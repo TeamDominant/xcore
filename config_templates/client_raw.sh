@@ -80,102 +80,6 @@
       }
     ]
   },
-  "inbounds": [
-    {
-      "tag": "socks",
-      "port": 10808,
-      "protocol": "socks",
-      "settings": {
-        "udp": true,
-        "auth": "noauth",
-        "userLevel": 8
-      },
-      "sniffing": {
-        "enabled": true,
-        "destOverride": [
-          "http",
-          "tls",
-          "quic",
-          "fakedns"
-        ]
-      },
-      "routeOnly": false,
-      "metadataOnly": false
-    },
-    {
-      "tag": "http",
-      "port": 10809,
-      "protocol": "http",
-      "settings": {
-        "userLevel": 8
-      }
-    }
-  ],
-  "outbounds": [
-    {
-      "tag": "vless_raw",
-      "protocol": "vless",
-      "streamSettings": {
-        "network": "tcp",
-        "security": "tls",
-        "tcpSettings": {
-          "header": {
-            "type": "none"
-          }
-        },
-        "tslSettings": {
-          "utls": {
-            "alpn": [
-              "h2",
-              "http/1.1"
-            ],
-            "fingerprint": "chrome"
-          }
-        }
-      },
-      "mux": {
-        "enabled": true,
-        "concurrency": 8,
-        "xudpConcurrency": 16,
-        "xudpProxyUDP443": "reject"
-      },
-      "settings": {
-        "vnext": [
-          {
-            "address": "swe.theleetworld.ru",
-            "port": 443,
-            "users": [
-              {
-                "encryption": "none",
-                "id": "uuid_templates",
-                "level": 8
-              }
-            ]
-          }
-        ]
-      }
-    },
-    {
-      "tag": "direct",
-      "protocol": "freedom",
-      "settings": {
-        "domainStrategy": "ForceIPv4"
-      },
-      "sockopt": {
-        "tcpMaxSeg": 1460,
-        "tcpFastOpen": true
-      }
-    },
-    {
-      "tag": "block",
-      "protocol": "blackhole",
-      "settings": {
-        "response": {
-          "type": "none"
-        }
-      }
-    }
-  ],
   "routing": {
     "domainStrategy": "IPIfNonMatch",
     "domainMatcher": "hybrid",
@@ -278,5 +182,101 @@
       }
     ]
   },
+  "inbounds": [
+    {
+      "tag": "socks",
+      "port": 10808,
+      "protocol": "socks",
+      "settings": {
+        "udp": true,
+        "auth": "noauth",
+        "userLevel": 8
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic",
+          "fakedns"
+        ]
+      },
+      "routeOnly": false,
+      "metadataOnly": false
+    },
+    {
+      "tag": "http",
+      "port": 10809,
+      "protocol": "http",
+      "settings": {
+        "userLevel": 8
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "vless_raw",
+      "protocol": "vless",
+      "streamSettings": {
+        "network": "tcp",
+        "security": "tls",
+        "tcpSettings": {
+          "header": {
+            "type": "none"
+          }
+        },
+        "tslSettings": {
+          "utls": {
+            "alpn": [
+              "h2",
+              "http/1.1"
+            ],
+            "fingerprint": "chrome"
+          }
+        }
+      },
+      "mux": {
+        "enabled": true,
+        "concurrency": 8,
+        "xudpConcurrency": 16,
+        "xudpProxyUDP443": "reject"
+      },
+      "settings": {
+        "vnext": [
+          {
+            "address": "swe.theleetworld.ru",
+            "port": 443,
+            "users": [
+              {
+                "encryption": "none",
+                "id": "uuid_templates",
+                "level": 8
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "tag": "direct",
+      "protocol": "freedom",
+      "settings": {
+        "domainStrategy": "ForceIPv4"
+      },
+      "sockopt": {
+        "tcpMaxSeg": 1460,
+        "tcpFastOpen": true
+      }
+    },
+    {
+      "tag": "block",
+      "protocol": "blackhole",
+      "settings": {
+        "response": {
+          "type": "none"
+        }
+      }
+    }
+  ],
   "stats": {}
 }

@@ -6,6 +6,7 @@
     "loglevel": "warning",
     "maskAddress": ""
   },
+  "dns": null,
   "routing": {
     "domainStrategy": "AsIs",
     "rules": [
@@ -46,7 +47,6 @@
       }
     ]
   },
-  "dns": null,
   "inbounds": [
     {
       "tag": "api",
