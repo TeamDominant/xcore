@@ -244,12 +244,12 @@
       "settings": {
         "vnext": [
           {
-            "address": "swe.theleetworld.ru",
+            "address": "DOMAIN",
             "port": 443,
             "users": [
               {
                 "encryption": "none",
-                "id": "uuid_templates",
+                "id": "UUID_TEMPLATES",
                 "level": 8
               }
             ]

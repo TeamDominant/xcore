@@ -68,9 +68,9 @@
       "settings": {
         "clients": [
           {
-            "email": "ggpe4nb7",
+            "email": "USERNAME",
             "level": 0,
-            "id": "uuid_templates"
+            "id": "UUID_TEMPLATES"
           }
         ],
         "decryption": "none"
