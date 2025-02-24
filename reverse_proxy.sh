@@ -11,8 +11,7 @@ LANG_FILE="/usr/local/reverse_proxy/lang.conf"
 DEFAULT_FLAGS="/usr/local/reverse_proxy/default.conf"
 DIR_XRAY="/usr/local/etc/xray/"
 
-REPO_URL="https://github.com/cortez24rus/reverse_proxy.git"
-SERVER_CONFIG_URL="https://raw.githubusercontent.com/cortez24rus/reverse_proxy/refs/heads/main/config_templates/server_raw.sh?token=GHSAT0AAAAAAC6C2BUANLUKODAXDX66T5Y6Z52FJ5Q"
+REPO_URL="https://github.com/cortez24rus/reverse_proxy/archive/refs/heads/main.tar.gz"
 
 ###################################
 ### Initialization and Declarations
@@ -334,7 +333,7 @@ update_reverse_proxy() {
   info "Script update and integration."
   
   mkdir -p "${DIR_REVERSE_PROXY}repo/"
-  git clone $REPO_URL "${DIR_REVERSE_PROXY}repo/"
+  wget -qO- $REPO_URL | tar xz --strip-components=1 -C "${DIR_REVERSE_PROXY}repo/"
   
   chmod +x "${DIR_REVERSE_PROXY}repo/reverse_proxy.sh"
   ln -sf ${DIR_REVERSE_PROXY}repo/reverse_proxy.sh /usr/local/bin/reverse_proxy
