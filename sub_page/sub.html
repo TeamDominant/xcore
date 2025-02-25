@@ -3,12 +3,14 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>XRP</title>
+    <title>XRP SUB</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script>
+        const baseDomain = "https://DOMAIN_TEMP/SUB_JSON_PATH_TEMP/client/";
+
         function getParameterByName(name) {
             name = name.replace(/[\[\]]/g, "\\$&");
-            var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+            const regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
                 results = regex.exec(window.location.href);
             if (!results) return null;
             if (!results[2]) return '';
@@ -16,29 +18,39 @@
         }
 
         function fillNameInput() {
-            var name = getParameterByName('name');
+            const name = getParameterByName('name');
             if (name) {
                 document.getElementById('nameInput').value = name;
             }
         }
 
-        function copyVlessUrl() {
-            var name = document.getElementById("nameInput").value.trim();
-            var baseUrl = "https://DOMAIN_TEMP/SUB_JSON_PATH_TEMP/client/";
-            var fullUrl = baseUrl + encodeURIComponent(name) + "_vl_raw.json";
+        function openApp(scheme) {
+            const name = document.getElementById("nameInput").value.trim();
+            if (!name) {
+                alert("Введите имя пользователя!");
+                return;
+            }
+            const fullUrl = `${scheme}${baseDomain}${encodeURIComponent(name)}_vl_raw.json`;
+            window.open(fullUrl);
+        }
 
-            // Создаем временный элемент для копирования
-            var tempInput = document.createElement("input");
+        function copyXrayJsonLink() {
+            const name = document.getElementById("nameInput").value.trim();
+            if (!name) {
+                alert("Введите имя пользователя!");
+                return;
+            }
+            const fullUrl = `${baseDomain}${encodeURIComponent(name)}_vl_raw.json`;
+
+            const tempInput = document.createElement("input");
             tempInput.value = fullUrl;
             document.body.appendChild(tempInput);
             tempInput.select();
-            document.execCommand("copy"); // Копируем в буфер обмена
+            document.execCommand("copy");
             document.body.removeChild(tempInput);
 
-            alert("Ссылка на подписку пользователя \"" + name + "\" скопирована в буфер обмена.");
+            alert(`Ссылка на подписку пользователя "${name}" скопирована в буфер обмена.`);
         }
-
-        document.addEventListener("DOMContentLoaded", fillNameInput);
     </script>
     <style>
         body {
@@ -74,14 +86,20 @@
             color: #000000;
             border: 1px solid black;
             padding: 5px 10px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 14px;
+            font-size: 16px;
             margin: 8px 4px;
             cursor: pointer;
-            border-radius: 4px;
+            border-radius: 6px;
             box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            justify-content: center;
+            margin: 0 auto;
+            max-width: 500px;
         }
 
         .button:hover {
@@ -89,50 +107,52 @@
         }
 
         input {
-            padding: 5px 10px;
-            font-size: 14px;
+            padding: 5px;
+            font-size: 16px;
             border: 1px solid black;
-            border-radius: 4px;
-            width: 230px;
-        }
-
-        input:hover {
-            background-color: rgba(240, 240, 240, 1);
+            border-radius: 5px;
+            width: 250px;
         }
     </style>
 </head>
 
-<body>
-    <h2 style="line-height: 2.5em;">1. Скачать приложение</h2>
-    <h3>- Android и iOS -</h3>
-    <button class="button"
-        onclick="window.open('https://play.google.com/store/apps/details?id=com.v2ray.ang', '_blank')">Android</button>
-    <button class="button"
-        onclick="window.open('https://apps.apple.com/us/app/v2box-v2ray-client/id6446814690', '_blank')">iOS</button>
-    <br><br>
+<body onload="fillNameInput()">
+    <br>
+    <h2>1. Скачать приложение</h2>
+
     <h3>- Windows -</h3>
-    <button class="button"
-        onclick="window.open('https://github.com/BLUEBL0B/Secret-Sing-Box/blob/main/Docs/Sing-Box-Windows-ru.md', '_blank')">Рекомендуемый
-        способ</button>
-    <button class="button" onclick="window.open('https://github.com/hiddify/hiddify-app/releases/latest', '_blank')">Или
-        скачать Hiddify</button>
-    <br><br>
+    <button class="button" onclick="window.open('https://github.com/2dust/v2rayN/releases', '_blank')">V2rayN</button>
+    <button class="button" onclick="window.open('https://github.com/hiddify/hiddify-app/releases/tag/v2.0.5', '_blank')">Hiddify</button>
+    <button class="button" onclick="window.open('https://github.com/InvisibleManVPN/InvisibleMan-XRayClient/releases/latest', '_blank')">Invisible Man</button>
+
+    <h3>- Android -</h3>
+    <button class="button" onclick="window.open('https://play.google.com/store/apps/details?id=com.v2ray.ang', '_blank')">V2rayNG</button>
+    <button class="button" onclick="window.open('https://github.com/hiddify/hiddify-app/releases/tag/v2.0.5', '_blank')">Hiddify</button>
+
+    <h3>- iOS -</h3>
+    <button class="button" onclick="window.open('https://github.com/hiddify/hiddify-app/releases/tag/v2.0.5', '_blank')">Hiddify</button>
+    <button class="button" onclick="window.open('https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532', '_blank')">Hiddify</button>
+    <button class="button" onclick="window.open('https://apps.apple.com/us/app/streisand/id6450534064', '_blank')">Streisand</button>
+
     <h3>- Linux -</h3>
-    <button class="button"
-        onclick="window.open('https://github.com/BLUEBL0B/Secret-Sing-Box#%D0%BD%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%B9%D0%BA%D0%B0-%D0%BA%D0%BB%D0%B8%D0%B5%D0%BD%D1%82%D0%BE%D0%B2', '_blank')">Рекомендуемый
-        способ</button>
-    <button class="button" onclick="window.open('https://github.com/hiddify/hiddify-app/releases/latest', '_blank')">Или
-        скачать Hiddify</button>
-    <br><br>
-    <h2 style="line-height: 1.2em;">2. Подключиться к серверу</h2>
-    <p style="line-height: 2em;"><i>Для Android, iOS и Windows (Hiddify)</i></p>
-    <p>
+    <button class="button" onclick="window.open('https://github.com/2dust/v2rayN/releases', '_blank')">V2rayN</button>
+    <button class="button" onclick="window.open('https://github.com/hiddify/hiddify-app/releases/latest', '_blank')">Hiddify</button>
+
+    <br>
+    <br>
+    <h2>2. Подключиться к серверу</h2>
+    <h3>- Для Windows, Android и iOS -</h3>
+
     <form onsubmit="return false;">
         <input type="text" placeholder="Введите имя пользователя..." id="nameInput" required><br><br>
-        <button class="button" onclick="copyVlessUrl()">Скопировать Vless URL</button>
+
+        <div class="button-grid">
+            <button class="button" onclick="openApp('v2rayng://install-config?url=')">Добавить в v2rayng</button>
+            <button class="button" onclick="openApp('streisand://import/')">Добавить в Streisand</button>
+            <button class="button" onclick="openApp('invxray://subscription/')">Добавить в Invisible Man</button>
+            <button class="button" onclick="copyXrayJsonLink()">Скопировать ссылку</button>
+        </div>
     </form>
-    </p>
-    <br>
 </body>
 
 </html>
