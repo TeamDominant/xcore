@@ -1962,7 +1962,7 @@ renew_cert() {
 ### Depersonalization of the database
 ###################################
 depersonalization_db() {
-
+  echo ""
 }
 
 ###################################
