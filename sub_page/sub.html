@@ -5,8 +5,153 @@
     <meta charset="UTF-8">
     <title>XRP SUB</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: 
+                linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(255, 255, 255, 0.8)),
+                url('background.jpg');
+            background-size: cover;
+            background-blend-mode: overlay; /* смешивание фона и градиента */
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(63, 63, 63, 0.6);
+            padding: 30px;
+            border-radius: 30px;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.6);
+            width: 100%;
+            max-width: 600px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            color: #000000;
+        }
+
+        h2, h3 {
+            margin-bottom: 15px;
+            font-weight: 600;
+            color: #000000;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .button {
+            padding: 12px;
+            border: none;
+            border-radius: 14px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #d4d4d4;
+            color: #000000;
+            transition: background 0.3s ease;
+        }
+
+        .button:hover {
+            background-color: #ffffff;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #000;
+            border-radius: 14px;
+            background-color: #d4d4d4;
+            color: #000000;
+            margin-bottom: 15px;
+        }
+
+        .app-section h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>REVERSE PROXY</h1>
+
+        <section class="section">
+            <h2>1. Скачать приложение</h2>
+
+            <div class="app-section">
+                <h3>Windows</h3>
+                <div class="button-grid">
+                    <button class="button" onclick="window.open('https://github.com/2dust/v2rayN/releases', '_blank')">V2rayN</button>
+                    <button class="button" onclick="window.open('https://github.com/InvisibleManVPN/InvisibleMan-XRayClient/releases/latest', '_blank')">Invisible Man</button>
+                </div>
+            </div>
+            <br>
+            <div class="app-section">
+                <h3>Android</h3>
+                <div class="button-grid">
+                    <button class="button" onclick="window.open('https://play.google.com/store/apps/details?id=com.v2ray.ang', '_blank')">V2rayNG</button>
+                </div>
+            </div>
+            <br>
+            <div class="app-section">
+                <h3>iOS</h3>
+                <div class="button-grid">
+                    <button class="button" onclick="window.open('https://apps.apple.com/us/app/v2box-v2ray-client/id6446814690', '_blank')">V2box</button>
+                    <button class="button" onclick="window.open('https://apps.apple.com/us/app/streisand/id6450534064', '_blank')">Streisand</button>
+                </div>
+            </div>
+            <br>
+            <div class="app-section">
+                <h3>Linux</h3>
+                <div class="button-grid">
+                    <button class="button" onclick="window.open('https://github.com/2dust/v2rayN/releases', '_blank')">V2rayN</button>
+                </div>
+            </div>
+        </section>
+        <h2>2. Подключиться к серверу</h2>
+        <form onsubmit="return false;">
+            <input type="text" placeholder="Введите имя пользователя..." id="nameInput" required><br>
+            <div class="button-grid">
+                <button class="button" onclick="copyXrayJsonLink()">Скопировать ссылку</button>
+                <button class="button" onclick="openApp('v2rayng://install-config?url=')">Добавить в V2rayNG</button>
+                <button class="button" onclick="openApp('v2box://install-sub?url=')">Добавить в V2box</button>
+                <button class="button" onclick="openApp('streisand://import/')">Добавить в Streisand</button>
+                <button class="button" onclick="openApp('invxray://subscription/')">Добавить в Invisible Man</button>
+            </div>
+        </form>
+    </div>
+
     <script>
         const baseDomain = "https://DOMAIN_TEMP/SUB_JSON_PATH_TEMP/client/";
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const name = params.get('name');
+            if (name) {
+                document.getElementById('nameInput').value = name;
+            }
+        });
 
         function getParameterByName(name) {
             name = name.replace(/[\[\]]/g, "\\$&");
@@ -52,107 +197,6 @@
             alert(`Ссылка на подписку пользователя "${name}" скопирована в буфер обмена.`);
         }
     </script>
-    <style>
-        body {
-            background-color: #ffffff;
-            background-image: url('background.jpg');
-            background-size: cover;
-            background-repeat: no-repeat;
-            background-position: top left;
-            background-attachment: fixed;
-            text-align: center;
-        }
-
-        h2 {
-            font-family: Arial, sans-serif;
-            color: #000000;
-        }
-
-        h3 {
-            font-family: Arial, sans-serif;
-            font-weight: normal;
-            color: #000000;
-            line-height: 0.1em;
-        }
-
-        p {
-            font-family: Arial, sans-serif;
-            font-size: 15px;
-            color: #000000;
-        }
-
-        .button {
-            background-color: rgba(25, 25, 25, 0.1);
-            color: #000000;
-            border: 1px solid black;
-            padding: 5px 10px;
-            font-size: 16px;
-            margin: 8px 4px;
-            cursor: pointer;
-            border-radius: 6px;
-            box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
-        .button-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            justify-content: center;
-            margin: 0 auto;
-            max-width: 500px;
-        }
-
-        .button:hover {
-            background-color: rgba(0, 0, 0, 0.2);
-        }
-
-        input {
-            padding: 5px;
-            font-size: 16px;
-            border: 1px solid black;
-            border-radius: 5px;
-            width: 250px;
-        }
-    </style>
-</head>
-
-<body onload="fillNameInput()">
-    <br>
-    <h2>1. Скачать приложение</h2>
-
-    <h3>- Windows -</h3>
-    <button class="button" onclick="window.open('https://github.com/2dust/v2rayN/releases', '_blank')">V2rayN</button>
-    <button class="button" onclick="window.open('https://github.com/hiddify/hiddify-app/releases/tag/v2.0.5', '_blank')">Hiddify</button>
-    <button class="button" onclick="window.open('https://github.com/InvisibleManVPN/InvisibleMan-XRayClient/releases/latest', '_blank')">Invisible Man</button>
-
-    <h3>- Android -</h3>
-    <button class="button" onclick="window.open('https://play.google.com/store/apps/details?id=com.v2ray.ang', '_blank')">V2rayNG</button>
-    <button class="button" onclick="window.open('https://github.com/hiddify/hiddify-app/releases/tag/v2.0.5', '_blank')">Hiddify</button>
-
-    <h3>- iOS -</h3>
-    <button class="button" onclick="window.open('https://apps.apple.com/us/app/v2box-v2ray-client/id6446814690', '_blank')">V2box</button>
-    <button class="button" onclick="window.open('https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532', '_blank')">Hiddify</button>
-    <button class="button" onclick="window.open('https://apps.apple.com/us/app/streisand/id6450534064', '_blank')">Streisand</button>
-
-    <h3>- Linux -</h3>
-    <button class="button" onclick="window.open('https://github.com/2dust/v2rayN/releases', '_blank')">V2rayN</button>
-    <button class="button" onclick="window.open('https://github.com/hiddify/hiddify-app/releases/latest', '_blank')">Hiddify</button>
-
-    <br>
-    <br>
-    <h2>2. Подключиться к серверу</h2>
-    <h3>- Для Windows, Android и iOS -</h3>
-
-    <form onsubmit="return false;">
-        <input type="text" placeholder="Введите имя пользователя..." id="nameInput" required><br><br>
-
-        <div class="button-grid">
-            <button class="button" onclick="openApp('v2rayng://install-config?url=')">Добавить в v2rayng</button>
-            <button class="button" onclick="openApp('streisand://import/')">Добавить в Streisand</button>
-            <button class="button" onclick="openApp('invxray://subscription/')">Добавить в Invisible Man</button>
-            <button class="button" onclick="copyXrayJsonLink()">Скопировать ссылку</button>
-        </div>
-    </form>
 </body>
 
 </html>
