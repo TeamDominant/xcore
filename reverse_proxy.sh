@@ -7,8 +7,6 @@ VERSION_MANAGER='1.4.3с'
 VERSION_XRAY='25.1.30'
 
 DIR_REVERSE_PROXY="/usr/local/reverse_proxy/"
-LANG_FILE="/usr/local/reverse_proxy/lang.conf"
-DEFAULT_FLAGS="/usr/local/reverse_proxy/default.conf"
 DIR_XRAY="/usr/local/etc/xray/"
 
 REPO_URL="https://github.com/cortez24rus/reverse_proxy/archive/refs/heads/main.tar.gz"
@@ -351,13 +349,13 @@ update_reverse_proxy() {
 ### Reading values ​​from file
 ################################### 
 read_defaults_from_file() {
-  if [[ -f $DEFAULT_FLAGS ]]; then
+  if [[ -f "${DIR_REVERSE_PROXY}default.conf" ]]; then
     # Чтение и выполнение строк из файла
     while IFS= read -r line; do
       # Пропускаем пустые строки и комментарии
       [[ -z "$line" || "$line" =~ ^# ]] && continue
       eval "$line"
-    done < $DEFAULT_FLAGS
+    done < "${DIR_REVERSE_PROXY}default.conf"
   else
     # Если файл не найден, используем значения по умолчанию
     defaults[utils]=true
@@ -385,7 +383,7 @@ read_defaults_from_file() {
 ### Writing values ​​to a file
 ###################################
 write_defaults_to_file() {
-  cat > ${DEFAULT_FLAGS}<<EOF
+  cat > "${DIR_REVERSE_PROXY}default.conf"<<EOF
 defaults[utils]=false
 defaults[dns]=false
 defaults[addu]=false
@@ -522,7 +520,7 @@ log_entry() {
 ### Language selection
 ###################################
 select_language() {
-  if [ ! -f "$LANG_FILE" ]; then  # Если файла нет
+  if [ ! -f "${DIR_REVERSE_PROXY}lang.conf" ]; then  # Если файла нет
     L=E
     hint " $(text 0) \n" 
     reading " $(text 1) " LANGUAGE
@@ -532,11 +530,11 @@ select_language() {
       2) L=R ;;   # Русский
       *) L=E ;;   # По умолчанию — английский
     esac
-    cat > "$LANG_FILE" << EOF
+    cat > "${DIR_REVERSE_PROXY}lang.conf" << EOF
 $L
 EOF
   else
-    L=$(cat "$LANG_FILE")  # Загружаем язык
+    L=$(cat "${DIR_REVERSE_PROXY}lang.conf")  # Загружаем язык
   fi
 }
 
@@ -1702,7 +1700,10 @@ web_sub_page() {
     "/var/www/${SUB_JSON_PATH}/sub.html"
 }
 
-web_client_conf() {
+###################################
+### Client configuration setup
+###################################
+client_conf() {
   cp -r ${DIR_REVERSE_PROXY}repo/conf_template/client_raw.sh /var/www/${SUB_JSON_PATH}/client/${USERNAME}_vl_raw.json
 
   sed -i \
@@ -1719,7 +1720,7 @@ xray_client_conf() {
   info " $(text 46) "
 
   web_sub_page
-  web_client_conf
+  client_conf
 
   tilda "$(text 10)"
 }
