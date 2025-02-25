@@ -24,7 +24,6 @@ declare -A generate
 ###################################
 regex[domain]="^([a-zA-Z0-9-]+)\.([a-zA-Z0-9-]+\.[a-zA-Z]{2,})$"
 regex[port]="^[1-9][0-9]*$"
-regex[warp_license]="^[a-zA-Z0-9]{8}-[a-zA-Z0-9]{8}-[a-zA-Z0-9]{8}$"
 regex[username]="^[a-zA-Z0-9]+$"
 regex[ip]="^([0-9]{1,3}\.){3}[0-9]{1,3}$"
 regex[tgbot_token]="^[0-9]{8,10}:[a-zA-Z0-9_-]{35}$"
@@ -2094,6 +2093,45 @@ log_clear() {
 }
 
 ###################################
+### Конфигурирование Xray core
+###################################
+xray_configuration() {
+  while true; do
+    clear
+    banner_xray
+    tilda "|--------------------------------------------------------------------------|"
+    info " $(text 86) "                      # MENU
+    tilda "|--------------------------------------------------------------------------|"
+    info " $(text 87) "                      # 1. Добавление пользователей
+    info " $(text 88) "                      # 2. Удаление пользователей
+    echo
+    info " 0. Назад в основное меню"         # 0. Return
+    info " $(text 84) "                      # Exit
+    tilda "|--------------------------------------------------------------------------|"
+    echo
+    reading " $(text 1) " CHOICE_MENU        # Choise
+    tilda "$(text 10)"
+    case $CHOICE_MENU in
+      1)
+        clear
+        # Тут код для добавления пользователей
+        ;;
+      2)
+        # Тут код для удаления пользователей
+        ;;
+      0)
+        return 0  # Это позволит вернуться в основное меню
+        ;;
+      *)
+        warning " $(text 76) "
+        ;;
+    esac
+    info " $(text 85) "
+    read -r dummy
+  done
+}
+
+###################################
 ### Main function
 ###################################
 main() {
@@ -2192,6 +2230,9 @@ main() {
       12)
         rm -rf ${DIR_REVERSE_PROXY}lang.conf
         select_language
+        ;;
+      13)
+        xray_configuration
         ;;
       0)
         clear
