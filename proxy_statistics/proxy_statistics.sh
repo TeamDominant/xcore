@@ -3,7 +3,6 @@
 # Указываем директории 
 dirXray="/usr/local/etc/xray/"
 dataBasePath="/usr/local/reverse_proxy/reverse_proxy.db"
-logFile="/var/log/xrp-ipl.log"
 
 # Глобальные переменные для хранения значений
 previous_stats=""
