@@ -3,7 +3,7 @@
 ###################################
 ### Global values
 ###################################
-VERSION_MANAGER='0.2.50'
+VERSION_MANAGER='0.2.51'
 VERSION_XRAY='25.1.30'
 
 DIR_REVERSE_PROXY="/usr/local/reverse_proxy/"
@@ -2063,7 +2063,7 @@ display_stats() {
   echo "  📊 Статистика клиентов:"
   sqlite3 "$dataBasePath" <<EOF
 .headers on
-.mode table
+.mode column
 SELECT
   email AS "Email",
   activity_status AS "Status",

@@ -227,7 +227,7 @@
             "type": "none"
           }
         },
-        "tslSettings": {
+        "tlsSettings": {
           "utls": {
             "alpn": [
               "h2",

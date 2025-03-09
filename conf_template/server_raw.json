@@ -86,7 +86,7 @@
         "network": "tcp",
         "security": "none",
         "tcpSettings": {
-          "acceptProxyProtocol": false,
+          "acceptProxyProtocol": true,
           "header": {
             "type": "none"
           }

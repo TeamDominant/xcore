@@ -421,7 +421,7 @@ display_stats() {
   echo "  📊 Статистика клиентов:"
   sqlite3 "$dataBasePath" <<EOF
 .headers on
-.mode table
+.mode column
 SELECT
   email AS "Email",
   activity_status AS "Status",
