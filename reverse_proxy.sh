@@ -1412,7 +1412,7 @@ EOF
 location_sub_page() {
   cat > /etc/nginx/locations/sub_page.conf <<EOF
 # Subsciption
-location ~ ^/${SUBPATH} {
+location ~ ^/${SUB_JSON_PATH} {
   default_type application/json;
   root /var/www;
 }
