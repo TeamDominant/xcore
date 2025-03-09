@@ -1370,7 +1370,7 @@ EOF
 local_conf() {
   cat > /etc/nginx/conf.d/local.conf <<EOF
 server {
-  listen                               36077;
+  listen                               36078;
   server_name                          _;
 
   # Enable locations
