@@ -66,8 +66,8 @@ E[6]="It is recommended to perform the following actions before running the scri
 R[6]="Перед запуском скрипта рекомендуется выполнить следующие действия"
 E[7]="Annihilation of the system!"
 R[7]="Аннигиляция системы!"
-E[8]="Start the XRAY installation? Choose option [y/N]:"
-R[8]="Начать установку XRAY? Выберите опцию [y/N]:"
+E[8]=""
+R[8]=""
 E[9]="CANCEL"
 R[9]="ОТМЕНА"
 E[10]="\n|--------------------------------------------------------------------------|\n"
@@ -88,8 +88,8 @@ E[17]="Verifying domain, API token/key, and email..."
 R[17]="Проверка домена, API токена/ключа и почты..."
 E[18]="Error: invalid domain, API token/key, or email. Please try again."
 R[18]="Ошибка: неправильно введён домен, API токен/ключ или почта. Попробуйте снова."
-E[19]="Enter SNI for Reality (do not enter your domain):"
-R[19]="Введите SNI для Reality (не вводите ваш домен):"
+E[19]=""
+R[19]=""
 E[20]="Error: failed to connect to WARP. Manual acceptance of the terms of service is required."
 R[20]="Ошибка: не удалось подключиться к WARP. Требуется вручную согласиться с условиями использования."
 E[21]="Access link to node exporter:"
@@ -100,32 +100,32 @@ E[23]="Creating a backup and rotation."
 R[23]="Создание резевной копии и ротация."
 E[24]="Enter Node Exporter path:"
 R[24]="Введите путь к Node Exporter:"
-E[25]="Enter Adguard-home path:"
-R[25]="Введите путь к Adguard-home:"
-E[26]="Enter panel path:"
-R[26]="Введите путь к панели:"
+E[25]=""
+R[25]=""
+E[26]=""
+R[26]=""
 E[27]="Enter subscription path:"
 R[27]="Введите путь к подписке:"
-E[28]="Enter JSON subscription path:"
-R[28]="Введите путь к JSON подписке:"
+E[28]=""
+R[28]=""
 E[29]="Error: path cannot be empty, please re-enter."
 R[29]="Ошибка: путь не может быть пустым, повторите ввод."
 E[30]="Error: path must not contain characters {, }, /, $, \\, please re-enter."
 R[30]="Ошибка: путь не должен содержать символы {, }, /, $, \\, повторите ввод."
-E[31]="DNS server:\n  1. Systemd-resolved \n  2. Adguard-home"
-R[31]="DNS сервер:\n  1. Systemd-resolved \n  2. Adguard-home"
-E[32]="Systemd-resolved selected."
-R[32]="Выбран systemd-resolved."
+E[31]=""
+R[31]=""
+E[32]=""
+R[32]="."
 E[33]="Error: invalid choice, please try again."
 R[33]="Ошибка: неверный выбор, попробуйте снова."
-E[34]="Enter the Telegram bot token for the control panel:"
-R[34]="Введите токен Telegram бота для панели управления:"
-E[35]="Enter your Telegram ID:"
-R[35]="Введите ваш Telegram ID:"
+E[34]=""
+R[34]=""
+E[35]=""
+R[35]=""
 E[36]="Updating system and installing necessary packages."
 R[36]="Обновление системы и установка необходимых пакетов."
-E[37]="Configuring DNS."
-R[37]="Настройка DNS."
+E[37]=""
+R[37]=""
 E[38]="Download failed, retrying..."
 R[38]="Скачивание не удалось, пробуем снова..."
 E[39]="Adding user."
@@ -142,8 +142,8 @@ E[44]="Issuing certificates."
 R[44]="Выдача сертификатов."
 E[45]="Configuring NGINX."
 R[45]="Настройка NGINX."
-E[46]="Setting up the panel for Xray."
-R[46]="Настройка панели для Xray."
+E[46]="Setting Xray."
+R[46]="Настройка Xray."
 E[47]="Configuring UFW."
 R[47]="Настройка UFW."
 E[48]="Configuring SSH."
@@ -164,16 +164,16 @@ E[55]="Error: Keys not found. Please add them to the server before retrying..."
 R[55]="Ошибка: ключи не найдены, добавьте его на сервер, прежде чем повторить..."
 E[56]="Key found, proceeding with SSH setup."
 R[56]="Ключ найден, настройка SSH."
-E[57]="Installing bot."
-R[57]="Установка бота."
+E[57]=""
+R[57]=""
 E[58]="SAVE THIS SCREEN!"
 R[58]="СОХРАНИ ЭТОТ ЭКРАН!"
-E[59]="Access the panel at the link:"
-R[59]="Доступ по ссылке к панели:"
-E[60]="Quick subscription link for connection:"
-R[60]="Быстрая ссылка на подписку для подключения:"
-E[61]="Access Adguard-home at the link:"
-R[61]="Доступ по ссылке к adguard-home:"
+E[59]="Subscription page link:"
+R[59]="Ссылка на страницу подписки:"
+E[60]=""
+R[60]=""
+E[61]=""
+R[61]=":"
 E[62]="SSH connection:"
 R[62]="Подключение по SSH:"
 E[63]="Username:"
@@ -184,12 +184,12 @@ E[65]="Log file path:"
 R[65]="Путь к лог файлу:"
 E[66]="Prometheus monitor."
 R[66]="Мониторинг Prometheus."
-E[67]="Set up the Telegram bot? [y/N]:"
-R[67]="Настроить telegram бота? [y/N]:"
-E[68]="Bot:\n  1. IP limit (default) \n  2. Torrent ban"
-R[68]="Бот:\n  1. IP limit (по умолчанию) \n  2. Torrent ban"
-E[69]="Enter the Telegram bot token for IP limit, Torrent ban:"
-R[69]="Введите токен Telegram бота для IP limit, Torrent ban:"
+E[67]=""
+R[67]=""
+E[68]=""
+R[68]=""
+E[69]=""
+R[69]=""
 E[70]="Secret key:"
 R[70]="Секретный ключ:"
 E[71]="Current operating system is \$SYS.\\\n The system lower than \$SYSTEM \${MAJOR[int]} is not supported. Feedback: [https://github.com/cortez24rus/xui-reverse-proxy/issues]"
@@ -272,7 +272,7 @@ R[107]="12. Изменить язык."
 ###################################
 show_help() {
   echo
-  echo "Usage: reverse_proxy [-u|--utils <true|false>] [-d|--dns <true|false>] [-a|--addu <true|false>]"
+  echo "Usage: reverse_proxy [-u|--utils <true|false>] [-a|--addu <true|false>]"
   echo "         [-r|--autoupd <true|false>] [-b|--bbr <true|false>] [-i|--ipv6 <true|false>] [-w|--warp <true|false>]"
   echo "         [-c|--cert <true|false>] [-m|--mon <true|false>] [-l|--shell <true|false>] [-n|--nginx <true|false>]"
   echo "         [-p|--xcore <true|false>] [--custom <true|false>] [-f|--firewall <true|false>] [-s|--ssh <true|false>]"
@@ -281,8 +281,6 @@ show_help() {
   echo
   echo "  -u, --utils <true|false>       Additional utilities                             (default: ${defaults[utils]})"
   echo "                                 Дополнительные утилиты"
-  echo "  -d, --dns <true|false>         DNS encryption                                   (default: ${defaults[dns]})"
-  echo "                                 Шифрование DNS"
   echo "  -a, --addu <true|false>        User addition                                    (default: ${defaults[addu]})"
   echo "                                 Добавление пользователя"
   echo "  -r, --autoupd <true|false>     Automatic updates                                (default: ${defaults[autoupd]})"
@@ -358,7 +356,6 @@ read_defaults_from_file() {
   else
     # Если файл не найден, используем значения по умолчанию
     defaults[utils]=true
-    defaults[dns]=true
     defaults[addu]=true
     defaults[autoupd]=true
     defaults[bbr]=true
@@ -384,7 +381,6 @@ read_defaults_from_file() {
 write_defaults_to_file() {
   cat > "${DIR_REVERSE_PROXY}default.conf"<<EOF
 defaults[utils]=false
-defaults[dns]=false
 defaults[addu]=false
 defaults[autoupd]=false
 defaults[bbr]=false
@@ -437,7 +433,6 @@ validate_true_false() {
 ###################################
 declare -A arg_map=(
   [-u]=utils      [--utils]=utils
-  [-d]=dns        [--dns]=dns
   [-a]=addu       [--addu]=addu
   [-r]=autoupd    [--autoupd]=autoupd
   [-b]=bbr        [--bbr]=bbr
@@ -458,7 +453,7 @@ declare -A arg_map=(
 
 parse_args() {
   local opts
-  opts=$(getopt -o hu:d:a:r:b:i:w:c:m:l:n:x:f:s:t:g:o --long utils:,dns:,addu:,autoupd:,bbr:,ipv6:,warp:,cert:,mon:,shell:,nginx:,xcore:,custom:,firewall:,ssh:,tgbot:,generate:,subdomain:,update,depers,help -- "$@")
+  opts=$(getopt -o hu:a:r:b:i:w:c:m:l:n:x:f:s:t:g:o --long utils:,addu:,autoupd:,bbr:,ipv6:,warp:,cert:,mon:,shell:,nginx:,xcore:,custom:,firewall:,ssh:,tgbot:,generate:,subdomain:,update,depers,help -- "$@")
 
   if [[ $? -ne 0 ]]; then
     return 1
@@ -807,9 +802,6 @@ data_entry() {
   reading " $(text 11) " USERNAME
   echo
   reading " $(text 12) " PASSWORD
-
-  tilda "$(text 10)"
-
   [[ ${args[addu]} == "true" ]] && add_user
 
   check_cf_token
@@ -840,7 +832,6 @@ data_entry() {
   fi
 
   if [[ ${args[ssh]} == "true" ]]; then
-    tilda "$(text 10)"
     reading " $(text 54) " ANSWER_SSH
     if [[ "${ANSWER_SSH,,}" == "y" ]]; then
       info " $(text 48) "
@@ -1883,15 +1874,8 @@ ssh_setup() {
 data_output() {
   info " $(text 58) "
   echo
-  printf '0\n' | x-ui | grep --color=never -i ':'
+  out_data " $(text 59) " "https://${DOMAIN}/${SUB_JSON_PATH}/"
   echo
-  out_data " $(text 59) " "https://${DOMAIN}/${WEB_BASE_PATH}/"
-  out_data " $(text 60) " "${SUB_URI}user"
-  echo
-  if [[ $CHOISE_DNS = "2" ]]; then
-    out_data " $(text 61) " "https://${DOMAIN}/${ADGUARDPATH}/login.html"
-    echo
-  fi
   if [[ ${args[mon]} == "true" ]]; then
     out_data " $(text 21) " "https://${DOMAIN}/${METRICS}/"
     echo
@@ -2383,7 +2367,6 @@ reverse_proxy_main_menu() {
         warning_banner
         data_entry
         [[ ${args[utils]} == "true" ]] && installation_of_utilities
-        [[ ${args[dns]} == "true" ]] && dns_encryption
         [[ ${args[autoupd]} == "true" ]] && setup_auto_updates
         [[ ${args[bbr]} == "true" ]] && enable_bbr
         [[ ${args[ipv6]} == "true" ]] && disable_ipv6
@@ -2391,7 +2374,7 @@ reverse_proxy_main_menu() {
         [[ ${args[cert]} == "true" ]] && issuance_of_certificates
         [[ ${args[mon]} == "true" ]] && monitoring
         [[ ${args[shell]} == "true" ]] && shellinabox
-        update_reverse_proxy
+        #update_reverse_proxy
         random_site
         [[ ${args[nginx]} == "true" ]] && nginx_setup
         [[ ${args[haproxy]} == "true" ]] && haproxy_setup
@@ -2399,7 +2382,7 @@ reverse_proxy_main_menu() {
         [[ ${args[xcore]} == "true" ]] && xray_client_conf
         reverse_proxy_statistics
         write_defaults_to_file
-        rotation_and_archiving
+#        rotation_and_archiving
         [[ ${args[firewall]} == "true" ]] && enabling_security
         [[ ${args[ssh]} == "true" ]] && ssh_setup
         data_output
