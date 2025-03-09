@@ -3,7 +3,7 @@
 ###################################
 ### Global values
 ###################################
-VERSION_MANAGER='0.1.2'
+VERSION_MANAGER='0.2.4'
 VERSION_XRAY='25.1.30'
 
 DIR_REVERSE_PROXY="/usr/local/reverse_proxy/"
@@ -124,8 +124,8 @@ E[35]=""
 R[35]=""
 E[36]="Updating system and installing necessary packages."
 R[36]="Обновление системы и установка необходимых пакетов."
-E[37]=""
-R[37]=""
+E[37]="Configuring Haproxy."
+R[37]="Настройка Haproxy."
 E[38]="Download failed, retrying..."
 R[38]="Скачивание не удалось, пробуем снова..."
 E[39]="Adding user."
@@ -327,9 +327,11 @@ show_help() {
 update_reverse_proxy() {
   info "Script update and integration."
   
-  mkdir -p "${DIR_REVERSE_PROXY}repo/"
-  wget -qO- $REPO_URL | tar xz --strip-components=1 -C "${DIR_REVERSE_PROXY}repo/"
+  TOKEN="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"
+  REPO_URL="https://api.github.com/repos/cortez24rus/reverse_proxy/tarball/main"
   
+  mkdir -p "${DIR_REVERSE_PROXY}repo/"
+  wget --header="Authorization: Bearer $TOKEN" -qO- $REPO_URL | tar xz --strip-components=1 -C "${DIR_REVERSE_PROXY}repo/"
   chmod +x "${DIR_REVERSE_PROXY}repo/reverse_proxy.sh"
   ln -sf ${DIR_REVERSE_PROXY}repo/reverse_proxy.sh /usr/local/bin/reverse_proxy
 
@@ -337,7 +339,7 @@ update_reverse_proxy() {
   warning "Script version: $CURRENT_VERSION"
 
   crontab -l | grep -v -- "--update" | crontab -
-  add_cron_rule "0 0 * * * /usr/local/reverse_proxy/repo/reverse_proxy --update"
+  add_cron_rule "0 0 * * * /usr/local/reverse_proxy/repo/reverse_proxy.sh --update"
 
   tilda "\n|-----------------------------------------------------------------------------|\n"
 }
@@ -1210,7 +1212,6 @@ monitoring() {
 
   cat > /etc/nginx/locations/monitoring.conf <<EOF
 location /${METRICS} {
-  if (\$hack = 1) {return 404;}
   auth_basic "Restricted Content";
   auth_basic_user_file /etc/nginx/.htpasswd;
   proxy_pass http://127.0.0.1:9100/metrics;
@@ -1252,7 +1253,6 @@ EOF
 
   cat > /etc/nginx/locations/shellinabox.conf <<EOF
 location /${SHELLBOX} {
-  if (\$hack = 1) {return 404;}
   auth_basic "Restricted Content";
   auth_basic_user_file /etc/nginx/.htpasswd;
   proxy_pass http://127.0.0.1:4200;
@@ -1418,8 +1418,8 @@ EOF
 ###################################
 ### Web site
 ###################################
-locatiion_root() {
-  cat > /etc/nginx/locations/local.conf <<EOF
+location_root() {
+  cat > /etc/nginx/locations/root.conf <<EOF
 # Web site
 location / {
   root /var/www/html;
@@ -1479,6 +1479,7 @@ nginx_setup() {
 
   nginx_conf
   local_conf
+  location_root
   location_hidden_files
   location_sub_page  
 
@@ -1550,10 +1551,10 @@ EOF
 ### HAPROXY
 ###################################
 haproxy_setup() {
-  info " $(text 45) "
+  info " $(text 37) "
+  mkdir -p /etc/haproxy/certs
   auth_lua
 
-  mkdir -p /etc/haproxy/certs
   openssl dhparam -out /etc/haproxy/dhparam.pem 2048
   cat /etc/letsencrypt/live/${DOMAIN}/fullchain.pem /etc/letsencrypt/live/${DOMAIN}/privkey.pem > /etc/haproxy/certs/${DOMAIN}.pem
 
@@ -1644,8 +1645,8 @@ xray_setup() {
 ### Xray config
 ###################################
 xray_config() {
-  cp -f ${DIR_REVERSE_PROXY}repo/сonf_template/server_raw.sh ${DIR_XRAY}config.json
-
+  cp -f ${DIR_REVERSE_PROXY}repo/conf_template/server_raw.json ${DIR_XRAY}config.json
+        
   sed -i \
     -e "s/USERNAME_TEMP/${USERNAME}/g" \
     -e "s/UUID_TEMP/${XRAY_UUID}/g" \
@@ -1711,7 +1712,7 @@ web_sub_page() {
 ### Client configuration setup
 ###################################
 client_conf() {
-  cp -r ${DIR_REVERSE_PROXY}repo/conf_template/client_raw.sh /var/www/${SUB_JSON_PATH}/vless_raw/${USERNAME}.json
+  cp -r ${DIR_REVERSE_PROXY}repo/conf_template/client_raw.json /var/www/${SUB_JSON_PATH}/vless_raw/${USERNAME}.json
 
   sed -i \
     -e "s/DOMAIN_TEMP/${DOMAIN}/g" \
@@ -2374,7 +2375,7 @@ reverse_proxy_main_menu() {
         [[ ${args[cert]} == "true" ]] && issuance_of_certificates
         [[ ${args[mon]} == "true" ]] && monitoring
         [[ ${args[shell]} == "true" ]] && shellinabox
-        #update_reverse_proxy
+        update_reverse_proxy
         random_site
         [[ ${args[nginx]} == "true" ]] && nginx_setup
         [[ ${args[haproxy]} == "true" ]] && haproxy_setup
@@ -2386,6 +2387,7 @@ reverse_proxy_main_menu() {
         [[ ${args[firewall]} == "true" ]] && enabling_security
         [[ ${args[ssh]} == "true" ]] && ssh_setup
         data_output
+        log_clear
         ;;
       2)
         if [ ! -d "/usr/local/reverse_proxy/backup" ]; then
