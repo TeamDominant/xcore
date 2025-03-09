@@ -164,8 +164,8 @@ E[55]="Error: Keys not found. Please add them to the server before retrying..."
 R[55]="Ошибка: ключи не найдены, добавьте его на сервер, прежде чем повторить..."
 E[56]="Key found, proceeding with SSH setup."
 R[56]="Ключ найден, настройка SSH."
-E[57]=""
-R[57]=""
+E[57]="Client-side configuration."
+R[57]="Настройка клиентской части."
 E[58]="SAVE THIS SCREEN!"
 R[58]="СОХРАНИ ЭТОТ ЭКРАН!"
 E[59]="Subscription page link:"
@@ -779,8 +779,6 @@ data_entry() {
   tilda "$(text 10)"
 
   check_cf_token
-
-  tilda "$(text 10)"
 
   if [[ ${args[generate]} == "true" ]]; then
     SUB_JSON_PATH=$(eval ${generate[path]})
@@ -1690,7 +1688,7 @@ client_conf() {
 ### Xray client settings
 ###################################
 xray_client_conf() {
-  info " $(text 46) "
+  info " $(text 57) "
 
   web_sub_page
   client_conf
@@ -1702,7 +1700,7 @@ reverse_proxy_statistics() {
   local SOURCE="/usr/local/reverse_proxy/repo/proxy_statistics/"
   local DESTINATION="/etc/systemd/system/proxy_statistics.service"
   
-  mv -f "${SERVICE_SRC}proxy_statistics.service" "$DESTINATION"
+  mv -f "${SOURCE}proxy_statistics.service" "$DESTINATION"
   mv -f "${SOURCE}proxy_statistics.sh" "${DIR_REVERSE_PROXY}proxy_statistics.sh"
   chmod +x ${DIR_REVERSE_PROXY}proxy_statistics.sh
 
@@ -2340,7 +2338,7 @@ reverse_proxy_main_menu() {
         update_reverse_proxy
         random_site
         [[ ${args[nginx]} == "true" ]] && nginx_setup
-        [[ ${args[haproxy]} == "true" ]] && haproxy_setup
+        haproxy_setup
         [[ ${args[xcore]} == "true" ]] && xray_server_conf
         [[ ${args[xcore]} == "true" ]] && xray_client_conf
         reverse_proxy_statistics
