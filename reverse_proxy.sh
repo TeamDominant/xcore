@@ -332,7 +332,7 @@ update_reverse_proxy() {
   chmod +x "${DIR_REVERSE_PROXY}repo/reverse_proxy.sh"
   ln -sf "${DIR_REVERSE_PROXY}repo/reverse_proxy.sh" /usr/local/bin/reverse_proxy
 
-  sleep 3
+  sleep 1
 
   CURRENT_VERSION=$(sed -n "s/^[[:space:]]*VERSION_MANAGER=[[:space:]]*'\([0-9\.]*\)'/\1/p" "${DIR_REVERSE_PROXY}repo/reverse_proxy.sh")
   warning "Script version: $CURRENT_VERSION"
