@@ -3,7 +3,7 @@
 ###################################
 ### Global values
 ###################################
-VERSION_MANAGER='0.2.41'
+VERSION_MANAGER='0.2.42'
 VERSION_XRAY='25.1.30'
 
 DIR_REVERSE_PROXY="/usr/local/reverse_proxy/"
@@ -775,6 +775,8 @@ data_entry() {
   echo
   reading " $(text 12) " PASSWORD
   [[ ${args[addu]} == "true" ]] && add_user
+
+  tilda "$(text 10)"
 
   check_cf_token
 
