@@ -227,7 +227,7 @@
             <div class="button-grid">
                 <button class="button" onclick="copyXrayJsonLink()">Скопировать ссылку</button>
                 <button class="button" onclick="openApp('v2rayng://install-config?url=')">Добавить в V2rayNG</button>
-                <button class="button" onclick="openApp('v2box://install-sub?url=')">Добавить в V2box</button>
+                <button class="button" onclick="openV2boxApp('v2box://install-sub?url=')">Добавить в V2box</button>
                 <button class="button" onclick="openApp('streisand://import/')">Добавить в Streisand</button>
                 <button class="button" onclick="openApp('invxray://subscription/')">Добавить в Invisible Man</button>
             </div>
@@ -289,7 +289,17 @@
                 alert("Введите имя пользователя!");
                 return;
             }
-            const fullUrl = `${scheme}${baseDomain}${encodeURIComponent(name)}.json`;
+            const fullUrl = `${scheme}${baseDomain}${encodeURIComponent(name)}.json#REVERSE_PROXY`;
+            window.open(fullUrl);
+        }
+
+        function openV2boxApp(scheme) {
+            const name = document.getElementById("nameInput").value.trim();
+            if (!name) {
+                alert("Введите имя пользователя!");
+                return;
+            }
+            const fullUrl = `${scheme}${baseDomain}${encodeURIComponent(name)}.json&name=REVERSE_PROXY`;
             window.open(fullUrl);
         }
 
