@@ -266,7 +266,7 @@
                     <button class="button" onclick="generateQRCode()">Сгенерировать QR-код</button>
                 </div>
             </div>
-            <div id="qrcode" onclick="copyQRCodeToClipboard()"></div>
+            <div id="qrcode"></div>
         </form>
     </div>
     
@@ -335,29 +335,6 @@
                     console.error('Ошибка генерации QR-кода', error);
                 }
             });
-        }
-
-        function copyQRCodeToClipboard() {
-            const canvas = document.querySelector('#qrcode canvas');
-            if (!canvas) {
-                alert("QR-код не сгенерирован!");
-                return;
-            }
-
-            // Преобразуем canvas в изображение (PNG)
-            canvas.toBlob((blob) => {
-                // Копируем изображение в буфер обмена
-                navigator.clipboard.write([
-                    new ClipboardItem({
-                        'image/png': blob
-                    })
-                ]).then(() => {
-                    alert("QR-код скопирован в буфер обмена!");
-                }).catch((err) => {
-                    console.error("Ошибка при копировании QR-кода:", err);
-                    alert("Не удалось скопировать QR-код. Попробуйте снова.");
-                });
-            }, 'image/png');
         }
 
         window.addEventListener('DOMContentLoaded', () => {
