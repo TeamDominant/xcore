@@ -3,7 +3,7 @@
 ###################################
 ### Global values
 ###################################
-VERSION_MANAGER='0.3.2'
+VERSION_MANAGER='0.3.3'
 VERSION_XRAY='25.1.30'
 
 DIR_REVERSE_PROXY="/usr/local/reverse_proxy/"
@@ -1474,7 +1474,7 @@ auth_lua() {
   
   cat > ${LUA_PATH} <<EOF
 local passwords = {
-  ["${LUA_UUID}"] = true,
+  ["${XRAY_UUID}"] = true,
   ["${PLACEBO_XRAY_UUID}"] = false		-- Заглушка, не удаляй, а то убьет
 }
 
@@ -1825,7 +1825,7 @@ ssh_setup() {
       s/PermitEmptyPasswords yes/PermitEmptyPasswords no/g;
     " /etc/ssh/sshd_config
 
-    bash <(curl -Ls https://raw.githubusercontent.com/cortez24rus/motd/refs/heads/main/install.sh)
+    bash <(curl -Ls https://raw.githubusercontent.com/cortez24rus/motd/refs/heads/X/install.sh)
     systemctl restart ssh
     tilda "$(text 10)"
   fi
