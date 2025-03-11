@@ -92,7 +92,8 @@
           "keyword:yastatic",
           "keyword:reklama",
           "keyword:firebase",
-          "keyword:analytics"
+          "keyword:analytics",
+          "keyword:telemetry"
         ],
         "outboundTag": "block"
       },
