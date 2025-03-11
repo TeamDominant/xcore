@@ -3,7 +3,7 @@
 ###################################
 ### Global values
 ###################################
-VERSION_MANAGER='0.3.6'
+VERSION_MANAGER='0.3.7'
 VERSION_XRAY='25.1.30'
 
 DIR_REVERSE_PROXY="/usr/local/reverse_proxy/"
@@ -2087,25 +2087,25 @@ SELECT
     WHEN session_uplink >= 1024 * 1024 THEN printf("%.2f MB", session_uplink / 1024.0 / 1024.0)
     WHEN session_uplink >= 1024 THEN printf("%.2f KB", session_uplink / 1024.0)
     ELSE printf("%d B", session_uplink)
-  END AS "S Upload",
+  END AS "Sess Up",
   CASE
     WHEN session_downlink >= 1024 * 1024 * 1024 THEN printf("%.2f GB", session_downlink / 1024.0 / 1024.0 / 1024.0)
     WHEN session_downlink >= 1024 * 1024 THEN printf("%.2f MB", session_downlink / 1024.0 / 1024.0)
     WHEN session_downlink >= 1024 THEN printf("%.2f KB", session_downlink / 1024.0)
     ELSE printf("%d B", session_downlink)
-  END AS "S Download",
+  END AS "Sess Down",
   CASE
     WHEN uplink >= 1024 * 1024 * 1024 THEN printf("%.2f GB", uplink / 1024.0 / 1024.0 / 1024.0)
     WHEN uplink >= 1024 * 1024 THEN printf("%.2f MB", uplink / 1024.0 / 1024.0)
     WHEN uplink >= 1024 THEN printf("%.2f KB", uplink / 1024.0)
     ELSE printf("%d B", uplink)
-  END AS "Upload",
+  END AS "Tot Up",
   CASE
     WHEN downlink >= 1024 * 1024 * 1024 THEN printf("%.2f GB", downlink / 1024.0 / 1024.0 / 1024.0)
     WHEN downlink >= 1024 * 1024 THEN printf("%.2f MB", downlink / 1024.0 / 1024.0)
     WHEN downlink >= 1024 THEN printf("%.2f KB", downlink / 1024.0)
     ELSE printf("%d B", downlink)
-  END AS "Download"
+  END AS "Tot Down"
 FROM clients_stats;
 EOF
 
@@ -2121,25 +2121,25 @@ SELECT
     WHEN session_uplink >= 1024 * 1024 THEN printf("%.2f MB", session_uplink / 1024.0 / 1024.0)
     WHEN session_uplink >= 1024 THEN printf("%.2f KB", session_uplink / 1024.0)
     ELSE printf("%d B", session_uplink)
-  END AS "S Upload",
+  END AS "Sess Up",
   CASE
     WHEN session_downlink >= 1024 * 1024 * 1024 THEN printf("%.2f GB", session_downlink / 1024.0 / 1024.0 / 1024.0)
     WHEN session_downlink >= 1024 * 1024 THEN printf("%.2f MB", session_downlink / 1024.0 / 1024.0)
     WHEN session_downlink >= 1024 THEN printf("%.2f KB", session_downlink / 1024.0)
     ELSE printf("%d B", session_downlink)
-  END AS "S Download",
+  END AS "Sess Down",
   CASE
     WHEN uplink >= 1024 * 1024 * 1024 THEN printf("%.2f GB", uplink / 1024.0 / 1024.0 / 1024.0)
     WHEN uplink >= 1024 * 1024 THEN printf("%.2f MB", uplink / 1024.0 / 1024.0)
     WHEN uplink >= 1024 THEN printf("%.2f KB", uplink / 1024.0)
     ELSE printf("%d B", uplink)
-  END AS "Upload",
+  END AS "Tot Up",
   CASE
     WHEN downlink >= 1024 * 1024 * 1024 THEN printf("%.2f GB", downlink / 1024.0 / 1024.0 / 1024.0)
     WHEN downlink >= 1024 * 1024 THEN printf("%.2f MB", downlink / 1024.0 / 1024.0)
     WHEN downlink >= 1024 THEN printf("%.2f KB", downlink / 1024.0)
     ELSE printf("%d B", downlink)
-  END AS "Download"
+  END AS "Tot Down"
 FROM traffic_stats;
 EOF
 }
