@@ -70,11 +70,14 @@
           "keyword:ozon",
           "keyword:wildberries",
           "keyword:aliexpress",
+          "keyword:browserleaks",
+          "dnsleaktest.com",
           "wikipedia.org",
           "ru.com",
           "ru.net",
-          "keyword:browserleaks",
-          "dnsleaktest.com"
+          "dzen.ru",
+          "vkuser.net",
+          "okcdn.ru"
         ],
         "skipFallback": false,
         "queryStrategy": "ForceIPv4"
@@ -173,11 +176,14 @@
           "keyword:ozon",
           "keyword:wildberries",
           "keyword:aliexpress",
+          "keyword:browserleaks",
+          "dnsleaktest.com",
           "wikipedia.org",
           "ru.com",
           "ru.net",
-          "keyword:browserleaks",
-          "dnsleaktest.com"
+          "dzen.ru",
+          "vkuser.net",
+          "okcdn.ru"
         ],
         "outboundTag": "direct"
       }
