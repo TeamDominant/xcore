@@ -3,7 +3,7 @@
 ###################################
 ### Global values
 ###################################
-VERSION_MANAGER='0.3.0'
+VERSION_MANAGER='0.3.1'
 VERSION_XRAY='25.1.30'
 
 DIR_REVERSE_PROXY="/usr/local/reverse_proxy/"
@@ -805,6 +805,7 @@ data_entry() {
   fi
 
   if [[ ${args[ssh]} == "true" ]]; then
+    tilda "$(text 10)"
     reading " $(text 54) " ANSWER_SSH
     if [[ "${ANSWER_SSH,,}" == "y" ]]; then
       info " $(text 48) "
@@ -966,8 +967,6 @@ add_user() {
   touch /home/${USERNAME}/.ssh/authorized_keys
   chown -R ${USERNAME}: /home/${USERNAME}/.ssh
   chmod -R 700 /home/${USERNAME}/.ssh
-
-  tilda "$(text 10)"
 }
 
 ###################################
