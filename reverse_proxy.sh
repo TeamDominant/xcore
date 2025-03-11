@@ -507,7 +507,7 @@ enable_logging() {
 }
 
 disable_logging() {
-  exec >/dev/null 2>&1
+  exec > /dev/tty 2>&1
 }
 
 ###################################
@@ -2408,6 +2408,7 @@ reverse_proxy_xray_menu() {
     extract_data
     case $CHOICE_MENU in
       1)
+        disable_logging
         local dataBasePath="/usr/local/reverse_proxy/reverse_proxy.db"
         while true; do
         clear
@@ -2430,6 +2431,7 @@ reverse_proxy_xray_menu() {
 
         sleep 10
         done
+        enable_logging
         ;;
       2)
         add_user_config
@@ -2483,7 +2485,6 @@ reverse_proxy_main_menu() {
     case $CHOICE_MENU in
       1)
         clear
-        enable_logging
         check_dependencies
         banner_xray
         warning_banner
@@ -2508,7 +2509,6 @@ reverse_proxy_main_menu() {
         [[ ${args[firewall]} == "true" ]] && enabling_security
         [[ ${args[ssh]} == "true" ]] && ssh_setup
         data_output
-        enable_logging
         log_clear
         ;;
       2)
@@ -2567,6 +2567,7 @@ reverse_proxy_main_menu() {
 ### Main function
 ###################################
 main() {
+  enable_logging
   read_defaults_from_file
   parse_args "$@" || show_help
   check_root
