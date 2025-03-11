@@ -3,7 +3,7 @@
 ###################################
 ### Global values
 ###################################
-VERSION_MANAGER='0.3.1'
+VERSION_MANAGER='0.3.2'
 VERSION_XRAY='25.1.30'
 
 DIR_REVERSE_PROXY="/usr/local/reverse_proxy/"
@@ -500,10 +500,14 @@ parse_args() {
 ###################################
 ### Logging
 ###################################
-log_entry() {
+enable_logging() {
   mkdir -p ${DIR_REVERSE_PROXY}
   LOGFILE="${DIR_REVERSE_PROXY}reverse_proxy.log"
   exec > >(tee -a "$LOGFILE") 2>&1
+}
+
+disable_logging() {
+  exec >/dev/null 2>&1
 }
 
 ###################################
@@ -1429,7 +1433,6 @@ nginx_setup() {
   rm -rf /etc/nginx/conf.d/default.conf
   touch /etc/nginx/.htpasswd
   htpasswd -nb "$USERNAME" "$PASSWORD" > /etc/nginx/.htpasswd
-  openssl dhparam -out /etc/nginx/dhparam.pem 2048
 
   case "$SYSTEM" in
     Debian|Ubuntu)
@@ -2405,6 +2408,7 @@ reverse_proxy_xray_menu() {
     extract_data
     case $CHOICE_MENU in
       1)
+        disable_logging
         local dataBasePath="/usr/local/reverse_proxy/reverse_proxy.db"
         while true; do
         clear
@@ -2427,6 +2431,7 @@ reverse_proxy_xray_menu() {
 
         sleep 10
         done
+        enable_logging
         ;;
       2)
         add_user_config
@@ -2474,7 +2479,6 @@ reverse_proxy_main_menu() {
     info " $(text 84) "                      # Exit
     tilda "|--------------------------------------------------------------------------|"
     echo
-
     reading " $(text 1) " CHOICE_MENU        # Choise
     tilda "$(text 10)"
 
@@ -2563,7 +2567,7 @@ reverse_proxy_main_menu() {
 ### Main function
 ###################################
 main() {
-  log_entry
+  enable_logging
   read_defaults_from_file
   parse_args "$@" || show_help
   check_root
