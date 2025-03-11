@@ -2079,7 +2079,7 @@ SELECT
   email AS "Email",
   activity_status AS "Status",
   enabled AS "Enabled",
-  created AS "Created",
+--  created AS "Created",
   ip AS "Ips",
   ip_limit AS "Lim_ip",
   CASE
