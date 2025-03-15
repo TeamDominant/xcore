@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 # Указываем директории 
-dirXray="/usr/local/etc/xray/"
-dataBasePath="/usr/local/reverse_proxy/reverse_proxy.db"
+dirXray="${dirXray:-/usr/local/etc/xray/}"
+dataBasePath="${dataBasePath:-/usr/local/reverse_proxy/reverse_proxy.db}"
 
 # Глобальные переменные для хранения значений
 previous_stats=""
@@ -12,7 +12,18 @@ client_current_stats=""
 
 extract_data() {
   local CONFIG_FILE_HAPROXY="/etc/haproxy/haproxy.cfg"
-  SUB_JSON_PATH=$(grep -oP 'use_backend http-sub if \{ path /.*? \}' "$CONFIG_FILE_HAPROXY" | grep -oP '(?<=path /).*?(?= \})')
+  SUB_JSON_PATH=""
+  
+  while IFS= read -r line; do
+    case "$line" in
+      *"path "*)
+        SUB_JSON_PATH="${line#*path }"
+        SUB_JSON_PATH="${SUB_JSON_PATH%% *}"
+        SUB_JSON_PATH="${SUB_JSON_PATH#/}"
+        break;
+        ;;
+    esac
+  done < "$CONFIG_FILE_HAPROXY"
 }
 
 # Инициализация базы данных
@@ -85,11 +96,15 @@ get_file_creation_date() {
   local USER_FILE_PATH="/var/www/${SUB_JSON_PATH}/vless_raw/${USERNAME}.json"
   
   # Получаем дату создания файла в секундах с эпохи UNIX
+  local file_creation_time
   file_creation_time=$(stat --format=%W "$USER_FILE_PATH" 2>/dev/null)
 
   # Если дата создания доступна (больше 0), преобразуем в формат YYYY-MM-DD-HH
   if [[ "$file_creation_time" -gt 0 ]]; then
-    date -d @$file_creation_time "+%Y-%m-%d-%H"
+    # Используем встроенные возможности date для форматирования
+    local formatted_date
+    formatted_date=$(printf "%(%Y-%m-%d-%H)T\n" "$file_creation_time")
+    echo "$formatted_date"
   else
     echo "неизвестно"
   fi
@@ -506,3 +521,21 @@ cleanup() {
 
 trap cleanup SIGINT SIGTERM
 statistics_collection "$1"
+
+#statistics_collection() {
+#  extract_data
+#  if [ ! -f "$dataBasePath" ]; then
+#    init_db
+#  fi
+#  add_user_to_db
+#  delete_user_from_db
+#  api_response
+#  update_client_stats
+#  update_proxy_stats
+#  update_enable_status
+#  ip_limit
+#}
+#time for ((i = 0; i < 100; i++)); do
+#  statistics_collection >/dev/null
+#done
+#display_stats
