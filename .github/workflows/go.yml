@@ -32,14 +32,14 @@ jobs:
       - name: Build
         run: |
           cd statistics
-          go build -v -o statistics/stat ./...
-  
+          go build -v -o statistics/myapp ./...
+
       - name: Upload binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v2
         with:
-          name: stat
-          path: statistics/stat
-          
+          name: myapp
+          path: statistics/myapp
+
       - name: Test
         run: |
           cd statistics
