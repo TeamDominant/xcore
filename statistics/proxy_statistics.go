@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -30,7 +31,8 @@ var (
 	configFileHaproxy   = "/etc/haproxy/haproxy.cfg"
 	previousStats       string
 	clientPreviousStats string
-	//luaFilePath         = "/etc/haproxy/.auth.lua"
+	luaFilePath         = "/etc/haproxy/.auth.lua"
+	rgx                 = regexp.MustCompile(`\["([a-f0-9-]+)"\] = (true|false)`)
 )
 
 func extractData() string {
@@ -518,9 +520,9 @@ func updateClientStats(db *sql.DB, apiData *ApiResponse) {
 		switch {
 		case diffOnline < 1:
 			onlineStatus = "❌ offline"
-		case diffOnline < 25000:
+		case diffOnline < 24576:
 			onlineStatus = "💤 idle"
-		case diffOnline < 12000000:
+		case diffOnline < 18874368:
 			onlineStatus = "🟢 online"
 		default:
 			onlineStatus = "⚡ overload"
@@ -554,6 +556,33 @@ func stringToInt(s string) int {
 		log.Printf("ошибка преобразования строки в число: %v", err)
 	}
 	return result
+}
+
+func parseAndUpdate(db *sql.DB, file *os.File) {
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		matches := rgx.FindStringSubmatch(line)
+		if len(matches) == 3 {
+			uuid := matches[1]
+			enabled := matches[2]
+			updateEnabledInDB(db, uuid, enabled)
+		}
+	}
+	//	if err := scanner.Err(); err != nil {
+	//		fmt.Println("Ошибка чтения файла:", err)
+	//	}
+}
+
+func updateEnabledInDB(db *sql.DB, uuid string, enabled string) {
+	db.Exec("UPDATE clients_stats SET enabled = ? WHERE uuid = ?", enabled, uuid)
+	//_, err := db.Exec("UPDATE clients_stats SET enabled = ? WHERE uuid = ?", enabled, uuid)
+	//if err != nil {
+	//	fmt.Println("Ошибка обновления базы данных:", err)
+	//} else {
+	//	fmt.Printf("UUID: %s, Enabled: %s (обновлено в БД)\n", uuid, enabled)
+	//}
 }
 
 // Функция обновления IP в базе данных
@@ -626,8 +655,112 @@ func readNewLines(accessLog *os.File, offset *int64) {
 		fmt.Println("Ошибка чтения файла:", err)
 	}
 
-	pos, _ := accessLog.Seek(0, os.SEEK_CUR)
+	pos, _ := accessLog.Seek(0, io.SeekCurrent)
 	*offset = pos
+}
+
+// Функция для получения статистики
+func getStats() string {
+	// Статистика сервера
+	stats := "🌐 Статистика сервера:\n==========================\n"
+	// Запрос для статистики сервера
+	cmd := exec.Command(
+		"sqlite3", dataBasePath,
+		"-cmd", ".headers on",
+		"-cmd", ".mode column",
+		"SELECT source AS 'Source', "+
+			"CASE "+
+			"  WHEN sess_uplink >= 1024 * 1024 * 1024 THEN printf('%.2f GB', sess_uplink / 1024.0 / 1024.0 / 1024.0) "+
+			"  WHEN sess_uplink >= 1024 * 1024 THEN printf('%.2f MB', sess_uplink / 1024.0 / 1024.0) "+
+			"  WHEN sess_uplink >= 1024 THEN printf('%.2f KB', sess_uplink / 1024.0) "+
+			"  ELSE printf('%d B', sess_uplink) "+
+			"END AS 'Sess Up', "+
+			"CASE "+
+			"  WHEN sess_downlink >= 1024 * 1024 * 1024 THEN printf('%.2f GB', sess_downlink / 1024.0 / 1024.0 / 1024.0) "+
+			"  WHEN sess_downlink >= 1024 * 1024 THEN printf('%.2f MB', sess_downlink / 1024.0 / 1024.0) "+
+			"  WHEN sess_downlink >= 1024 THEN printf('%.2f KB', sess_downlink / 1024.0) "+
+			"  ELSE printf('%d B', sess_downlink) "+
+			"END AS 'Sess Down', "+
+			"CASE "+
+			"  WHEN uplink >= 1024 * 1024 * 1024 THEN printf('%.2f GB', uplink / 1024.0 / 1024.0 / 1024.0) "+
+			"  WHEN uplink >= 1024 * 1024 THEN printf('%.2f MB', uplink / 1024.0 / 1024.0) "+
+			"  WHEN uplink >= 1024 THEN printf('%.2f KB', uplink / 1024.0) "+
+			"  ELSE printf('%d B', uplink) "+
+			"END AS 'Upload', "+
+			"CASE "+
+			"  WHEN downlink >= 1024 * 1024 * 1024 THEN printf('%.2f GB', downlink / 1024.0 / 1024.0 / 1024.0) "+
+			"  WHEN downlink >= 1024 * 1024 THEN printf('%.2f MB', downlink / 1024.0 / 1024.0) "+
+			"  WHEN downlink >= 1024 THEN printf('%.2f KB', downlink / 1024.0) "+
+			"  ELSE printf('%d B', downlink) "+
+			"END AS 'Download' "+
+			"FROM traffic_stats;",
+	)
+
+	// Получаем результат запроса
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("Ошибка выполнения SQL-запроса: %v\n%s", err, string(output))
+	}
+	stats += string(output)
+
+	// Статистика клиентов
+	stats += "\n📊 Статистика клиентов:\n==========================\n"
+	// Запрос для статистики клиентов
+	cmd = exec.Command(
+		"sqlite3", dataBasePath,
+		"-cmd", ".headers on",
+		"-cmd", ".mode column",
+		"SELECT email AS 'Email', "+
+			"status AS 'Status', "+
+			"enabled AS 'Enabled', "+
+			"created AS 'Created', "+
+			"ip AS 'Ips', "+
+			"ip_limit AS 'Lim_ip', "+
+			"CASE "+
+			"  WHEN sess_uplink >= 1024 * 1024 * 1024 THEN printf('%.2f GB', sess_uplink / 1024.0 / 1024.0 / 1024.0) "+
+			"  WHEN sess_uplink >= 1024 * 1024 THEN printf('%.2f MB', sess_uplink / 1024.0 / 1024.0) "+
+			"  WHEN sess_uplink >= 1024 THEN printf('%.2f KB', sess_uplink / 1024.0) "+
+			"  ELSE printf('%d B', sess_uplink) "+
+			"END AS 'Sess Up', "+
+			"CASE "+
+			"  WHEN sess_downlink >= 1024 * 1024 * 1024 THEN printf('%.2f GB', sess_downlink / 1024.0 / 1024.0 / 1024.0) "+
+			"  WHEN sess_downlink >= 1024 * 1024 THEN printf('%.2f MB', sess_downlink / 1024.0 / 1024.0) "+
+			"  WHEN sess_downlink >= 1024 THEN printf('%.2f KB', sess_downlink / 1024.0) "+
+			"  ELSE printf('%d B', sess_downlink) "+
+			"END AS 'Sess Down', "+
+			"CASE "+
+			"  WHEN uplink >= 1024 * 1024 * 1024 THEN printf('%.2f GB', uplink / 1024.0 / 1024.0 / 1024.0) "+
+			"  WHEN uplink >= 1024 * 1024 THEN printf('%.2f MB', uplink / 1024.0 / 1024.0) "+
+			"  WHEN uplink >= 1024 THEN printf('%.2f KB', uplink / 1024.0) "+
+			"  ELSE printf('%d B', uplink) "+
+			"END AS 'Uplink', "+
+			"CASE "+
+			"  WHEN downlink >= 1024 * 1024 * 1024 THEN printf('%.2f GB', downlink / 1024.0 / 1024.0 / 1024.0) "+
+			"  WHEN downlink >= 1024 * 1024 THEN printf('%.2f MB', downlink / 1024.0 / 1024.0) "+
+			"  WHEN downlink >= 1024 THEN printf('%.2f KB', downlink / 1024.0) "+
+			"  ELSE printf('%d B', downlink) "+
+			"END AS 'Downlink' "+
+			"FROM clients_stats;",
+	)
+
+	// Получаем результат запроса
+	output, err = cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("Ошибка выполнения SQL-запроса: %v\n%s", err, string(output))
+	}
+	stats += string(output)
+
+	return stats
+}
+
+// Обработчик для API
+func statsHandler(w http.ResponseWriter, r *http.Request) {
+	// Получаем актуальную статистику
+	stats := getStats()
+
+	// Отправляем статистику в ответ
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	fmt.Fprintln(w, stats)
 }
 
 // Функция установки нового `ipTTL` через API
@@ -655,76 +788,12 @@ func setIPTTLHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(response))
 }
 
-// Функция для получения статистики
-func getStats() string {
-	// Статистика сервера
-	stats := "🌐 Статистика сервера:\n==========================\n"
-	// Запрос для статистики сервера
-	cmd := exec.Command(
-		"sqlite3", dataBasePath,
-		"-cmd", ".headers on",
-		"-cmd", ".mode column",
-		"SELECT source AS 'Source', "+
-			"printf('%.2f MB', sess_uplink / 1024.0 / 1024.0) AS 'S Upload', "+
-			"printf('%.2f MB', sess_downlink / 1024.0 / 1024.0) AS 'S Download', "+
-			"printf('%.2f MB', uplink / 1024.0 / 1024.0) AS 'Upload', "+
-			"printf('%.2f MB', downlink / 1024.0 / 1024.0) AS 'Download' "+
-			"FROM traffic_stats;",
-	)
-
-	// Получаем результат запроса
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Printf("Ошибка выполнения SQL-запроса: %v\n%s", err, string(output))
-	}
-	stats += string(output)
-
-	// Статистика клиентов
-	stats += "\n📊 Статистика клиентов:\n==========================\n"
-	// Запрос для статистики клиентов
-	cmd = exec.Command(
-		"sqlite3", dataBasePath,
-		"-cmd", ".headers on",
-		"-cmd", ".mode column",
-		"SELECT email AS 'Email', "+
-			"status AS 'Status', "+
-			"enabled AS 'Enabled', "+
-			"created AS 'Created', "+
-			"ip AS 'Ips', "+
-			"ip_limit AS 'Lim_ip', "+
-			"printf('%.2f MB', sess_uplink / 1024.0 / 1024.0) AS 'S Upload', "+
-			"printf('%.2f MB', sess_downlink / 1024.0 / 1024.0) AS 'S Download', "+
-			"printf('%.2f MB', uplink / 1024.0 / 1024.0) AS 'Upload', "+
-			"printf('%.2f MB', downlink / 1024.0 / 1024.0) AS 'Download' "+
-			"FROM clients_stats;",
-	)
-
-	// Получаем результат запроса
-	output, err = cmd.CombinedOutput()
-	if err != nil {
-		log.Printf("Ошибка выполнения SQL-запроса: %v\n%s", err, string(output))
-	}
-	stats += string(output)
-
-	return stats
-}
-
-// Обработчик для API
-func statsHandler(w http.ResponseWriter, r *http.Request) {
-	// Получаем актуальную статистику
-	stats := getStats()
-
-	// Отправляем статистику в ответ
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	fmt.Fprintln(w, stats)
-}
-
 // Функция запуска HTTP-сервера
 func startAPIServer() {
 	http.HandleFunc("/set_ttl", setIPTTLHandler)
 	http.HandleFunc("/stats", statsHandler) // Регистрируем обработчик для пути /stats
-	log.Println("API сервер запущен на 127.0.0.1:9998")
-	log.Fatal(http.ListenAndServe("127.0.0.1:9998", nil))
+	log.Println("API сервер запущен на 127.0.0.1:9952")
+	log.Fatal(http.ListenAndServe("127.0.0.1:9952", nil))
 }
 
 func main() {
@@ -734,6 +803,13 @@ func main() {
 		log.Fatal("Ошибка открытия базы данных:", err)
 	}
 	defer db.Close()
+
+	// Очищаем содержимое файла перед чтением
+	err = os.Truncate(accessLogPath, 0)
+	if err != nil {
+		fmt.Println("Ошибка очистки файла:", err)
+		return
+	}
 
 	// Открываем файл access.log
 	accessLog, err := os.Open(accessLogPath)
@@ -763,6 +839,12 @@ func main() {
 	for {
 		starttime := time.Now()
 
+		luaConf, err := os.Open(luaFilePath)
+		if err != nil {
+			fmt.Println("Ошибка открытия файла:", err)
+		}
+		defer luaConf.Close()
+
 		// Инициализация базы данных
 		err = initDB(db)
 		if err != nil {
@@ -790,6 +872,9 @@ func main() {
 		// Обновляем статистику
 		updateProxyStats(db, apiData)
 		updateClientStats(db, apiData)
+
+		// Обновление состояния пользователя
+		parseAndUpdate(db, luaConf)
 
 		elapsed := time.Since(starttime)
 		fmt.Printf("Время выполнения программы: %s\n", elapsed)
