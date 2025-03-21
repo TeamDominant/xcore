@@ -72,6 +72,7 @@
           "keyword:aliexpress",
           "keyword:browserleaks",
           "keyword:porno",
+          "keyword:2gis",
           "dnsleaktest.com",
           "wikipedia.org",
           "ru.com",
@@ -96,14 +97,12 @@
       {
         "domain": [
           "geosite:category-ads-all",
-          "keyword:yastatic",
           "keyword:reklama",
           "keyword:firebase",
           "keyword:analytics",
           "keyword:telemetry",
           "vkuser.net",
-          "okcdn.ru",
-          "yandex.net"
+          "okcdn.ru"
         ],
         "outboundTag": "block"
       },
@@ -185,6 +184,7 @@
           "keyword:aliexpress",
           "keyword:browserleaks",
           "keyword:porno",
+          "keyword:2gis",
           "dnsleaktest.com",
           "wikipedia.org",
           "ru.com",

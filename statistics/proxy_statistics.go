@@ -4,12 +4,15 @@ import (
 	"bufio"
 	"database/sql"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
+	"regexp"
+	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -17,19 +20,20 @@ import (
 )
 
 var (
-	dirXray             = "/usr/local/etc/xray/"
+	accessLogPath       = "/usr/local/etc/xray/access.log"
+	re                  = regexp.MustCompile(`from tcp:([0-9\.]+).*?email: (\S+)`) // Регулярное выражение
+	ipTTL               = 3 * time.Minute                                          // Время жизни IP (по умолчанию 5 минут)
+	uniqueEntries       = make(map[string]map[string]time.Time)                    // email -> {IP: время добавления}
+	mutex               = &sync.Mutex{}
 	dataBasePath        = "/usr/local/reverse_proxy/projectgo/reverse.db"
-	statsFlag           bool
+	dirXray             = "/usr/local/etc/xray/"
+	configFileHaproxy   = "/etc/haproxy/haproxy.cfg"
 	previousStats       string
 	clientPreviousStats string
+	//luaFilePath         = "/etc/haproxy/.auth.lua"
 )
 
-func clearScreen() {
-	fmt.Print("\033[H\033[2J") // ANSI Escape codes for clearing the screen
-}
-
 func extractData() string {
-	const configFileHaproxy = "/etc/haproxy/haproxy.cfg"
 	file, err := os.Open(configFileHaproxy)
 	if err != nil {
 		log.Fatal("Ошибка при открытии файла:", err)
@@ -58,14 +62,8 @@ func extractData() string {
 	return ""
 }
 
-func initDB() {
-	// Открываем соединение с базой данных
-	db, err := sql.Open("sqlite3", dataBasePath)
-	if err != nil {
-		log.Fatal("Ошибка открытия базы данных:", err)
-	}
-	defer db.Close()
-
+// Функция для инициализации базы данных
+func initDB(db *sql.DB) error {
 	// SQL-запрос для создания таблиц
 	query := `
     CREATE TABLE IF NOT EXISTS clients_stats (
@@ -93,13 +91,14 @@ func initDB() {
       downlink INTEGER DEFAULT 0
     );`
 
-	// Выполняем запрос
-	_, err = db.Exec(query)
+	// Выполнение запроса
+	_, err := db.Exec(query)
 	if err != nil {
-		log.Fatal("Ошибка выполнения SQL-запроса:", err)
+		return fmt.Errorf("ошибка выполнения SQL-запроса: %v", err)
 	}
-
 	// fmt.Println("База данных успешно инициализирована")
+	// Успешная инициализация базы данных
+	return nil
 }
 
 // Структуры для представления данных из конфигурации Xray
@@ -164,14 +163,7 @@ func getFileCreationTime() (string, error) {
 	return formattedTime, nil
 }
 
-func addUserToDB(clients []Client) error {
-	// Открываем соединение с базой данных
-	db, err := sql.Open("sqlite3", dataBasePath)
-	if err != nil {
-		return fmt.Errorf("ошибка открытия базы данных: %v", err)
-	}
-	defer db.Close()
-
+func addUserToDB(db *sql.DB, clients []Client) error {
 	var queries string
 
 	for _, client := range clients {
@@ -190,6 +182,7 @@ func addUserToDB(clients []Client) error {
 	}
 
 	if queries != "" {
+		// Используем = для присваивания, так как переменная err уже была объявлена
 		_, err := db.Exec(queries)
 		if err != nil {
 			return fmt.Errorf("ошибка выполнения транзакции: %v", err)
@@ -200,13 +193,7 @@ func addUserToDB(clients []Client) error {
 	return nil
 }
 
-func delUserFromDB(clients []Client) error {
-	db, err := sql.Open("sqlite3", dataBasePath)
-	if err != nil {
-		return fmt.Errorf("ошибка открытия базы данных: %v", err)
-	}
-	defer db.Close()
-
+func delUserFromDB(db *sql.DB, clients []Client) error {
 	rows, err := db.Query("SELECT email FROM clients_stats")
 	if err != nil {
 		return fmt.Errorf("ошибка выполнения запроса: %v", err)
@@ -312,14 +299,7 @@ func splitAndCleanName(name string) []string {
 	return nil
 }
 
-func updateProxyStats(apiData *ApiResponse) {
-	// Открываем соединение с базой данных
-	db, err := sql.Open("sqlite3", dataBasePath)
-	if err != nil {
-		log.Fatalf("ошибка открытия базы данных: %v", err)
-	}
-	defer db.Close()
-
+func updateProxyStats(db *sql.DB, apiData *ApiResponse) {
 	// Получаем и фильтруем данные
 	currentStats := extractProxyTraffic(apiData)
 
@@ -428,14 +408,7 @@ func updateProxyStats(apiData *ApiResponse) {
 	previousStats = strings.Join(currentStats, "\n")
 }
 
-func updateClientStats(apiData *ApiResponse) {
-	// Открываем соединение с базой данных
-	db, err := sql.Open("sqlite3", dataBasePath)
-	if err != nil {
-		log.Fatalf("ошибка открытия базы данных: %v", err)
-	}
-	defer db.Close()
-
+func updateClientStats(db *sql.DB, apiData *ApiResponse) {
 	// Получаем и фильтруем данные
 	clientCurrentStats := extractUserTraffic(apiData)
 
@@ -583,13 +556,133 @@ func stringToInt(s string) int {
 	return result
 }
 
-func displayStats() {
-	// Статистика клиентов
-	fmt.Println("  📊 Статистика клиентов:")
-	fmt.Println("==========================") // Линия с символами "="
+// Функция обновления IP в базе данных
+func updateIPInDB(email string, ipList []string) error {
+	db, err := sql.Open("sqlite3", dataBasePath)
+	if err != nil {
+		return fmt.Errorf("ошибка при подключении к БД: %v", err)
+	}
+	defer db.Close()
 
-	// Запрос для статистики клиентов
+	ipStr := strings.Join(ipList, ",")
+	query := `UPDATE clients_stats SET ip = ? WHERE email = ?`
+	_, err = db.Exec(query, ipStr, email)
+	if err != nil {
+		return fmt.Errorf("ошибка при обновлении данных: %v", err)
+	}
+
+	return nil
+}
+
+// Функция обработки строк из access.log
+func processLogLine(line string) {
+	matches := re.FindStringSubmatch(line)
+	if len(matches) != 3 {
+		return
+	}
+
+	ip := matches[1]
+	email := matches[2]
+
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	if uniqueEntries[email] == nil {
+		uniqueEntries[email] = make(map[string]time.Time)
+	}
+
+	uniqueEntries[email][ip] = time.Now()
+
+	validIPs := []string{}
+	for ip, timestamp := range uniqueEntries[email] {
+		if time.Since(timestamp) <= ipTTL {
+			validIPs = append(validIPs, ip)
+		} else {
+			delete(uniqueEntries[email], ip)
+		}
+	}
+
+	updateIPInDB(email, validIPs)
+	// err := updateIPInDB(email, validIPs)
+	//
+	//	if err != nil {
+	//		fmt.Println("Ошибка обновления БД:", err)
+	//	} else {
+	//
+	//		fmt.Printf("Обновлены IP для %s: %v\n", email, validIPs)
+	//	}
+}
+
+// Функция чтения новых строк из access.log
+func readNewLines(accessLog *os.File, offset *int64) {
+	accessLog.Seek(*offset, 0)
+
+	scanner := bufio.NewScanner(accessLog)
+	for scanner.Scan() {
+		processLogLine(scanner.Text())
+	}
+
+	if err := scanner.Err(); err != nil {
+		fmt.Println("Ошибка чтения файла:", err)
+	}
+
+	pos, _ := accessLog.Seek(0, os.SEEK_CUR)
+	*offset = pos
+}
+
+// Функция установки нового `ipTTL` через API
+func setIPTTLHandler(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query()
+	ttlStr := query.Get("minutes")
+
+	if ttlStr == "" {
+		http.Error(w, "Параметр 'minutes' отсутствует", http.StatusBadRequest)
+		return
+	}
+
+	ttl, err := strconv.Atoi(ttlStr)
+	if err != nil || ttl <= 0 {
+		http.Error(w, "Некорректное значение 'minutes'", http.StatusBadRequest)
+		return
+	}
+
+	mutex.Lock()
+	ipTTL = time.Duration(ttl) * time.Minute
+	mutex.Unlock()
+
+	response := fmt.Sprintf("Время жизни IP установлено на %d минут\n", ttl)
+	fmt.Println(response)
+	w.Write([]byte(response))
+}
+
+// Функция для получения статистики
+func getStats() string {
+	// Статистика сервера
+	stats := "🌐 Статистика сервера:\n==========================\n"
+	// Запрос для статистики сервера
 	cmd := exec.Command(
+		"sqlite3", dataBasePath,
+		"-cmd", ".headers on",
+		"-cmd", ".mode column",
+		"SELECT source AS 'Source', "+
+			"printf('%.2f MB', sess_uplink / 1024.0 / 1024.0) AS 'S Upload', "+
+			"printf('%.2f MB', sess_downlink / 1024.0 / 1024.0) AS 'S Download', "+
+			"printf('%.2f MB', uplink / 1024.0 / 1024.0) AS 'Upload', "+
+			"printf('%.2f MB', downlink / 1024.0 / 1024.0) AS 'Download' "+
+			"FROM traffic_stats;",
+	)
+
+	// Получаем результат запроса
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("Ошибка выполнения SQL-запроса: %v\n%s", err, string(output))
+	}
+	stats += string(output)
+
+	// Статистика клиентов
+	stats += "\n📊 Статистика клиентов:\n==========================\n"
+	// Запрос для статистики клиентов
+	cmd = exec.Command(
 		"sqlite3", dataBasePath,
 		"-cmd", ".headers on",
 		"-cmd", ".mode column",
@@ -607,65 +700,83 @@ func displayStats() {
 	)
 
 	// Получаем результат запроса
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Printf("Ошибка выполнения SQL-запроса: %v\n%s", err, string(output))
-	}
-
-	// Выводим результат
-	fmt.Println(string(output))
-
-	// Статистика сервера
-	fmt.Println("  🌐 Статистика сервера:")
-	fmt.Println("==========================") // Линия с символами "="
-	// Запрос для статистики сервера
-	cmd = exec.Command(
-		"sqlite3", dataBasePath,
-		"-cmd", ".headers on",
-		"-cmd", ".mode column",
-		"SELECT source AS 'Source', "+
-			"printf('%.2f MB', sess_uplink / 1024.0 / 1024.0) AS 'S Upload', "+
-			"printf('%.2f MB', sess_downlink / 1024.0 / 1024.0) AS 'S Download', "+
-			"printf('%.2f MB', uplink / 1024.0 / 1024.0) AS 'Upload', "+
-			"printf('%.2f MB', downlink / 1024.0 / 1024.0) AS 'Download' "+
-			"FROM traffic_stats;",
-	)
-
-	// Получаем результат запроса
 	output, err = cmd.CombinedOutput()
 	if err != nil {
 		log.Printf("Ошибка выполнения SQL-запроса: %v\n%s", err, string(output))
 	}
+	stats += string(output)
 
-	// Выводим результат
-	fmt.Println(string(output))
+	return stats
+}
+
+// Обработчик для API
+func statsHandler(w http.ResponseWriter, r *http.Request) {
+	// Получаем актуальную статистику
+	stats := getStats()
+
+	// Отправляем статистику в ответ
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	fmt.Fprintln(w, stats)
+}
+
+// Функция запуска HTTP-сервера
+func startAPIServer() {
+	http.HandleFunc("/set_ttl", setIPTTLHandler)
+	http.HandleFunc("/stats", statsHandler) // Регистрируем обработчик для пути /stats
+	log.Println("API сервер запущен на 127.0.0.1:9998")
+	log.Fatal(http.ListenAndServe("127.0.0.1:9998", nil))
 }
 
 func main() {
-	// Определяем флаг --stats
-	flag.BoolVar(&statsFlag, "stats", false, "Вывести статистику клиентов и сервера")
-	flag.Parse()
+	// Открываем соединение с базой данных
+	db, err := sql.Open("sqlite3", dataBasePath)
+	if err != nil {
+		log.Fatal("Ошибка открытия базы данных:", err)
+	}
+	defer db.Close()
+
+	// Открываем файл access.log
+	accessLog, err := os.Open(accessLogPath)
+	if err != nil {
+		log.Fatalf("Ошибка при открытии access.log: %v", err)
+	}
+	defer accessLog.Close()
+
+	var offset int64
 
 	// Используем ticker для регулярного запуска каждые 10 секунд
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
+	// Запуск API в отдельной горутине
+	go startAPIServer()
+
+	// Запускаем горутину для чтения новых строк из access.log
+	go func() {
+		for {
+			readNewLines(accessLog, &offset)
+			<-ticker.C
+		}
+	}()
+
 	// Запускаем бесконечный цикл, который будет выполняться каждую итерацию через 10 секунд
 	for {
-		clearScreen() // Очищаем экран перед выполнением каждого цикла
 		starttime := time.Now()
-		fmt.Printf("\n")
 
-		exec.Command("clear") // Для Linux и macOS
-		initDB()
+		// Инициализация базы данных
+		err = initDB(db)
+		if err != nil {
+			log.Fatal("Ошибка инициализации базы данных:", err)
+		}
+
 		clients := extractUsersXrayServer()
 
-		err := addUserToDB(clients)
+		err = addUserToDB(db, clients)
 		if err != nil {
 			log.Fatalf("Ошибка при добавлении пользователя: %v", err)
 		}
 
-		err = delUserFromDB(clients)
+		err = delUserFromDB(db, clients)
 		if err != nil {
 			log.Fatalf("Ошибка при удалении пользователей: %v", err)
 		}
@@ -677,16 +788,11 @@ func main() {
 		}
 
 		// Обновляем статистику
-		updateProxyStats(apiData)
-		updateClientStats(apiData)
+		updateProxyStats(db, apiData)
+		updateClientStats(db, apiData)
 
-		// Выводим статистику клиентов и сервера
-		if statsFlag {
-			displayStats()
-			// Вычисляем время выполнения
-			elapsed := time.Since(starttime)
-			fmt.Printf("Время выполнения программы: %s\n", elapsed)
-		}
+		elapsed := time.Since(starttime)
+		fmt.Printf("Время выполнения программы: %s\n", elapsed)
 
 		// Ждем 10 секунд перед следующей итерацией
 		<-ticker.C
