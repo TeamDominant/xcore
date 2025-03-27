@@ -4,8 +4,8 @@ import (
 	"bufio"
 	"database/sql"
 	"encoding/json"
+	"flag"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -20,23 +20,64 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+type Config struct {
+	DatabasePath      string
+	AccessLogPath     string
+	DirXray           string
+	ConfigFileHaproxy string
+	LUAFilePath       string
+	XIPLLogFile       string
+	IP_TTL            time.Duration
+}
+
+var config = Config{
+	DatabasePath:      "/usr/local/reverse_proxy/projectgo/reverse.db",
+	AccessLogPath:     "/usr/local/etc/xray/access.log",
+	DirXray:           "/usr/local/etc/xray/",
+	ConfigFileHaproxy: "/etc/haproxy/haproxy.cfg",
+	LUAFilePath:       "/etc/haproxy/.auth.lua",
+	XIPLLogFile:       "/var/log/xipl.log",
+	IP_TTL:            1 * time.Minute,
+}
+
 var (
-	accessLogPath       = "/usr/local/etc/xray/access.log"
-	re                  = regexp.MustCompile(`from tcp:([0-9\.]+).*?email: (\S+)`) // Регулярное выражение
-	ipTTL               = 3 * time.Minute                                          // Время жизни IP (по умолчанию 5 минут)
-	uniqueEntries       = make(map[string]map[string]time.Time)                    // email -> {IP: время добавления}
+	dnsEnabled          = flag.Bool("dns", false, "Enable DNS statistics collection") // Флаг для включения/отключения DNS
+	uniqueEntries       = make(map[string]map[string]time.Time)                       // email -> {IP: время добавления}
 	mutex               = &sync.Mutex{}
-	dataBasePath        = "/usr/local/reverse_proxy/projectgo/reverse.db"
-	dirXray             = "/usr/local/etc/xray/"
-	configFileHaproxy   = "/etc/haproxy/haproxy.cfg"
+	re                  = regexp.MustCompile(`from tcp:([0-9\.]+).*?tcp:([\w\.\-]+):\d+.*?email: (\S+)`)
+	rgx                 = regexp.MustCompile(`\["([a-f0-9-]+)"\] = (true|false)`)
 	previousStats       string
 	clientPreviousStats string
-	luaFilePath         = "/etc/haproxy/.auth.lua"
-	rgx                 = regexp.MustCompile(`\["([a-f0-9-]+)"\] = (true|false)`)
 )
 
+type Client struct {
+	Email string `json:"email"`
+	Level int    `json:"level"`
+	ID    string `json:"id"`
+}
+
+type Inbound struct {
+	Tag      string `json:"tag"`
+	Settings struct {
+		Clients []Client `json:"clients"`
+	} `json:"settings"`
+}
+
+type ConfigXray struct {
+	Inbounds []Inbound `json:"inbounds"`
+}
+
+type Stat struct {
+	Name  string `json:"name"`
+	Value int    `json:"value"`
+}
+
+type ApiResponse struct {
+	Stat []Stat `json:"stat"`
+}
+
 func extractData() string {
-	file, err := os.Open(configFileHaproxy)
+	file, err := os.Open(config.ConfigFileHaproxy)
 	if err != nil {
 		log.Fatal("Ошибка при открытии файла:", err)
 		return ""
@@ -91,7 +132,14 @@ func initDB(db *sql.DB) error {
       sess_downlink INTEGER DEFAULT 0,
       uplink INTEGER DEFAULT 0,
       downlink INTEGER DEFAULT 0
-    );`
+    );
+
+	CREATE TABLE IF NOT EXISTS dns_stats (
+		email TEXT NOT NULL,
+		count INTEGER DEFAULT 1,
+		domain TEXT NOT NULL,
+		PRIMARY KEY (email, domain)
+	);`
 
 	// Выполнение запроса
 	_, err := db.Exec(query)
@@ -103,33 +151,15 @@ func initDB(db *sql.DB) error {
 	return nil
 }
 
-// Структуры для представления данных из конфигурации Xray
-type Client struct {
-	Email string `json:"email"`
-	Level int    `json:"level"`
-	ID    string `json:"id"`
-}
-
-type Inbound struct {
-	Tag      string `json:"tag"`
-	Settings struct {
-		Clients []Client `json:"clients"`
-	} `json:"settings"`
-}
-
-type Config struct {
-	Inbounds []Inbound `json:"inbounds"`
-}
-
 // extractUsersXrayServer извлекает пользователей из config.json
 func extractUsersXrayServer() []Client {
-	configPath := dirXray + "config.json"
+	configPath := config.DirXray + "config.json"
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		log.Fatalf("Ошибка чтения config.json: %v", err)
 	}
 
-	var config Config
+	var config ConfigXray
 	if err := json.Unmarshal(data, &config); err != nil {
 		log.Fatalf("Ошибка парсинга JSON: %v", err)
 	}
@@ -167,7 +197,6 @@ func getFileCreationTime() (string, error) {
 
 func addUserToDB(db *sql.DB, clients []Client) error {
 	var queries string
-
 	for _, client := range clients {
 		// Получаем дату создания файла
 		createdClient, err := getFileCreationTime()
@@ -237,18 +266,8 @@ func delUserFromDB(db *sql.DB, clients []Client) error {
 	return nil
 }
 
-// Структура для парсинга JSON-ответа
-type Stat struct {
-	Name  string `json:"name"`
-	Value int    `json:"value"`
-}
-
-type ApiResponse struct {
-	Stat []Stat `json:"stat"`
-}
-
 func getApiResponse() (*ApiResponse, error) {
-	cmd := exec.Command(dirXray+"xray", "api", "statsquery")
+	cmd := exec.Command(config.DirXray+"xray", "api", "statsquery")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("ошибка выполнения команды: %w", err)
@@ -558,6 +577,16 @@ func stringToInt(s string) int {
 	return result
 }
 
+func updateEnabledInDB(db *sql.DB, uuid string, enabled string) {
+	db.Exec("UPDATE clients_stats SET enabled = ? WHERE uuid = ?", enabled, uuid)
+	//_, err := db.Exec("UPDATE clients_stats SET enabled = ? WHERE uuid = ?", enabled, uuid)
+	//if err != nil {
+	//	fmt.Println("Ошибка обновления базы данных:", err)
+	//} else {
+	//	fmt.Printf("UUID: %s, Enabled: %s (обновлено в БД)\n", uuid, enabled)
+	//}
+}
+
 func parseAndUpdate(db *sql.DB, file *os.File) {
 	scanner := bufio.NewScanner(file)
 
@@ -575,97 +604,190 @@ func parseAndUpdate(db *sql.DB, file *os.File) {
 	//	}
 }
 
-func updateEnabledInDB(db *sql.DB, uuid string, enabled string) {
-	db.Exec("UPDATE clients_stats SET enabled = ? WHERE uuid = ?", enabled, uuid)
-	//_, err := db.Exec("UPDATE clients_stats SET enabled = ? WHERE uuid = ?", enabled, uuid)
-	//if err != nil {
-	//	fmt.Println("Ошибка обновления базы данных:", err)
-	//} else {
-	//	fmt.Printf("UUID: %s, Enabled: %s (обновлено в БД)\n", uuid, enabled)
-	//}
-}
-
-// Функция обновления IP в базе данных
-func updateIPInDB(email string, ipList []string) error {
-	db, err := sql.Open("sqlite3", dataBasePath)
+func logExcessIPs(db *sql.DB) error {
+	// Открытие лог-файла
+	logFile, err := os.OpenFile(config.XIPLLogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		return fmt.Errorf("ошибка при подключении к БД: %v", err)
+		return err
 	}
-	defer db.Close()
+	defer logFile.Close()
 
-	ipStr := strings.Join(ipList, ",")
-	query := `UPDATE clients_stats SET ip = ? WHERE email = ?`
-	_, err = db.Exec(query, ipStr, email)
+	// Получение текущего времени в нужном формате
+	currentTime := time.Now().Format("2006/01/02 15:04:05")
+
+	// Запрос для получения email, ip_limit и ip из таблицы clients_stats
+	rows, err := db.Query("SELECT email, ip_limit, ip FROM clients_stats")
 	if err != nil {
-		return fmt.Errorf("ошибка при обновлении данных: %v", err)
+		return err
+	}
+	defer rows.Close()
+
+	// Обработка всех записей из таблицы
+	for rows.Next() {
+		var email string
+		var ipLimit int
+		var ipAddresses sql.NullString // Используем sql.NullString для обработки NULL
+
+		err := rows.Scan(&email, &ipLimit, &ipAddresses)
+		if err != nil {
+			return err
+		}
+
+		// Если ipAddresses равно NULL, присваиваем пустую строку
+		if !ipAddresses.Valid {
+			ipAddresses.String = ""
+		}
+
+		// Убираем квадратные скобки и разбиваем IP-адреса по запятой
+		ipAddresses.String = strings.Trim(ipAddresses.String, "[]")
+		ipList := strings.Split(ipAddresses.String, ",")
+
+		if len(ipList) > ipLimit {
+			// Если IP-адресов больше, чем ipLimit, сохраняем избыточные в лог
+			excessIPs := ipList[ipLimit:]
+			for _, ip := range excessIPs {
+				ip = strings.TrimSpace(ip)
+				// Формируем строку в точном формате
+				logData := fmt.Sprintf("%s [LIMIT_IP] Email = %s || SRC = %s\n", currentTime, email, ip)
+				_, err := logFile.WriteString(logData)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	// Проверка на ошибки после обработки строк
+	if err := rows.Err(); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-// Функция обработки строк из access.log
-func processLogLine(line string) {
+type DNSStat struct {
+	Email  string
+	Domain string
+	Count  int
+}
+
+// Функция обновления IP в базе данных
+func updateIPInDB(db *sql.DB, email string, ipList []string) error {
+	ipStr := strings.Join(ipList, ",")
+	query := `UPDATE clients_stats SET ip = ? WHERE email = ?`
+	_, err := db.Exec(query, ipStr, email)
+	if err != nil {
+		return fmt.Errorf("ошибка при обновлении данных: %v", err)
+	}
+	return nil
+}
+
+// Функция вставки или обновления записи в dns_stats
+func upsertDNSRecord(db *sql.DB, email, domain string) error {
+	_, err := db.Exec(`
+		INSERT INTO dns_stats (email, domain, count) 
+		VALUES (?, ?, 1)
+		ON CONFLICT(email, domain) 
+		DO UPDATE SET count = count + 1`, email, domain)
+	return err
+}
+
+// Обработка строк из access.log
+func processLogLine(db *sql.DB, line string) {
 	matches := re.FindStringSubmatch(line)
-	if len(matches) != 3 {
+	if len(matches) != 4 {
 		return
 	}
 
+	email := strings.TrimSpace(matches[3])
+	domain := strings.TrimSpace(matches[2])
 	ip := matches[1]
-	email := matches[2]
 
 	mutex.Lock()
-	defer mutex.Unlock()
-
 	if uniqueEntries[email] == nil {
 		uniqueEntries[email] = make(map[string]time.Time)
 	}
-
 	uniqueEntries[email][ip] = time.Now()
+	mutex.Unlock()
 
 	validIPs := []string{}
 	for ip, timestamp := range uniqueEntries[email] {
-		if time.Since(timestamp) <= ipTTL {
+		if time.Since(timestamp) <= config.IP_TTL {
 			validIPs = append(validIPs, ip)
 		} else {
 			delete(uniqueEntries[email], ip)
 		}
 	}
 
-	updateIPInDB(email, validIPs)
-	// err := updateIPInDB(email, validIPs)
-	//
-	//	if err != nil {
-	//		fmt.Println("Ошибка обновления БД:", err)
-	//	} else {
-	//
-	//		fmt.Printf("Обновлены IP для %s: %v\n", email, validIPs)
-	//	}
+	if err := updateIPInDB(db, email, validIPs); err != nil {
+		log.Printf("Ошибка при обновлении IP в БД: %v", err)
+	}
+
+	// Условный вызов upsertDNSRecord в зависимости от флага
+	if *dnsEnabled {
+		if err := upsertDNSRecord(db, email, domain); err != nil {
+			log.Printf("Ошибка при обновлении DNS в БД: %v", err)
+		}
+	}
 }
 
-// Функция чтения новых строк из access.log
-func readNewLines(accessLog *os.File, offset *int64) {
-	accessLog.Seek(*offset, 0)
+// Чтение новых строк из access.log
+func readNewLines(db *sql.DB, file *os.File, offset *int64) {
 
-	scanner := bufio.NewScanner(accessLog)
+	file.Seek(*offset, 0)
+	data, err := db.Begin()
+	if err != nil {
+		log.Printf("Ошибка при создании транзакции: %v", err)
+		return
+	}
+	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		processLogLine(scanner.Text())
+		processLogLine(db, scanner.Text())
 	}
 
 	if err := scanner.Err(); err != nil {
-		fmt.Println("Ошибка чтения файла:", err)
+		log.Println("Ошибка чтения файла:", err)
+		data.Rollback()
+		return
 	}
 
-	pos, _ := accessLog.Seek(0, io.SeekCurrent)
+	if err := data.Commit(); err != nil {
+		log.Printf("Ошибка при коммите транзакции: %v", err)
+	}
+
+	pos, _ := file.Seek(0, 1)
 	*offset = pos
 }
 
 // Функция для получения статистики
-func getStats() string {
+func statsHandler(w http.ResponseWriter, r *http.Request) {
+	// Отправляем статистику в ответ
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+
+	// Проверяем, что метод запроса - GET
+	if r.Method != http.MethodGet {
+		http.Error(w, "Неверный метод. Используйте GET", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Открываем соединение с базой данных
+	db, err := sql.Open("sqlite3", config.DatabasePath)
+	if err != nil {
+		log.Fatal("Ошибка открытия базы данных:", err)
+	}
+	defer db.Close()
+
+	// Проверка инициализации базы данных
+	if db == nil {
+		http.Error(w, "База данных не инициализирована", http.StatusInternalServerError)
+		return
+	}
+
 	// Статистика сервера
-	stats := "🌐 Статистика сервера:\n==========================\n"
+	stats := " 🌐 Статистика сервера:\n============================\n"
 	// Запрос для статистики сервера
 	cmd := exec.Command(
-		"sqlite3", dataBasePath,
+		"sqlite3", config.DatabasePath,
 		"-cmd", ".headers on",
 		"-cmd", ".mode column",
 		"SELECT source AS 'Source', "+
@@ -704,16 +826,16 @@ func getStats() string {
 	stats += string(output)
 
 	// Статистика клиентов
-	stats += "\n📊 Статистика клиентов:\n==========================\n"
+	stats += "\n 📊 Статистика клиентов:\n============================\n"
 	// Запрос для статистики клиентов
 	cmd = exec.Command(
-		"sqlite3", dataBasePath,
+		"sqlite3", config.DatabasePath,
 		"-cmd", ".headers on",
 		"-cmd", ".mode column",
 		"SELECT email AS 'Email', "+
 			"status AS 'Status', "+
 			"enabled AS 'Enabled', "+
-			"created AS 'Created', "+
+			//"created AS 'Created', "+
 			"ip AS 'Ips', "+
 			"ip_limit AS 'Lim_ip', "+
 			"CASE "+
@@ -750,76 +872,234 @@ func getStats() string {
 	}
 	stats += string(output)
 
-	return stats
-}
-
-// Обработчик для API
-func statsHandler(w http.ResponseWriter, r *http.Request) {
-	// Получаем актуальную статистику
-	stats := getStats()
-
-	// Отправляем статистику в ответ
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	fmt.Fprintln(w, stats)
 }
 
-// Функция установки нового `ipTTL` через API
-func setIPTTLHandler(w http.ResponseWriter, r *http.Request) {
-	query := r.URL.Query()
-	ttlStr := query.Get("minutes")
+// Функция для получения статистики
+func dnsStatsHandler(w http.ResponseWriter, r *http.Request) {
+	// Отправляем статистику в ответ
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 
-	if ttlStr == "" {
-		http.Error(w, "Параметр 'minutes' отсутствует", http.StatusBadRequest)
+	// Проверяем, что метод запроса - GET
+	if r.Method != http.MethodGet {
+		http.Error(w, "Неверный метод. Используйте GET", http.StatusMethodNotAllowed)
 		return
 	}
 
-	ttl, err := strconv.Atoi(ttlStr)
-	if err != nil || ttl <= 0 {
-		http.Error(w, "Некорректное значение 'minutes'", http.StatusBadRequest)
+	// Открываем соединение с базой данных
+	db, err := sql.Open("sqlite3", config.DatabasePath)
+	if err != nil {
+		log.Fatal("Ошибка открытия базы данных:", err)
+	}
+	defer db.Close()
+
+	// Проверка инициализации базы данных
+	if db == nil {
+		http.Error(w, "База данных не инициализирована", http.StatusInternalServerError)
 		return
 	}
 
-	mutex.Lock()
-	ipTTL = time.Duration(ttl) * time.Minute
-	mutex.Unlock()
+	// Получаем параметры запроса
+	email := r.URL.Query().Get("email")
+	count := r.URL.Query().Get("count")
 
-	response := fmt.Sprintf("Время жизни IP установлено на %d минут\n", ttl)
-	fmt.Println(response)
-	w.Write([]byte(response))
+	// Проверяем наличие email
+	if email == "" {
+		http.Error(w, "Missing email parameter", http.StatusBadRequest)
+		return
+	}
+
+	// Устанавливаем count по умолчанию в 20, если он не указан
+	if count == "" {
+		count = "20"
+	}
+
+	// Проверяем, что count - число
+	if _, err := strconv.Atoi(count); err != nil {
+		http.Error(w, "Invalid count parameter", http.StatusBadRequest)
+		return
+	}
+
+	// Статистика клиентов
+	stats := " 📊 Статистика dns запросов:\n============================\n" // Объявляем stats как локальную переменную
+
+	// Формируем SQL-запрос как одну строку
+	sqlQuery := fmt.Sprintf(
+		"SELECT email AS 'Email', count AS 'Count', domain AS 'Domain' "+
+			"FROM dns_stats "+
+			"WHERE email = '%s' "+
+			"ORDER BY count DESC LIMIT %s;",
+		email, count,
+	)
+
+	// Запрос для статистики клиентов
+	cmd := exec.Command(
+		"sqlite3", config.DatabasePath,
+		"-cmd", ".headers on",
+		"-cmd", ".mode table",
+		sqlQuery, // Передаём запрос как один аргумент
+	)
+
+	// Получаем результат запроса
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("Ошибка выполнения SQL-запроса: %v\n%s", err, string(output))
+		http.Error(w, "Ошибка выполнения запроса", http.StatusInternalServerError)
+		return
+	}
+
+	stats += string(output)
+	fmt.Fprintln(w, stats)
+}
+
+func updateIPLimitHandler(w http.ResponseWriter, r *http.Request) {
+	// Отправляем статистику в ответ
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+
+	// Проверяем, что метод запроса - PATCH
+	if r.Method != http.MethodPatch {
+		http.Error(w, "Неверный метод. Используйте PATCH", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Открываем соединение с базой данных
+	db, err := sql.Open("sqlite3", config.DatabasePath)
+	if err != nil {
+		log.Fatal("Ошибка открытия базы данных:", err)
+	}
+	defer db.Close()
+
+	// Проверка инициализации базы данных
+	if db == nil {
+		http.Error(w, "База данных не инициализирована", http.StatusInternalServerError)
+		return
+	}
+
+	// Читаем параметры из формы (POST или PATCH тело запроса)
+	err = r.ParseForm()
+	if err != nil {
+		http.Error(w, "Ошибка парсинга формы", http.StatusBadRequest)
+		return
+	}
+
+	// Извлекаем параметры
+	username := r.FormValue("username")
+	ipLimit := r.FormValue("ip_limit")
+
+	// Проверяем, что параметры не пустые
+	if username == "" || ipLimit == "" {
+		http.Error(w, "Неверные параметры. Используйте username и ip_limit", http.StatusBadRequest)
+		return
+	}
+
+	// Проверяем, что ip_limit - это число в пределах от 1 до 100
+	ipLimitInt, err := strconv.Atoi(ipLimit)
+	if err != nil {
+		http.Error(w, "ip_limit должен быть числом", http.StatusBadRequest)
+		return
+	}
+
+	if ipLimitInt < 1 || ipLimitInt > 100 {
+		http.Error(w, "ip_limit должен быть в пределах от 1 до 100", http.StatusBadRequest)
+		return
+	}
+
+	// Выполняем обновление в базе данных
+	query := "UPDATE clients_stats SET ip_limit = ? WHERE email = ?"
+	result, err := db.Exec(query, ipLimit, username)
+	if err != nil {
+		http.Error(w, "Ошибка обновления ip_limit", http.StatusInternalServerError)
+		return
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		http.Error(w, fmt.Sprintf("Пользователь '%s' не найден", username), http.StatusNotFound)
+		return
+	}
+
+	// Ответ о успешном обновлении
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "ip_limit для '%s' обновлен до '%s'\n", username, ipLimit)
+}
+
+func deleteDNSStatshandler(w http.ResponseWriter, r *http.Request) {
+	// Проверяем, что метод запроса - POST
+	if r.Method != http.MethodPost {
+		http.Error(w, "Неверный метод. Используйте POST", http.StatusMethodNotAllowed)
+	}
+
+	// Открываем соединение с базой данных
+	db, err := sql.Open("sqlite3", config.DatabasePath)
+	if err != nil {
+		log.Fatal("Ошибка открытия базы данных:", err)
+	}
+	defer db.Close()
+
+	// Проверка инициализации базы данных
+	if db == nil {
+		http.Error(w, "База данных не инициализирована", http.StatusInternalServerError)
+		return
+	}
+
+	// Выполнение команды DELETE
+	_, err = db.Exec("DELETE FROM dns_stats")
+	if err != nil {
+		http.Error(w, "Не удалось удалить записи из dns_stats", http.StatusInternalServerError)
+		return
+	}
+
+	// Выполнение команды DELETE
+	_, err = db.Exec("DELETE FROM dns_stats")
+	if err != nil {
+		http.Error(w, "Failed to delete dns_stats", http.StatusInternalServerError)
+		return
+	}
+
+	// Логирование запроса
+	log.Printf("Received request to delete dns_stats from %s", r.RemoteAddr)
+
+	// Успешный ответ
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintln(w, "dns_stats deleted successfully")
 }
 
 // Функция запуска HTTP-сервера
 func startAPIServer() {
-	http.HandleFunc("/set_ttl", setIPTTLHandler)
-	http.HandleFunc("/stats", statsHandler) // Регистрируем обработчик для пути /stats
+	http.HandleFunc("/stats", statsHandler)
+	http.HandleFunc("/dns_stats", dnsStatsHandler)
+	http.HandleFunc("/update_ip_limit", updateIPLimitHandler)
+	http.HandleFunc("/delete_dns_stats", deleteDNSStatshandler)
 	log.Println("API сервер запущен на 127.0.0.1:9952")
 	log.Fatal(http.ListenAndServe("127.0.0.1:9952", nil))
 }
 
 func main() {
+	// Парсим флаги перед началом работы программы
+	flag.Parse()
+
 	// Открываем соединение с базой данных
-	db, err := sql.Open("sqlite3", dataBasePath)
+	db, err := sql.Open("sqlite3", config.DatabasePath)
 	if err != nil {
 		log.Fatal("Ошибка открытия базы данных:", err)
 	}
 	defer db.Close()
 
 	// Очищаем содержимое файла перед чтением
-	err = os.Truncate(accessLogPath, 0)
+	err = os.Truncate(config.AccessLogPath, 0)
 	if err != nil {
 		fmt.Println("Ошибка очистки файла:", err)
 		return
 	}
 
 	// Открываем файл access.log
-	accessLog, err := os.Open(accessLogPath)
+	accessLog, err := os.Open(config.AccessLogPath)
 	if err != nil {
 		log.Fatalf("Ошибка при открытии access.log: %v", err)
 	}
 	defer accessLog.Close()
 
-	var offset int64
-
+	var offset int64 = 0
 	// Используем ticker для регулярного запуска каждые 10 секунд
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
@@ -830,16 +1110,16 @@ func main() {
 	// Запускаем горутину для чтения новых строк из access.log
 	go func() {
 		for {
-			readNewLines(accessLog, &offset)
+			readNewLines(db, accessLog, &offset)
 			<-ticker.C
 		}
 	}()
 
 	// Запускаем бесконечный цикл, который будет выполняться каждую итерацию через 10 секунд
-	for {
+	for range ticker.C {
 		starttime := time.Now()
 
-		luaConf, err := os.Open(luaFilePath)
+		luaConf, err := os.Open(config.LUAFilePath)
 		if err != nil {
 			fmt.Println("Ошибка открытия файла:", err)
 		}
@@ -869,17 +1149,16 @@ func main() {
 			log.Fatalf("Ошибка получения данных из API: %v", err)
 		}
 
-		// Обновляем статистику
 		updateProxyStats(db, apiData)
 		updateClientStats(db, apiData)
-
-		// Обновление состояния пользователя
 		parseAndUpdate(db, luaConf)
+
+		err = logExcessIPs(db)
+		if err != nil {
+			log.Fatal(err)
+		}
 
 		elapsed := time.Since(starttime)
 		fmt.Printf("Время выполнения программы: %s\n", elapsed)
-
-		// Ждем 10 секунд перед следующей итерацией
-		<-ticker.C
 	}
 }
