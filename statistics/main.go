@@ -107,6 +107,15 @@ func extractData() string {
 
 // Функция для инициализации базы данных
 func initDB(db *sql.DB) error {
+	// Установка PRAGMA-настроек для оптимизации
+	_, err := db.Exec(`
+		PRAGMA cache_size = 10000;  -- Увеличивает кэш (10000 страниц ≈ 40 MB RAM)
+		PRAGMA journal_mode = MEMORY; -- Хранит журнал транзакций в RAM
+	`)
+	if err != nil {
+		return fmt.Errorf("ошибка установки PRAGMA: %v", err)
+	}
+
 	// SQL-запрос для создания таблиц
 	query := `
     CREATE TABLE IF NOT EXISTS clients_stats (
@@ -142,11 +151,11 @@ func initDB(db *sql.DB) error {
 	);`
 
 	// Выполнение запроса
-	_, err := db.Exec(query)
+	_, err = db.Exec(query)
 	if err != nil {
 		return fmt.Errorf("ошибка выполнения SQL-запроса: %v", err)
 	}
-	// fmt.Println("База данных успешно инициализирована")
+	fmt.Println("База данных успешно инициализирована")
 	// Успешная инициализация базы данных
 	return nil
 }
@@ -759,6 +768,39 @@ func readNewLines(db *sql.DB, file *os.File, offset *int64) {
 	*offset = pos
 }
 
+func checkExpiredSubscriptions(db *sql.DB) {
+	now := time.Now()
+
+	rows, err := db.Query("SELECT email, sub_end FROM clients_stats WHERE sub_end IS NOT NULL")
+	if err != nil {
+		log.Println("Ошибка при получении данных из БД:", err)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var email string
+		var subEndStr string
+
+		err := rows.Scan(&email, &subEndStr)
+		if err != nil {
+			log.Println("Ошибка сканирования строки:", err)
+			continue
+		}
+
+		subEnd, err := time.Parse("2006-01-02-15", subEndStr)
+		if err != nil {
+			log.Printf("Ошибка парсинга даты для %s, %v\n", email, err)
+			continue
+		}
+
+		// Если подписка истекла
+		if subEnd.Before(now) {
+			log.Printf("❌ Подписка истекла для %s (sub_end: %s)\n", email, subEndStr)
+		}
+	}
+}
+
 // Функция для получения статистики
 func statsHandler(w http.ResponseWriter, r *http.Request) {
 	// Отправляем статистику в ответ
@@ -1064,12 +1106,123 @@ func deleteDNSStatshandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "dns_stats deleted successfully")
 }
 
+// Разбирает строку и корректирует дату
+func parseAndAdjustDate(offset string, baseDate time.Time) (time.Time, error) {
+	// Регулярка для разбора формата (+/-)число(:число)?
+	re := regexp.MustCompile(`^([+-]?)(\d+)(?::(\d+))?$`)
+	matches := re.FindStringSubmatch(offset)
+
+	if matches == nil {
+		return time.Time{}, fmt.Errorf("неверный формат: %s", offset)
+	}
+
+	sign := matches[1] // + или -
+	daysStr := matches[2]
+	hoursStr := matches[3]
+
+	// Конвертируем в числа
+	days, _ := strconv.Atoi(daysStr)
+	hours := 0
+	if hoursStr != "" {
+		hours, _ = strconv.Atoi(hoursStr)
+	}
+
+	// Определяем направление (прибавлять или убавлять)
+	if sign == "-" {
+		days = -days
+		hours = -hours
+	}
+
+	// Корректируем дату
+	newDate := baseDate.AddDate(0, 0, days).Add(time.Duration(hours) * time.Hour)
+	return newDate, nil
+}
+
+// Обработчик API
+func adjustDateOffsetHandler(w http.ResponseWriter, r *http.Request) {
+	// Проверяем, что метод запроса - POST
+	if r.Method != http.MethodPatch {
+		http.Error(w, "Неверный метод. Используйте PATCH", http.StatusMethodNotAllowed)
+	}
+
+	// Открываем соединение с базой данных
+	db, err := sql.Open("sqlite3", config.DatabasePath)
+	if err != nil {
+		log.Fatal("Ошибка открытия базы данных:", err)
+	}
+	defer db.Close()
+
+	// Проверка инициализации базы данных
+	if db == nil {
+		http.Error(w, "База данных не инициализирована", http.StatusInternalServerError)
+		return
+	}
+
+	// Разбираем тело запроса
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Ошибка парсинга данных", http.StatusBadRequest)
+		return
+	}
+
+	email := r.FormValue("email")
+	offset := r.FormValue("offset")
+
+	if email == "" || offset == "" {
+		http.Error(w, "email и offset обязательны", http.StatusBadRequest)
+		return
+	}
+	offset = strings.TrimSpace(offset)
+
+	// Получаем текущую дату подписки
+	var subEndStr sql.NullString
+	err = db.QueryRow("SELECT sub_end FROM clients_stats WHERE email = ?", email).Scan(&subEndStr)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			http.Error(w, "Пользователь не найден", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Ошибка запроса к БД", http.StatusInternalServerError)
+		return
+	}
+
+	// Выбираем базовую дату
+	var baseDate time.Time
+	if subEndStr.Valid && subEndStr.String != "" {
+		baseDate, err = time.Parse("2006-01-02-15", subEndStr.String)
+		if err != nil {
+			http.Error(w, "Ошибка парсинга sub_end", http.StatusInternalServerError)
+			return
+		}
+	} else {
+		baseDate = time.Now().UTC()
+	}
+
+	// Рассчитываем новую дату
+	newDate, err := parseAndAdjustDate(offset, baseDate)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Обновляем `sub_end` в базе
+	_, err = db.Exec("UPDATE clients_stats SET sub_end = ? WHERE email = ?", newDate.Format("2006-01-02-15"), email)
+	if err != nil {
+		http.Error(w, "Ошибка обновления БД", http.StatusInternalServerError)
+		return
+	}
+
+	// Отправляем результат
+	fmt.Fprintf(w, "Email: %s (смещение %s)\n%s >>> %s\n",
+		email, offset, baseDate.Format("2006-01-02-15"), newDate.Format("2006-01-02-15"))
+}
+
 // Функция запуска HTTP-сервера
 func startAPIServer() {
 	http.HandleFunc("/stats", statsHandler)
 	http.HandleFunc("/dns_stats", dnsStatsHandler)
 	http.HandleFunc("/update_ip_limit", updateIPLimitHandler)
 	http.HandleFunc("/delete_dns_stats", deleteDNSStatshandler)
+	http.HandleFunc("/adjust-date", adjustDateOffsetHandler)
 	log.Println("API сервер запущен на 127.0.0.1:9952")
 	log.Fatal(http.ListenAndServe("127.0.0.1:9952", nil))
 }
@@ -1085,6 +1238,12 @@ func main() {
 	}
 	defer db.Close()
 
+	// Инициализация базы данных
+	err = initDB(db)
+	if err != nil {
+		log.Fatal("Ошибка инициализации базы данных:", err)
+	}
+
 	// Очищаем содержимое файла перед чтением
 	err = os.Truncate(config.AccessLogPath, 0)
 	if err != nil {
@@ -1099,66 +1258,89 @@ func main() {
 	}
 	defer accessLog.Close()
 
-	var offset int64 = 0
-	// Используем ticker для регулярного запуска каждые 10 секунд
-	ticker := time.NewTicker(10 * time.Second)
-	defer ticker.Stop()
+	var wg sync.WaitGroup
 
 	// Запуск API в отдельной горутине
-	go startAPIServer()
-
-	// Запускаем горутину для чтения новых строк из access.log
+	wg.Add(1)
 	go func() {
-		for {
-			readNewLines(db, accessLog, &offset)
-			<-ticker.C
+		defer wg.Done()
+
+		startAPIServer()
+	}()
+
+	// Запускаем горутину для логирования лишних IP (каждые 1 минуту)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		ticker := time.NewTicker(1 * time.Minute)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			err := logExcessIPs(db)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 	}()
 
-	// Запускаем бесконечный цикл, который будет выполняться каждую итерацию через 10 секунд
-	for range ticker.C {
-		starttime := time.Now()
+	// 🚀 Запускаем проверку подписок в отдельной горутине
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		ticker := time.NewTicker(1 * time.Minute)
+		defer ticker.Stop()
 
-		luaConf, err := os.Open(config.LUAFilePath)
-		if err != nil {
-			fmt.Println("Ошибка открытия файла:", err)
+		for range ticker.C {
+			checkExpiredSubscriptions(db)
 		}
-		defer luaConf.Close()
+	}()
 
-		// Инициализация базы данных
-		err = initDB(db)
-		if err != nil {
-			log.Fatal("Ошибка инициализации базы данных:", err)
+	// Запускаем цикл для выполнения других задач
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		ticker := time.NewTicker(10 * time.Second)
+		defer ticker.Stop()
+
+		var offset int64 = 0 // Переменная для хранения текущего смещения в файле access.log
+
+		for range ticker.C {
+			starttime := time.Now()
+
+			luaConf, err := os.Open(config.LUAFilePath)
+			if err != nil {
+				fmt.Println("Ошибка открытия файла:", err)
+			} else {
+				parseAndUpdate(db, luaConf)
+				luaConf.Close()
+			}
+
+			clients := extractUsersXrayServer()
+			err = addUserToDB(db, clients)
+			if err != nil {
+				log.Fatalf("Ошибка при добавлении пользователя: %v", err)
+			}
+			err = delUserFromDB(db, clients)
+			if err != nil {
+				log.Fatalf("Ошибка при удалении пользователей: %v", err)
+			}
+
+			// Получаем данные API
+			apiData, err := getApiResponse()
+			if err != nil {
+				log.Fatalf("Ошибка получения данных из API: %v", err)
+			}
+			updateProxyStats(db, apiData)
+			updateClientStats(db, apiData)
+
+			// Читаем новые строки из access.log
+			readNewLines(db, accessLog, &offset)
+
+			elapsed := time.Since(starttime)
+			fmt.Printf("Время выполнения программы: %s\n", elapsed)
 		}
+	}()
 
-		clients := extractUsersXrayServer()
-
-		err = addUserToDB(db, clients)
-		if err != nil {
-			log.Fatalf("Ошибка при добавлении пользователя: %v", err)
-		}
-
-		err = delUserFromDB(db, clients)
-		if err != nil {
-			log.Fatalf("Ошибка при удалении пользователей: %v", err)
-		}
-
-		// Получаем данные API
-		apiData, err := getApiResponse()
-		if err != nil {
-			log.Fatalf("Ошибка получения данных из API: %v", err)
-		}
-
-		updateProxyStats(db, apiData)
-		updateClientStats(db, apiData)
-		parseAndUpdate(db, luaConf)
-
-		err = logExcessIPs(db)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		elapsed := time.Since(starttime)
-		fmt.Printf("Время выполнения программы: %s\n", elapsed)
-	}
+	// Ожидаем завершения всех горутин
+	wg.Wait()
 }
