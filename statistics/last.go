@@ -45,7 +45,8 @@ var config = Config{
 var (
 	dnsEnabled          = flag.Bool("dns", false, "Enable DNS statistics collection") // Флаг для включения/отключения DNS
 	uniqueEntries       = make(map[string]map[string]time.Time)                       // email -> {IP: время добавления}
-	mutex               = &sync.Mutex{}
+	uniqueEntriesMutex  = &sync.Mutex{}                                               // Мьютекс для uniqueEntries
+	dbMutex             = &sync.Mutex{}
 	re                  = regexp.MustCompile(`from tcp:([0-9\.]+).*?tcp:([\w\.\-]+):\d+.*?email: (\S+)`)
 	rgx                 = regexp.MustCompile(`\["([a-f0-9-]+)"\] = (true|false)`)
 	previousStats       string
@@ -129,14 +130,13 @@ func initDB(db *sql.DB) error {
 	    created TEXT,
 	    sub_end TEXT,
 	    sub_duration TEXT,
-	    ip_limit INTEGER NOT NULL DEFAULT 10,
-	    ip TEXT NOT NULL DEFAULT '',
+	    ip_limit INTEGER DEFAULT 10,
+	    ip TEXT,
 	    uplink INTEGER DEFAULT 0,
 	    downlink INTEGER DEFAULT 0,
 	    sess_uplink INTEGER DEFAULT 0,
 	    sess_downlink INTEGER DEFAULT 0
 	);
-
     CREATE TABLE IF NOT EXISTS traffic_stats (
 		source TEXT PRIMARY KEY,
 		sess_uplink INTEGER DEFAULT 0,
@@ -144,7 +144,6 @@ func initDB(db *sql.DB) error {
 		uplink INTEGER DEFAULT 0,
 		downlink INTEGER DEFAULT 0
     );
-
 	CREATE TABLE IF NOT EXISTS dns_stats (
 		email TEXT NOT NULL,
 		count INTEGER DEFAULT 1,
@@ -176,14 +175,15 @@ func backupDB(srcDB, destDB *sql.DB) error {
 	}
 	defer destConn.Close()
 
-	_, err = destConn.ExecContext(context.Background(), fmt.Sprintf("ATTACH DATABASE '%s' AS src_db;", config.DatabasePath))
+	// Присоединяем исходную базу как 'src_db'
+	_, err = destConn.ExecContext(context.Background(), fmt.Sprintf("ATTACH DATABASE '%s' AS src_db", config.DatabasePath))
 	if err != nil {
 		return fmt.Errorf("ошибка при подключении исходной базы: %v", err)
 	}
 
-	// Создаём таблицы с правильной схемой, включая ограничения
+	// Создаем таблицы в destDB
 	_, err = destConn.ExecContext(context.Background(), `
-        CREATE TABLE clients_stats (
+        CREATE TABLE IF NOT EXISTS clients_stats (
             email TEXT PRIMARY KEY,
             level INTEGER,
             uuid TEXT,
@@ -192,21 +192,21 @@ func backupDB(srcDB, destDB *sql.DB) error {
             created TEXT,
             sub_end TEXT,
             sub_duration TEXT,
-            ip_limit INTEGER NOT NULL DEFAULT 10,
-            ip TEXT NOT NULL DEFAULT '',
+            ip_limit INTEGER DEFAULT 10,
+            ip TEXT,
             uplink INTEGER DEFAULT 0,
             downlink INTEGER DEFAULT 0,
             sess_uplink INTEGER DEFAULT 0,
             sess_downlink INTEGER DEFAULT 0
         );
-        CREATE TABLE traffic_stats (
+        CREATE TABLE IF NOT EXISTS traffic_stats (
             source TEXT PRIMARY KEY,
             sess_uplink INTEGER DEFAULT 0,
             sess_downlink INTEGER DEFAULT 0,
             uplink INTEGER DEFAULT 0,
             downlink INTEGER DEFAULT 0
         );
-        CREATE TABLE dns_stats (
+        CREATE TABLE IF NOT EXISTS dns_stats (
             email TEXT NOT NULL,
             count INTEGER DEFAULT 1,
             domain TEXT NOT NULL,
@@ -214,19 +214,20 @@ func backupDB(srcDB, destDB *sql.DB) error {
         );
     `)
 	if err != nil {
-		return fmt.Errorf("ошибка при создании таблиц в memDB: %v", err)
+		return fmt.Errorf("ошибка при создании таблиц в destDB: %v", err)
 	}
 
-	// Копируем данные из src_db в memDB
-	_, err = destConn.ExecContext(context.Background(), `
-        INSERT OR REPLACE INTO clients_stats SELECT * FROM src_db.clients_stats;
-        INSERT OR REPLACE INTO traffic_stats SELECT * FROM src_db.traffic_stats;
-        INSERT OR REPLACE INTO dns_stats SELECT * FROM src_db.dns_stats;
-    `)
-	if err != nil {
-		return fmt.Errorf("ошибка при копировании данных: %v", err)
+	// Копируем данные из src_db в destDB
+	for _, table := range []string{"clients_stats", "traffic_stats", "dns_stats"} {
+		_, err = destConn.ExecContext(context.Background(), fmt.Sprintf(`
+            INSERT OR REPLACE INTO %s SELECT * FROM src_db.%s;
+        `, table, table))
+		if err != nil {
+			return fmt.Errorf("ошибка при копировании данных для таблицы %s: %v", table, err)
+		}
 	}
 
+	// Отключаем исходную базу
 	_, err = destConn.ExecContext(context.Background(), "DETACH DATABASE src_db;")
 	if err != nil {
 		return fmt.Errorf("ошибка при отключении исходной базы: %v", err)
@@ -299,6 +300,9 @@ func getFileCreationTime() (string, error) {
 }
 
 func addUserToDB(db *sql.DB, clients []Client) error {
+	dbMutex.Lock()
+	defer dbMutex.Unlock()
+
 	tx, err := db.Begin()
 	if err != nil {
 		return fmt.Errorf("ошибка начала транзакции: %v", err)
@@ -326,6 +330,9 @@ func addUserToDB(db *sql.DB, clients []Client) error {
 }
 
 func delUserFromDB(db *sql.DB, clients []Client) error {
+	dbMutex.Lock()
+	defer dbMutex.Unlock()
+
 	rows, err := db.Query("SELECT email FROM clients_stats")
 	if err != nil {
 		return fmt.Errorf("ошибка выполнения запроса: %v", err)
@@ -421,6 +428,9 @@ func splitAndCleanName(name string) []string {
 }
 
 func updateProxyStats(db *sql.DB, apiData *ApiResponse) {
+	dbMutex.Lock()
+	defer dbMutex.Unlock()
+
 	// Получаем и фильтруем данные
 	currentStats := extractProxyTraffic(apiData)
 
@@ -530,6 +540,9 @@ func updateProxyStats(db *sql.DB, apiData *ApiResponse) {
 }
 
 func updateClientStats(db *sql.DB, apiData *ApiResponse) {
+	dbMutex.Lock()
+	defer dbMutex.Unlock()
+
 	// Получаем и фильтруем данные
 	clientCurrentStats := extractUserTraffic(apiData)
 
@@ -685,6 +698,9 @@ func updateEnabledInDB(db *sql.DB, uuid string, enabled string) {
 }
 
 func parseAndUpdate(db *sql.DB, file *os.File) {
+	dbMutex.Lock()
+	defer dbMutex.Unlock()
+
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -698,6 +714,9 @@ func parseAndUpdate(db *sql.DB, file *os.File) {
 }
 
 func logExcessIPs(db *sql.DB) error {
+	dbMutex.Lock()
+	defer dbMutex.Unlock()
+
 	// Открытие лог-файла
 	logFile, err := os.OpenFile(config.XIPLLogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -799,12 +818,12 @@ func processLogLine(tx *sql.Tx, line string) {
 	domain := strings.TrimSpace(matches[2])
 	ip := matches[1]
 
-	mutex.Lock()
+	uniqueEntriesMutex.Lock()
 	if uniqueEntries[email] == nil {
 		uniqueEntries[email] = make(map[string]time.Time)
 	}
 	uniqueEntries[email][ip] = time.Now()
-	mutex.Unlock()
+	uniqueEntriesMutex.Unlock()
 
 	validIPs := []string{}
 	for ip, timestamp := range uniqueEntries[email] {
@@ -828,6 +847,9 @@ func processLogLine(tx *sql.Tx, line string) {
 
 // Чтение новых строк из access.log
 func readNewLines(db *sql.DB, file *os.File, offset *int64) {
+	dbMutex.Lock()
+	defer dbMutex.Unlock()
+
 	file.Seek(*offset, 0)
 	scanner := bufio.NewScanner(file)
 
@@ -863,35 +885,92 @@ func readNewLines(db *sql.DB, file *os.File, offset *int64) {
 }
 
 func checkExpiredSubscriptions(db *sql.DB) {
-	now := time.Now()
+	dbMutex.Lock()
+	defer dbMutex.Unlock()
 
-	rows, err := db.Query("SELECT email, sub_end FROM clients_stats WHERE sub_end IS NOT NULL")
+	// Изменяем запрос, чтобы включить uuid и enabled
+	rows, err := db.Query("SELECT email, sub_end, uuid, enabled FROM clients_stats WHERE sub_end IS NOT NULL")
 	if err != nil {
 		log.Println("Ошибка при получении данных из БД:", err)
 		return
 	}
 	defer rows.Close()
 
+	now := time.Now()
 	for rows.Next() {
-		var email string
-		var subEndStr string
+		var email, subEndStr, uuid, enabled string
 
-		err := rows.Scan(&email, &subEndStr)
+		// Считываем email, sub_end, uuid и enabled
+		err := rows.Scan(&email, &subEndStr, &uuid, &enabled)
 		if err != nil {
 			log.Println("Ошибка сканирования строки:", err)
 			continue
 		}
 
-		subEnd, err := time.Parse("2006-01-02-15", subEndStr)
-		if err != nil {
-			log.Printf("Ошибка парсинга даты для %s, %v\n", email, err)
-			continue
-		}
+		// Проверяем статус подписки
+		if subEndStr != "" {
+			// Если sub_end задан, парсим дату
+			subEnd, err := time.Parse("2006-01-02-15", subEndStr)
+			if err != nil {
+				log.Printf("Ошибка парсинга даты для %s: %v", email, err)
+				continue
+			}
 
-		// Если подписка истекла
-		if subEnd.Before(now) {
-			log.Printf("❌ Подписка истекла для %s (sub_end: %s)\n", email, subEndStr)
+			if subEnd.Before(now) {
+				// Подписка истекла
+				// log.Printf("❌ Подписка истекла для %s (sub_end: %s)", email, subEndStr)
+
+				// Проверяем, включен ли пользователь
+				if enabled == "true" {
+					// Отключаем пользователя в Lua-файле
+					err = updateLuaUuid(uuid, false)
+					if err != nil {
+						log.Printf("Ошибка при отключении пользователя %s: %v", email, err)
+						continue
+					}
+					log.Printf("Пользователь %s успешно отключен", email)
+				} else {
+					// log.Printf("Пользователь %s уже отключен (enabled = false), пропускаем", email)
+				}
+			} else {
+				// Подписка активна
+				// log.Printf("✅ Подписка активна для %s (sub_end: %s)", email, subEndStr)
+
+				// Проверяем, выключен ли пользователь
+				if enabled == "false" {
+					// Включаем пользователя в Lua-файле
+					err = updateLuaUuid(uuid, true)
+					if err != nil {
+						log.Printf("Ошибка при включении пользователя %s: %v", email, err)
+						continue
+					}
+					log.Printf("Пользователь %s успешно включен", email)
+				} else {
+					//log.Printf("Пользователь %s уже включен (enabled = true), пропускаем", email)
+				}
+			}
+		} else {
+			// sub_end пустое или NULL, считаем подписку активной
+			log.Printf("✅ Подписка активна для %s (sub_end отсутствует)", email)
+
+			// Проверяем, выключен ли пользователь
+			if enabled == "false" {
+				// Включаем пользователя в Lua-файле
+				err = updateLuaUuid(uuid, true)
+				if err != nil {
+					log.Printf("Ошибка при включении пользователя %s: %v", email, err)
+					continue
+				}
+				log.Printf("Пользователь %s успешно включен", email)
+			} else {
+				log.Printf("Пользователь %s уже включен (enabled = true), пропускаем", email)
+			}
 		}
+	}
+
+	// Проверяем ошибки после обхода строк
+	if err = rows.Err(); err != nil {
+		log.Println("Ошибка при обработке строк:", err)
 	}
 }
 
@@ -1005,42 +1084,44 @@ func statsHandler(db *sql.DB) http.HandlerFunc {
 
 		// Статистика клиентов
 		stats += "\n 📊 Статистика клиентов:\n============================\n"
-		stats += fmt.Sprintf("%-12s %-11s %-8s %-10s %-10s %-10s %-10s %-6s %s\n",
-			"Email", "Status", "Enabled", "Sess Up", "Sess Down", "Uplink", "Downlink", "LimIP", "IP")
-		stats += "----------------------------------------------------------------------------------------------------------\n"
+		stats += fmt.Sprintf("%-12s %-11s %-8s %-14s %-10s %-10s %-10s %-10s %-6s %s\n",
+			"Email", "Status", "Enabled", "Sub_end", "Sess Up", "Sess Down", "Uplink", "Downlink", "LimIP", "IP")
+		stats += "-----------------------------------------------------------------------------------------------------------------\n"
 
 		rows, err = db.Query(`
-    SELECT email AS "Email",
-        status AS "Status",
-        enabled AS "Enabled",
-        ip AS "Ips",
-        ip_limit AS "Lim_ip",
-        CASE
-            WHEN sess_uplink >= 1024 * 1024 * 1024 THEN printf('%.2f GB', sess_uplink / 1024.0 / 1024.0 / 1024.0)
-            WHEN sess_uplink >= 1024 * 1024 THEN printf('%.2f MB', sess_uplink / 1024.0 / 1024.0)
-            WHEN sess_uplink >= 1024 THEN printf('%.2f KB', sess_uplink / 1024.0)
-            ELSE printf('%d B', sess_uplink)
-        END AS "Sess Up",
-        CASE
-            WHEN sess_downlink >= 1024 * 1024 * 1024 THEN printf('%.2f GB', sess_downlink / 1024.0 / 1024.0 / 1024.0)
-            WHEN sess_downlink >= 1024 * 1024 THEN printf('%.2f MB', sess_downlink / 1024.0 / 1024.0)
-            WHEN sess_downlink >= 1024 THEN printf('%.2f KB', sess_downlink / 1024.0)
-            ELSE printf('%d B', sess_downlink)
-        END AS "Sess Down",
-        CASE
-            WHEN uplink >= 1024 * 1024 * 1024 THEN printf('%.2f GB', uplink / 1024.0 / 1024.0 / 1024.0)
-            WHEN uplink >= 1024 * 1024 THEN printf('%.2f MB', uplink / 1024.0 / 1024.0)
-            WHEN uplink >= 1024 THEN printf('%.2f KB', uplink / 1024.0)
-            ELSE printf('%d B', uplink)
-        END AS "Uplink",
-        CASE
-            WHEN downlink >= 1024 * 1024 * 1024 THEN printf('%.2f GB', downlink / 1024.0 / 1024.0 / 1024.0)
-            WHEN downlink >= 1024 * 1024 THEN printf('%.2f MB', downlink / 1024.0 / 1024.0)
-            WHEN downlink >= 1024 THEN printf('%.2f KB', downlink / 1024.0)
-            ELSE printf('%d B', downlink)
-        END AS "Downlink"
-    FROM clients_stats;
-`)
+			SELECT email AS "Email",
+				status AS "Status",
+				enabled AS "Enabled",
+				sub_end AS "Sub end",
+				ip AS "Ips",
+				ip_limit AS "Lim_ip",
+				CASE
+					WHEN sess_uplink >= 1024 * 1024 * 1024 THEN printf('%.2f GB', sess_uplink / 1024.0 / 1024.0 / 1024.0)
+					WHEN sess_uplink >= 1024 * 1024 THEN printf('%.2f MB', sess_uplink / 1024.0 / 1024.0)
+					WHEN sess_uplink >= 1024 THEN printf('%.2f KB', sess_uplink / 1024.0)
+					ELSE printf('%d B', sess_uplink)
+				END AS "Sess Up",
+				CASE
+					WHEN sess_downlink >= 1024 * 1024 * 1024 THEN printf('%.2f GB', sess_downlink / 1024.0 / 1024.0 / 1024.0)
+					WHEN sess_downlink >= 1024 * 1024 THEN printf('%.2f MB', sess_downlink / 1024.0 / 1024.0)
+					WHEN sess_downlink >= 1024 THEN printf('%.2f KB', sess_downlink / 1024.0)
+					ELSE printf('%d B', sess_downlink)
+				END AS "Sess Down",
+				CASE
+					WHEN uplink >= 1024 * 1024 * 1024 THEN printf('%.2f GB', uplink / 1024.0 / 1024.0 / 1024.0)
+					WHEN uplink >= 1024 * 1024 THEN printf('%.2f MB', uplink / 1024.0 / 1024.0)
+					WHEN uplink >= 1024 THEN printf('%.2f KB', uplink / 1024.0)
+					ELSE printf('%d B', uplink)
+				END AS "Uplink",
+				CASE
+					WHEN downlink >= 1024 * 1024 * 1024 THEN printf('%.2f GB', downlink / 1024.0 / 1024.0 / 1024.0)
+					WHEN downlink >= 1024 * 1024 THEN printf('%.2f MB', downlink / 1024.0 / 1024.0)
+					WHEN downlink >= 1024 THEN printf('%.2f KB', downlink / 1024.0)
+					ELSE printf('%d B', downlink)
+				END AS "Downlink"
+			FROM clients_stats;
+		`)
+
 		if err != nil {
 			log.Printf("Ошибка выполнения SQL-запроса: %v", err)
 			http.Error(w, "Ошибка выполнения запроса", http.StatusInternalServerError)
@@ -1050,8 +1131,9 @@ func statsHandler(db *sql.DB) http.HandlerFunc {
 
 		for rows.Next() {
 			var email, status, enabled, sessUp, sessDown, uplink, downlink, ipLimit string
-			var ips sql.NullString // Используем sql.NullString для столбца ip
-			if err := rows.Scan(&email, &status, &enabled, &ips, &ipLimit, &sessUp, &sessDown, &uplink, &downlink); err != nil {
+			var ips sql.NullString     // Используем sql.NullString для столбца ip
+			var sub_end sql.NullString // Используем sql.NullString для столбца Sub_end
+			if err := rows.Scan(&email, &status, &enabled, &sub_end, &ips, &ipLimit, &sessUp, &sessDown, &uplink, &downlink); err != nil {
 				log.Printf("Ошибка чтения результата: %v", err)
 				http.Error(w, "Ошибка обработки данных", http.StatusInternalServerError)
 				return
@@ -1063,9 +1145,15 @@ func statsHandler(db *sql.DB) http.HandlerFunc {
 				ipStr = ips.String // Используем строковое значение, если оно есть
 			}
 
+			// Обработка значения sub_end
+			subEndStr := "N/A" // Значение по умолчанию для NULL
+			if sub_end.Valid {
+				subEndStr = sub_end.String // Если значение не NULL, берем строку
+			}
+
 			// Формируем строку клиента
-			stats += fmt.Sprintf("%-12s %-10s %-8s %-10s %-10s %-10s %-10s %-6s %s\n",
-				email, status, enabled, sessUp, sessDown, uplink, downlink, ipLimit, ipStr)
+			stats += fmt.Sprintf("%-12s %-10s %-8s %-14s %-10s %-10s %-10s %-10s %-6s %s\n",
+				email, status, enabled, subEndStr, sessUp, sessDown, uplink, downlink, ipLimit, ipStr)
 		}
 
 		fmt.Fprintln(w, stats)
@@ -1220,7 +1308,7 @@ func deleteDNSStatsHandler(db *sql.DB) http.HandlerFunc {
 
 		log.Printf("Received request to delete dns_stats from %s", r.RemoteAddr)
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprintln(w, "dns_stats deleted successfully")
+		fmt.Println(w, "dns_stats deleted successfully")
 	}
 }
 
@@ -1282,6 +1370,20 @@ func adjustDateOffsetHandler(db *sql.DB) http.HandlerFunc {
 		}
 		offset = strings.TrimSpace(offset)
 
+		dbMutex.Lock()
+		defer dbMutex.Unlock()
+
+		if offset == "0" {
+			_, err := db.Exec("UPDATE clients_stats SET sub_end = NULL WHERE email = ?", email)
+			if err != nil {
+				http.Error(w, "Ошибка обновления БД", http.StatusInternalServerError)
+				return
+			}
+			log.Printf("Для email %s устновлено безлимитное ограничение по времени", email)
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
 		var subEndStr sql.NullString
 		err := db.QueryRow("SELECT sub_end FROM clients_stats WHERE email = ?", email).Scan(&subEndStr)
 		if err != nil {
@@ -1321,10 +1423,108 @@ func adjustDateOffsetHandler(db *sql.DB) http.HandlerFunc {
 	}
 }
 
+func updateLuaUuid(uuid string, enabled bool) error {
+	data, err := os.ReadFile(config.LUAFilePath)
+	if err != nil {
+		return fmt.Errorf("ошибка чтения файла Lua: %v", err)
+	}
+
+	lines := strings.Split(string(data), "\n")
+	updated := false
+
+	for i, line := range lines {
+		matches := rgx.FindStringSubmatch(line)
+		if len(matches) == 3 && matches[1] == uuid {
+			lines[i] = fmt.Sprintf(`  ["%s"] = %t,`, uuid, enabled)
+			updated = true
+			break
+		}
+	}
+
+	if !updated {
+		return nil
+	}
+
+	newContent := strings.Join(lines, "\n")
+	err = os.WriteFile(config.LUAFilePath, []byte(newContent), 0644)
+	if err != nil {
+		return fmt.Errorf("ошибка записи в файл Lua: %v", err)
+	}
+
+	err = exec.Command("systemctl", "reload", "haproxy").Run()
+	if err != nil {
+		log.Printf("Ошибка перезагрузки Haproxy (reload): %v", err)
+
+		err = exec.Command("systemctl", "restart", "haproxy").Run()
+		if err != nil {
+			return fmt.Errorf("ошибка перезапуска HAProxy (restart): %v", err)
+		}
+		log.Printf("Haproxy успешно перезапущен (restart) после неудачного reload")
+	} else {
+		log.Printf("Haproxy успешно перезагружен (reload)")
+	}
+
+	return nil
+}
+
+func setEnabledHandler(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPatch {
+			http.Error(w, "Неверный метод. Используйте PATCH", http.StatusMethodNotAllowed)
+			return
+		}
+
+		if db == nil {
+			http.Error(w, "База данных не инициализирована", http.StatusInternalServerError)
+			return
+		}
+
+		if err := r.ParseForm(); err != nil {
+			http.Error(w, "Ошибка парсинга данных", http.StatusBadRequest)
+			return
+		}
+
+		email := r.FormValue("email")
+		enabledStr := r.FormValue("enabled")
+
+		if email == "" || enabledStr == "" {
+			http.Error(w, "email и enabled обязательны", http.StatusBadRequest)
+			return
+		}
+
+		enabled, err := strconv.ParseBool(enabledStr)
+		if err != nil {
+			http.Error(w, "enabled должны быть true или false", http.StatusBadRequest)
+			return
+		}
+
+		// Извлекаем uuid из базы данных по email
+		var uuid string
+		err = db.QueryRow("SELECT uuid FROM clients_stats WHERE email = ?", email).Scan(&uuid)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				http.Error(w, "Пользователь с таким email не найден", http.StatusNotFound)
+				return
+			}
+			log.Printf("Ошибка запроса к БД: %v", err)
+			http.Error(w, "Ошибка сервера при запросе к БД", http.StatusInternalServerError)
+			return
+		}
+
+		err = updateLuaUuid(uuid, enabled)
+		if err != nil {
+			log.Printf("Ошибка обновления Lua-файла %v", err)
+			http.Error(w, "Ошибка обновления файла авторизация", http.StatusInternalServerError)
+			return
+		}
+
+		log.Printf("Для email %s (uuid %s) установлено значение = %t", email, uuid, enabled)
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
 // Функция запуска HTTP-сервера с graceful shutdown
 func startAPIServer(ctx context.Context, memDB *sql.DB, wg *sync.WaitGroup) {
-	defer wg.Done()
-
 	server := &http.Server{
 		Addr:    "127.0.0.1:9952",
 		Handler: nil, // Используем стандартный маршрутизатор
@@ -1337,6 +1537,7 @@ func startAPIServer(ctx context.Context, memDB *sql.DB, wg *sync.WaitGroup) {
 	http.HandleFunc("/update_ip_limit", updateIPLimitHandler(memDB))
 	http.HandleFunc("/delete_dns_stats", deleteDNSStatsHandler(memDB))
 	http.HandleFunc("/adjust-date", adjustDateOffsetHandler(memDB))
+	http.HandleFunc("/set-enabled", setEnabledHandler(memDB))
 
 	// Запускаем сервер в отдельной горутине
 	go func() {
@@ -1349,9 +1550,19 @@ func startAPIServer(ctx context.Context, memDB *sql.DB, wg *sync.WaitGroup) {
 	// Ожидаем сигнала завершения
 	<-ctx.Done()
 	log.Println("Остановка API-сервера...")
-	if err := server.Shutdown(context.Background()); err != nil {
+
+	// Создаем контекст с таймаутом для graceful shutdown
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer shutdownCancel()
+
+	// Останавливаем сервер
+	if err := server.Shutdown(shutdownCtx); err != nil {
 		log.Printf("Ошибка при остановке сервера: %v", err)
 	}
+	log.Println("API-сервер успешно остановлен")
+
+	// Уменьшаем счетчик WaitGroup только после полной остановки
+	wg.Done()
 }
 
 // Функция для синхронизации данных из memDB в fileDB
@@ -1502,12 +1713,33 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		ticker := time.NewTicker(1 * time.Minute)
+		ticker := time.NewTicker(20 * time.Second)
 		defer ticker.Stop()
 		for {
 			select {
 			case <-ticker.C:
 				checkExpiredSubscriptions(memDB)
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
+	// Синхронизация данных каждые 5 минут
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		ticker := time.NewTicker(5 * time.Minute)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				log.Println("Начало синхронизации данных с файлом...")
+				if err := syncToFileDB(memDB, fileDB); err != nil {
+					log.Printf("Ошибка синхронизации: %v", err)
+				} else {
+					log.Println("Данные успешно синхронизированы")
+				}
 			case <-ctx.Done():
 				return
 			}
