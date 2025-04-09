@@ -3,12 +3,13 @@
 ###################################
 ### Global values
 ###################################
-VERSION_MANAGER='0.5.7'
+VERSION_MANAGER='0.5.4'
 VERSION_XRAY='25.1.30'
 
 DIR_REVERSE_PROXY="/usr/local/reverse_proxy/"
 DIR_XRAY="/usr/local/etc/xray/"
 LUA_PATH="/etc/haproxy/.auth.lua"
+DB_PATH="/usr/local/reverse_proxy/projectgo/reverse.db"
 
 REPO_URL="https://github.com/cortez24rus/reverse_proxy/archive/refs/heads/main.tar.gz"
 
@@ -2062,86 +2063,15 @@ traffic_stats() {
 }
 
 display_stats() {
-  echo " 🖥️  Состояние сервера:"
-  echo
+  clear
+  echo -e " 🖥️  Состояние сервера:\n============================"
   bash /etc/update-motd.d/02-uptime
   bash /etc/update-motd.d/03-load-average
   bash /etc/update-motd.d/04-memory
   bash /etc/update-motd.d/05-disk-usage
   bash /etc/update-motd.d/09-status
   echo
-  echo " 📊 Статистика клиентов:"
-  echo
-  sqlite3 "$dataBasePath" <<EOF
-.headers on
-.mode column
-SELECT
-  email AS "Email",
-  activity_status AS "Status",
-  enabled AS "Enabled",
---  created AS "Created",
-  ip AS "Ips",
-  ip_limit AS "Lim_ip",
-  CASE
-    WHEN sess_uplink >= 1024 * 1024 * 1024 THEN printf("%.2f GB", sess_uplink / 1024.0 / 1024.0 / 1024.0)
-    WHEN sess_uplink >= 1024 * 1024 THEN printf("%.2f MB", sess_uplink / 1024.0 / 1024.0)
-    WHEN sess_uplink >= 1024 THEN printf("%.2f KB", sess_uplink / 1024.0)
-    ELSE printf("%d B", sess_uplink)
-  END AS "Sess Up",
-  CASE
-    WHEN sess_downlink >= 1024 * 1024 * 1024 THEN printf("%.2f GB", sess_downlink / 1024.0 / 1024.0 / 1024.0)
-    WHEN sess_downlink >= 1024 * 1024 THEN printf("%.2f MB", sess_downlink / 1024.0 / 1024.0)
-    WHEN sess_downlink >= 1024 THEN printf("%.2f KB", sess_downlink / 1024.0)
-    ELSE printf("%d B", sess_downlink)
-  END AS "Sess Down",
-  CASE
-    WHEN uplink >= 1024 * 1024 * 1024 THEN printf("%.2f GB", uplink / 1024.0 / 1024.0 / 1024.0)
-    WHEN uplink >= 1024 * 1024 THEN printf("%.2f MB", uplink / 1024.0 / 1024.0)
-    WHEN uplink >= 1024 THEN printf("%.2f KB", uplink / 1024.0)
-    ELSE printf("%d B", uplink)
-  END AS "Uplink",
-  CASE
-    WHEN downlink >= 1024 * 1024 * 1024 THEN printf("%.2f GB", downlink / 1024.0 / 1024.0 / 1024.0)
-    WHEN downlink >= 1024 * 1024 THEN printf("%.2f MB", downlink / 1024.0 / 1024.0)
-    WHEN downlink >= 1024 THEN printf("%.2f KB", downlink / 1024.0)
-    ELSE printf("%d B", downlink)
-  END AS "Downlink"
-FROM clients_stats;
-EOF
-
-  echo
-  echo " 🌐 Статистика сервера:"
-  sqlite3 "$dataBasePath" <<EOF
-.headers on
-.mode table
-SELECT
-  source AS "Source",
-  CASE
-    WHEN sess_uplink >= 1024 * 1024 * 1024 THEN printf("%.2f GB", sess_uplink / 1024.0 / 1024.0 / 1024.0)
-    WHEN sess_uplink >= 1024 * 1024 THEN printf("%.2f MB", sess_uplink / 1024.0 / 1024.0)
-    WHEN sess_uplink >= 1024 THEN printf("%.2f KB", sess_uplink / 1024.0)
-    ELSE printf("%d B", sess_uplink)
-  END AS "Sess Up",
-  CASE
-    WHEN sess_downlink >= 1024 * 1024 * 1024 THEN printf("%.2f GB", sess_downlink / 1024.0 / 1024.0 / 1024.0)
-    WHEN sess_downlink >= 1024 * 1024 THEN printf("%.2f MB", sess_downlink / 1024.0 / 1024.0)
-    WHEN sess_downlink >= 1024 THEN printf("%.2f KB", sess_downlink / 1024.0)
-    ELSE printf("%d B", sess_downlink)
-  END AS "Sess Down",
-  CASE
-    WHEN uplink >= 1024 * 1024 * 1024 THEN printf("%.2f GB", uplink / 1024.0 / 1024.0 / 1024.0)
-    WHEN uplink >= 1024 * 1024 THEN printf("%.2f MB", uplink / 1024.0 / 1024.0)
-    WHEN uplink >= 1024 THEN printf("%.2f KB", uplink / 1024.0)
-    ELSE printf("%d B", uplink)
-  END AS "Uplink",
-  CASE
-    WHEN downlink >= 1024 * 1024 * 1024 THEN printf("%.2f GB", downlink / 1024.0 / 1024.0 / 1024.0)
-    WHEN downlink >= 1024 * 1024 THEN printf("%.2f MB", downlink / 1024.0 / 1024.0)
-    WHEN downlink >= 1024 THEN printf("%.2f KB", downlink / 1024.0)
-    ELSE printf("%d B", downlink)
-  END AS "Downlink"
-FROM traffic_stats;
-EOF
+  curl -X GET http://localhost:9952/stats
 }
 
 ###################################
@@ -2232,7 +2162,7 @@ delete_user_config() {
       return
     fi
     
-    echo "Список пользователей:"
+    info " Список пользователей:"
     local count=1
     declare -A user_map
 
@@ -2278,93 +2208,73 @@ delete_user_config() {
   done
 }
 
-# Функция для получения UUID и значений из Lua-конфига
-extract_lua_values() {
-  declare -A lua_uuids
-  while IFS= read -r line; do
-    if [[ $line =~ \[\"([a-f0-9\-]+)\"\]\ =\ (true|false) ]]; then
-      uuid="${BASH_REMATCH[1]}"
-      value="${BASH_REMATCH[2]}"
-      lua_uuids["$uuid"]=$value
-    fi
-  done < "$LUA_PATH"
-  echo "${lua_uuids[@]}"
-}
-
-# Функция для извлечения пользователей и их значений из Lua
-extract_users_and_lua_values() {
-  # Получаем данные из Lua в ассоциативный массив
-  declare -A lua_uuids
-  while IFS= read -r line; do
-    if [[ $line =~ \[\"([a-f0-9\-]+)\"\]\ =\ (true|false) ]]; then
-      uuid="${BASH_REMATCH[1]}"
-      value="${BASH_REMATCH[2]}"
-      lua_uuids["$uuid"]=$value
-    fi
-  done < "$LUA_PATH"
-
-  echo "Список пользователей:"
-  # Массив для хранения пользователей
-  counter=0  # Начинаем с 0 для корректной индексации массива
-  # Получаем пользователей из Xray и добавляем в массив
-  mapfile -t clients < <(extract_users)
-  
-  for client in "${clients[@]}"; do
-    IFS=' ' read -r email uuid <<< "$client"
-    # Проверяем UUID в Lua-данных
-    if [[ -n "${lua_uuids[$uuid]}" ]]; then
-      user_map[$counter]="$email $uuid ${lua_uuids[$uuid]}"
-      echo "$((counter+1)). $email - ${lua_uuids[$uuid]} (ID: $uuid)"  # Индексация начинается с 1
-      ((counter++))
-    fi
-  done
-  echo "0. Выйти"
-}
-
-# Функция для выбора пользователей
-select_users() {
-  read -p "Введите номера пользователей через запятую: " choices
-  echo
-
-  # Разбиение введенных номеров на массив
-  IFS=', ' read -r -a selected_users <<< "$choices"
-
-  # Перебор выбранных пользователей
-  for choice in "${selected_users[@]}"; do
-    case "$choice" in
-      0)
-        echo "Выход..."
-        return
-        ;;
-      ''|*[!0-9]*)
-        echo "Ошибка: введите корректный номер."
-        ;;
-      *)
-        if [[ "$choice" -ge 1 && "$choice" -le "${#user_map[@]}" ]]; then
-          selected_user="${user_map[$((choice-1))]}"
-          IFS=' ' read -r email uuid current_value <<< "$selected_user"
-
-          # Изменение значения на противоположное
-          new_value=$([[ "$current_value" == "true" ]] && echo "false" || echo "true")
-
-          # Обновление значения в Lua-файле
-          sed -i "s/\[\"$uuid\"\]\ =\ $current_value/\[\"$uuid\"\]\ =\ $new_value/" "$LUA_PATH"
-
-          echo "Изменено: $email (ID: $uuid) -> $new_value"
-        else
-          echo "Некорректный номер: $choice"
-        fi
-        ;;
-    esac
-  done
-}
-
-# Функция для включения/выключения пользователей
 toggle_user_status() {
-  declare -A user_map
-  extract_users_and_lua_values
-  select_users
-  echo
+  local API_URL="http://localhost:9952/users"
+  local TOGGLE_URL="http://localhost:9952/set-enabled"
+
+  while true; do
+    clear
+
+    # Получаем JSON от API
+    response=$(curl -s -X GET "$API_URL")
+    if [ $? -ne 0 ]; then
+      warning "Ошибка: Не удалось подключиться к API"
+      return 1
+    fi
+
+    # Парсим JSON и извлекаем email и enabled
+    mapfile -t users < <(echo "$response" | jq -r '.[] | [.email, .enabled] | join(" ")')
+
+    # Проверяем, есть ли пользователи
+    if [ ${#users[@]} -eq 0 ]; then
+      info "Нет пользователей для отображения"
+      return 1
+    fi
+
+    # Выводим список
+    info " Список пользователей:"
+    for i in "${!users[@]}"; do
+      IFS=' ' read -r email enabled <<< "${users[$i]}"
+      printf " %d. %s (%s)\n" "$((i+1))" "$email" "$enabled"
+    done
+    echo " 0. Выйти"
+
+    # Запрашиваем выбор
+    reading "Введите номера пользователей (через пробел или запятую): " USER_CHOICE
+
+    if [[ "$USER_CHOICE" == "0" ]]; then
+      return 0
+    fi
+
+    # Преобразуем ввод в массив чисел
+    USER_CHOICE="${USER_CHOICE//,/ }"   # заменяем запятые на пробелы
+    read -ra CHOICES <<< "$USER_CHOICE" # массив номеров
+
+    echo
+    for choice in "${CHOICES[@]}"; do
+      if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "${#users[@]}" ]; then
+        IFS=' ' read -r selected_email current_enabled <<< "${users[$((choice-1))]}"
+
+        # Определяем новый статус
+        new_enabled="false"
+        if [ "$current_enabled" = "false" ]; then
+          new_enabled="true"
+        fi
+
+        # Выполняем PATCH-запрос
+        response=$(curl -s -X PATCH -d "email=$selected_email&enabled=$new_enabled" "$TOGGLE_URL")
+        if [ $? -eq 0 ]; then
+          info "Статус пользователя $selected_email изменяется на $new_enabled"
+        else
+          warning "Ошибка при изменении статуса пользователя $selected_email"
+        fi
+      else
+        warning "Неверный выбор: $choice"
+      fi
+    done
+
+    sleep 10
+  done
 }
 
 sync_client_configs() {
@@ -2386,6 +2296,144 @@ sync_client_configs() {
   done
 }
 
+get_dns_stats() {
+  declare -A user_map
+  local counter=0
+  local last_choice=""
+
+  # Запрос количества строк
+  read -p "Введите количество строк для вывода статистики: " count
+  clear
+
+  # Получаем список пользователей через API
+  response=$(curl -s -X GET "http://127.0.0.1:9952/users")
+  if [ $? -ne 0 ]; then
+    echo "Ошибка подключения к API."
+    return 1
+  fi
+
+  # Парсим JSON в массив
+  mapfile -t users < <(echo "$response" | jq -r '.[] | .email')
+
+  # Проверяем, есть ли пользователи
+  if [ ${#users[@]} -eq 0 ]; then
+    echo "Нет пользователей в базе данных."
+    return 1
+  fi
+
+  # Заполняем user_map и выводим список пользователей
+  while true; do
+    counter=0
+    info " Список пользователей:"
+    for user in "${users[@]}"; do
+      user_map[$counter]="$user"
+      echo "$((counter+1)). $user"
+      ((counter++))
+    done
+    echo
+    if [[ -n "$last_choice" ]]; then
+      echo "(Enter - обновить статистику для ${user_map[$((last_choice-1))]})"
+    fi
+    read -p "Введите номер пользователя (0 - выход, \"reset\" - сброс статистики): " choice
+
+    if [[ "$choice" == "0" ]]; then
+      echo "Выход..."
+      return
+    fi
+
+    if [[ "$choice" == "reset" ]]; then
+      echo "Очищаю статистику..."
+      curl -X POST http://127.0.0.1:9952/delete_dns_stats
+      echo "Статистика удалена."
+      echo
+      continue
+    fi
+
+    if [[ -z "$choice" && -n "$last_choice" ]]; then
+      choice="$last_choice"  # Используем предыдущий выбор
+    fi
+
+    if [[ ! "$choice" =~ ^[0-9]+$ ]] || (( choice < 1 || choice > counter )); then
+      echo "Некорректный ввод. Попробуйте снова."
+      continue
+    fi
+
+    selected_email="${user_map[$((choice-1))]}"
+    last_choice="$choice"  # Сохраняем текущий выбор
+
+    # Выполняем запрос к API
+    clear
+    curl -X GET "http://127.0.0.1:9952/dns_stats?email=${selected_email}&count=${count}"
+  done
+}
+
+set_lim_ip() {
+  declare -A user_map
+  local counter=0
+
+  # Запрос лимита IP
+  read -p "Введите новый лимит IP: " lim_ip
+  clear
+
+  while true; do
+    # Получаем список пользователей через API
+    response=$(curl -s -X GET "http://127.0.0.1:9952/users")
+    if [ $? -ne 0 ]; then
+      echo "Ошибка подключения к API."
+      return 1
+    fi
+
+    # Парсим пользователей
+    mapfile -t users < <(echo "$response" | jq -r '.[] | "\(.email)|\(.lim_ip)"')
+    if [ ${#users[@]} -eq 0 ]; then
+      echo "Нет пользователей в ответе API."
+      return 1
+    fi
+
+    counter=0
+    info " Список пользователей:"
+    for user in "${users[@]}"; do
+      IFS='|' read -r email lim_ip_value <<< "$user"
+      user_map[$counter]="$email"
+      echo " $((counter+1)). $email (текущий лимит ${lim_ip_value:-не задан})"
+      ((counter++))
+    done
+    echo
+    echo " (Выбран лимит $lim_ip)"
+    read -p " Введите номер пользователя (0 - выход, \"reset\" - изменить лимит IP): " choice
+
+    if [[ "$choice" == "0" ]]; then
+      echo "Выход..."
+      return
+    fi
+
+    if [[ "$choice" == "reset" ]]; then
+      clear
+      read -p "Введите новый лимит IP: " lim_ip
+      continue
+    fi
+
+    # Разбиваем ввод на массив номеров
+    choices=($(echo "$choice" | tr ',' ' ' | tr -s ' ' | tr ' ' '\n'))
+
+    # Проверяем каждый номер
+    for num in "${choices[@]}"; do
+      if [[ ! "$num" =~ ^[0-9]+$ ]] || (( num < 1 || num > counter )); then
+        echo "Некорректный номер пользователя: $num. Попробуйте снова."
+        continue 2
+      fi
+    done
+
+    clear
+    # Обновляем лимит для выбранных пользователей
+    for num in "${choices[@]}"; do
+      selected_email="${user_map[$((num-1))]}"
+      curl -X PATCH -d "username=${selected_email}&lim_ip=${lim_ip}" "http://127.0.0.1:9952/update_lim_ip"
+    done
+    echo
+  done
+}
+
 ###################################
 ### Removing all escape sequences
 ###################################
@@ -2403,11 +2451,15 @@ reverse_proxy_xray_menu() {
     tilda "|--------------------------------------------------------------------------|"
     info " $(text 86) "                      # MENU
     tilda "|--------------------------------------------------------------------------|"
-    info " 1. Вывод статистики. "             # 1. Вывод статистики
-    info " 2. Добавление пользователей. "     # 2. Добавление пользователей
-    info " 3. Удаление пользователей. "       # 3. Удаление пользователей
-    info " 4. Включение/Отключение клиента. " # 4. Включение/Отключение клиента
-    info " 5. Синхронизация клиентских конфигураций. " # 5. Синхронизация клиентских конфигураций.
+    info " 1. Вывод статистики."
+    info " 2. Вывод статистики dns запросов клиентов." 
+    echo    
+    info " 3. Добавление пользователей."
+    info " 4. Удаление пользователей."
+    info " 5. Включение/Отключение клиента."
+    echo
+    info " 6. Синхронизация клиентских конфигураций."
+    info " 7. Смена лимита ip адресов для пользователя."
     echo
     info " 0. Назад в основное меню."         # 0. Return
     tilda "|--------------------------------------------------------------------------|"
@@ -2417,29 +2469,30 @@ reverse_proxy_xray_menu() {
     extract_data
     case $CHOICE_MENU in
       1)
-        disable_logging
-        local dataBasePath="/usr/local/reverse_proxy/reverse_proxy.db"
         while true; do
-          clear
-          display_stats "$dataBasePath"
-          echo
+          display_stats
           echo -n "Введите 0 для выхода (обновление каждые 10 секунд): "
           read -t 10 -r STATS_CHOICE
           [[ "$STATS_CHOICE" == "0" ]] && break
         done
-        enable_logging
         ;;
       2)
-        add_user_config
+        get_dns_stats
         ;;
       3)
-        delete_user_config
+        add_user_config
         ;;
       4)
-        toggle_user_status
+        delete_user_config
         ;;
       5)
+        toggle_user_status
+        ;;
+      6)
         sync_client_configs
+        ;;
+      7)
+        set_lim_ip
         ;;
       0)
         reverse_proxy_main_menu
@@ -2483,6 +2536,7 @@ reverse_proxy_main_menu() {
 
     case $CHOICE_MENU in
       1)
+        enable_logging
         clear
         check_dependencies
         banner_xray
@@ -2508,6 +2562,7 @@ reverse_proxy_main_menu() {
         [[ ${args[firewall]} == "true" ]] && enabling_security
         [[ ${args[ssh]} == "true" ]] && ssh_setup
         data_output
+        disable_logging
         log_clear
         ;;
       2)
@@ -2549,7 +2604,7 @@ reverse_proxy_main_menu() {
         ;;
       0)
         clear
-        break
+        exit 0
         ;;
       *)
         warning " $(text 76) "
@@ -2566,7 +2621,6 @@ reverse_proxy_main_menu() {
 ### Main function
 ###################################
 main() {
-  enable_logging
   read_defaults_from_file
   parse_args "$@" || show_help
   check_root
