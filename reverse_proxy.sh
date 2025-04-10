@@ -3,7 +3,7 @@
 ###################################
 ### Global values
 ###################################
-VERSION_MANAGER='0.6.6'
+VERSION_MANAGER='0.6.8'
 VERSION_XRAY='25.1.30'
 
 DIR_REVERSE_PROXY="/usr/local/reverse_proxy/"
