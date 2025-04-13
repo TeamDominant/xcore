@@ -3,7 +3,7 @@
 ###################################
 ### Global values
 ###################################
-VERSION_MANAGER='0.7.2'
+VERSION_MANAGER='0.7.5'
 VERSION_XRAY='25.1.30'
 
 DIR_REVERSE_PROXY="/usr/local/reverse_proxy/"
@@ -240,10 +240,10 @@ E[92]="6. Integrate custom JSON subscription."
 R[92]="6. Интеграция кастомной JSON подписки."
 E[93]="7. Copy someone else's website to your server."
 R[93]="7. Скопировать чужой сайт на ваш сервер."
-E[94]="8. Disable IPv6."
-R[94]="8. Отключение IPv6."
-E[95]="9. Enable IPv6."
-R[95]="9. Включение IPv6."
+E[94]=""
+R[94]=""
+E[95]=""
+R[95]=""
 E[96]="10. Find out the size of the directory."
 R[96]="10. Узнать размер директории."
 E[97]="Client migration initiation (experimental feature)."
@@ -1045,23 +1045,6 @@ disable_ipv6() {
       echo "net.ipv6.conf.$interface_name.disable_ipv6 = 1" >> /etc/sysctl.conf
   fi
 
-  sysctl -p
-  tilda "$(text 10)"
-}
-
-###################################
-### Enable IPv6
-###################################
-enable_ipv6() {
-  info " $(text 42) "
-  interface_name=$(ifconfig -s | awk 'NR==2 {print $1}')
-
-  sed -i "/net.ipv6.conf.all.disable_ipv6 = 1/d" /etc/sysctl.conf
-  sed -i "/net.ipv6.conf.default.disable_ipv6 = 1/d" /etc/sysctl.conf
-  sed -i "/net.ipv6.conf.lo.disable_ipv6 = 1/d" /etc/sysctl.conf
-  sed -i "/net.ipv6.conf.$interface_name.disable_ipv6 = 1/d" /etc/sysctl.conf
-
-  echo -e "IPv6 включен"
   sysctl -p
   tilda "$(text 10)"
 }
@@ -2414,6 +2397,152 @@ set_lim_ip() {
   done
 }
 
+update_user_renew() {
+  declare -A user_map
+  local counter=0
+
+  # Запрос значения renew
+  read -p "Введите новое значение renew: " renew_value
+  clear
+
+  while true; do
+    # Получаем список пользователей через API
+    response=$(curl -s -X GET "http://localhost:9952/users")
+    if [ $? -ne 0 ]; then
+      warning "Ошибка подключения к API."
+      return 1
+    fi
+
+    # Парсим пользователей (email и renew)
+    mapfile -t users < <(echo "$response" | jq -r '.[] | "\(.email)|\(.renew)"')
+    if [ ${#users[@]} -eq 0 ]; then
+      info "Нет пользователей в ответе API."
+      return 1
+    fi
+
+    counter=0
+    info " Список пользователей:"
+    for user in "${users[@]}"; do
+      IFS='|' read -r email renew <<< "$user"
+      user_map[$counter]="$email"
+      echo " $((counter+1)). $email (текущий renew: ${renew:-не задан})"
+      ((counter++))
+    done
+    echo
+    echo " (Выбрано значение renew: $renew_value)"
+    read -p " Введите номера пользователей (через запятую, 0 - выход, \"reset\" - изменить renew): " choice
+
+    if [[ "$choice" == "0" ]]; then
+      info "Выход..."
+      return
+    fi
+
+    if [[ "$choice" == "reset" ]]; then
+      clear
+      read -p "Введите новое значение renew: " renew_value
+      continue
+    fi
+
+    # Разбиваем ввод на массив номеров
+    choices=($(echo "$choice" | tr ',' ' ' | tr -s ' ' | tr ' ' '\n'))
+
+    # Проверяем каждый номер
+    for num in "${choices[@]}"; do
+      if [[ ! "$num" =~ ^[0-9]+$ ]] || (( num < 1 || num > counter )); then
+        warning "Некорректный номер пользователя: $num. Попробуйте снова."
+        continue 2
+      fi
+    done
+
+    clear
+    # Обновляем renew для выбранных пользователей
+    for num in "${choices[@]}"; do
+      selected_email="${user_map[$((num-1))]}"
+      response=$(curl -s -X PATCH -d "email=$selected_email&renew=$renew_value" "http://127.0.0.1:9952/update_renew")
+      if [ $? -eq 0 ]; then
+        info "Автопродление для $selected_email обновлено на $renew_value"
+      else
+        warning "Ошибка при обновлении автопродления для $selected_email"
+      fi
+    done
+    echo
+    sleep 2
+  done
+}
+
+adjust_user_subscription_date() {
+  declare -A user_map
+  local counter=0
+
+  # Запрос значения offset
+  read -p "Введите значение offset (например, +1, -1:3, 0): " offset_value
+  clear
+
+  while true; do
+    # Получаем список пользователей через API
+    response=$(curl -s -X GET "http://localhost:9952/users")
+    if [ $? -ne 0 ]; then
+      warning "Ошибка подключения к API."
+      return 1
+    fi
+
+    # Парсим пользователей (email и sub_end)
+    mapfile -t users < <(echo "$response" | jq -r '.[] | "\(.email)|\(.sub_end)"')
+    if [ ${#users[@]} -eq 0 ]; then
+      info "Нет пользователей в ответе API."
+      return 1
+    fi
+
+    counter=0
+    info " Список пользователей:"
+    for user in "${users[@]}"; do
+      IFS='|' read -r email sub_end <<< "$user"
+      user_map[$counter]="$email"
+      echo " $((counter+1)). $email (дата окончания: ${sub_end:-не задана})"
+      ((counter++))
+    done
+    echo
+    echo " (Выбрано значение offset: $offset_value)"
+    read -p " Введите номера пользователей (через запятую, 0 - выход, \"reset\" - изменить offset): " choice
+
+    if [[ "$choice" == "0" ]]; then
+      info "Выход..."
+      return
+    fi
+
+    if [[ "$choice" == "reset" ]]; then
+      clear
+      read -p "Введите новое значение offset (например, +1, -1:3, 0): " offset_value
+      continue
+    fi
+
+    # Разбиваем ввод на массив номеров
+    choices=($(echo "$choice" | tr ',' ' ' | tr -s ' ' | tr ' ' '\n'))
+
+    # Проверяем каждый номер
+    for num in "${choices[@]}"; do
+      if [[ ! "$num" =~ ^[0-9]+$ ]] || (( num < 1 || num > counter )); then
+        warning "Некорректный номер пользователя: $num. Попробуйте снова."
+        continue 2
+      fi
+    done
+
+    clear
+    # Обновляем sub_end для выбранных пользователей
+    for num in "${choices[@]}"; do
+      selected_email="${user_map[$((num-1))]}"
+      response=$(curl -s -X PATCH -d "email=$selected_email&offset=$offset_value" "http://localhost:9952/adjust-date")
+      if [ $? -eq 0 ]; then
+        info "Дата подписки для $selected_email обновлена с offset $offset_value"
+      else
+        warning "Ошибка при обновлении даты подписки для $selected_email"
+      fi
+    done
+    echo
+    sleep 2
+  done
+}
+
 ###################################
 ### Removing all escape sequences
 ###################################
@@ -2424,7 +2553,7 @@ log_clear() {
 ###################################
 ### Конфигурирование Xray core
 ###################################
-reverse_proxy_xray_menu() {
+xreverse_proxy_menu() {
   while true; do
     clear
     banner_xray
@@ -2440,6 +2569,8 @@ reverse_proxy_xray_menu() {
     echo
     info " 6. Синхронизация клиентских конфигураций."
     info " 7. Смена лимита ip адресов для пользователя."
+    info " 8. Обновление автопродления подписки пользователя."
+    info " 9. Изменение даты окончания подписки."
     echo
     info " 0. Назад в основное меню."         # 0. Return
     tilda "|--------------------------------------------------------------------------|"
@@ -2474,6 +2605,12 @@ reverse_proxy_xray_menu() {
       7)
         set_lim_ip
         ;;
+      8)
+        update_user_renew
+        ;;
+      9)
+        adjust_user_subscription_date
+        ;;
       0)
         reverse_proxy_main_menu
         ;;
@@ -2499,8 +2636,6 @@ reverse_proxy_main_menu() {
     info " $(text 91) "                      # 5. Renew cert
     echo
     info " $(text 93) "                      # 7. Steal web site
-    info " $(text 94) "                      # 8. Disable IPv6
-    info " $(text 95) "                      # 9. Enable IPv6
     echo
     info " $(text 96) "                      # 10. Directory size
     info " $(text 105) "                     # 11. Traffic statistics
@@ -2563,12 +2698,6 @@ reverse_proxy_main_menu() {
       7)
         download_website
         ;;
-      8)
-        enable_ipv6
-        ;;
-      9)
-        disable_ipv6
-        ;;
       10)
         directory_size
         ;;
@@ -2580,7 +2709,7 @@ reverse_proxy_main_menu() {
         select_language
         ;;
       13)
-        reverse_proxy_xray_menu
+        xreverse_proxy_menu
         ;;
       0)
         clear
