@@ -33,7 +33,7 @@ type Config struct {
 }
 
 var config = Config{
-	DatabasePath:      "/usr/local/reverse_proxy/projectgo/data.db",
+	DatabasePath:      "/opt/xcore/data.db",
 	AccessLogPath:     "/usr/local/etc/xray/access.log",
 	DirXray:           "/usr/local/etc/xray/",
 	ConfigFileHaproxy: "/etc/haproxy/haproxy.cfg",
@@ -1564,7 +1564,7 @@ func setEnabledHandler(memDB *sql.DB) http.HandlerFunc {
         var enabled bool
         if enabledStr == "" {
             enabled = true
-            enabledStr = "true" // Для записи в базу и логов
+            enabledStr = "true"
         } else {
             var err error
             enabled, err = strconv.ParseBool(enabledStr)

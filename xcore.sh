@@ -3,15 +3,14 @@
 ###################################
 ### Global values
 ###################################
-VERSION_MANAGER='0.7.7'
+VERSION_MANAGER='0.8.1'
 VERSION_XRAY='25.1.30'
 
-DIR_REVERSE_PROXY="/usr/local/reverse_proxy/"
+DIR_XCORE="/opt/xcore"
 DIR_XRAY="/usr/local/etc/xray/"
 LUA_PATH="/etc/haproxy/.auth.lua"
-DB_PATH="/usr/local/reverse_proxy/projectgo/reverse.db"
 
-REPO_URL="https://github.com/cortez24rus/reverse_proxy/archive/refs/heads/main.tar.gz"
+REPO_URL="https://github.com/cortez24rus/XCore/archive/refs/heads/main.tar.gz"
 
 ###################################
 ### Initialization and Declarations
@@ -194,8 +193,8 @@ E[69]=""
 R[69]=""
 E[70]="Secret key:"
 R[70]="Секретный ключ:"
-E[71]="Current operating system is \$SYS.\\\n The system lower than \$SYSTEM \${MAJOR[int]} is not supported. Feedback: [https://github.com/cortez24rus/xui-reverse-proxy/issues]"
-R[71]="Текущая операционная система: \$SYS.\\\n Система с версией ниже, чем \$SYSTEM \${MAJOR[int]}, не поддерживается. Обратная связь: [https://github.com/cortez24rus/xui-reverse-proxy/issues]"
+E[71]="Current operating system is \$SYS.\\\n The system lower than \$SYSTEM \${MAJOR[int]} is not supported. Feedback: [https://github.com/cortez24rus/xcore/issues]"
+R[71]="Текущая операционная система: \$SYS.\\\n Система с версией ниже, чем \$SYSTEM \${MAJOR[int]}, не поддерживается. Обратная связь: [https://github.com/cortez24rus/xcore/issues]"
 E[72]="Install dependence-list:"
 R[72]="Список зависимостей для установки:"
 E[73]="All dependencies already exist and do not need to be installed additionally."
@@ -272,10 +271,10 @@ R[106]="Статистика трафика:\n  1. По годам \n  2. По �
 ###################################
 show_help() {
   echo
-  echo "Usage: reverse_proxy [-u|--utils <true|false>] [-a|--addu <true|false>]"
+  echo "Usage: xcore [-u|--utils <true|false>] [-a|--addu <true|false>]"
   echo "         [-r|--autoupd <true|false>] [-b|--bbr <true|false>] [-i|--ipv6 <true|false>] [-w|--warp <true|false>]"
   echo "         [-c|--cert <true|false>] [-m|--mon <true|false>] [-l|--shell <true|false>] [-n|--nginx <true|false>]"
-  echo "         [-p|--xcore <true|false>] [--custom <true|false>] [-f|--firewall <true|false>] [-s|--ssh <true|false>]"
+  echo "         [-p|--xray <true|false>] [--custom <true|false>] [-f|--firewall <true|false>] [-s|--ssh <true|false>]"
   echo "         ] [-g|--generate <true|false>]"
   echo "         [--update] [-h|--help]"
   echo
@@ -299,7 +298,7 @@ show_help() {
   echo "                                 Установка Shell In A Box"
   echo "  -n, --nginx <true|false>       NGINX installation                               (default: ${defaults[nginx]})"
   echo "                                 Установка NGINX"
-  echo "  -p, --xcore <true|false>       Installing the Xray kernel                       (default: ${defaults[xcore]})"
+  echo "  -p, --xcore <true|false>       Installing the Xray kernel                       (default: ${defaults[xray]})"
   echo "                                 Установка ядра Xray"
   echo "      --custom <true|false>      Custom JSON subscription                         (default: ${defaults[custom]})"
   echo "                                 Кастомная JSON-подписка"  
@@ -309,8 +308,8 @@ show_help() {
   echo "                                 SSH доступ"
   echo "  -g, --generate <true|false>    Generate a random string for configuration       (default: ${defaults[generate]})"
   echo "                                 Генерация случайных путей для конфигурации"
-  echo "      --update                   Update version of Reverse-proxy manager (Version on github: ${VERSION_MANAGER})"
-  echo "                                 Обновить версию Reverse-proxy manager (Версия на github: ${VERSION_MANAGER})"
+  echo "      --update                   Update version of X Core manager (Version on github: ${VERSION_MANAGER})"
+  echo "                                 Обновить версию X Core manager (Версия на github: ${VERSION_MANAGER})"
   echo "  -h, --help                     Display this help message"
   echo "                                 Показать это сообщение помощи"
   echo
@@ -318,27 +317,31 @@ show_help() {
 }
 
 ###################################
-### Reverse_proxy manager
+### X Core manager
 ###################################
-update_reverse_proxy() {
+update_xcore_proxy() {
   info "Script update and integration."
-  
+  if [[ "$VERSION_MANAGER" == "$CURRENT_VERSION" ]]; then
+    info "Скрипт уже актуален: $VERSION_MANAGER"
+    return
+  fi
+
   TOKEN="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"
-  REPO_URL="https://api.github.com/repos/cortez24rus/reverse_proxy/tarball/main"
+  REPO_URL="https://api.github.com/repos/cortez24rus/XCore/tarball/main"
   
-  mkdir -p "${DIR_REVERSE_PROXY}repo/"
-  wget --header="Authorization: Bearer $TOKEN" -qO- $REPO_URL | tar xz --strip-components=1 -C "${DIR_REVERSE_PROXY}repo/"
+  mkdir -p "${DIR_XCORE}/repo/"
+  wget --header="Authorization: Bearer $TOKEN" -qO- $REPO_URL | tar xz --strip-components=1 -C "${DIR_XCORE}/repo/"
   
-  chmod +x "${DIR_REVERSE_PROXY}repo/reverse_proxy.sh"
-  ln -sf "${DIR_REVERSE_PROXY}repo/reverse_proxy.sh" /usr/local/bin/reverse_proxy
+  chmod +x "${DIR_XCORE}/repo/xcore.sh"
+  ln -sf "${DIR_XCORE}/repo/xcore.sh" /usr/local/bin/xcore
 
   sleep 1
 
-  CURRENT_VERSION=$(sed -n "s/^[[:space:]]*VERSION_MANAGER=[[:space:]]*'\([0-9\.]*\)'/\1/p" "${DIR_REVERSE_PROXY}repo/reverse_proxy.sh")
+  CURRENT_VERSION=$(sed -n "s/^[[:space:]]*VERSION_MANAGER=[[:space:]]*'\([0-9\.]*\)'/\1/p" "${DIR_XCORE}/repo/xcore.sh")
   warning "Script version: $CURRENT_VERSION"
 
   crontab -l | grep -v -- "--update" | crontab -
-  add_cron_rule "0 0 * * * /usr/local/reverse_proxy/repo/reverse_proxy.sh --update"
+  add_cron_rule "0 0 * * * /usr/local/xcore/repo/xcore.sh --update"
 
   tilda "\n|-----------------------------------------------------------------------------|\n"
 }
@@ -347,13 +350,13 @@ update_reverse_proxy() {
 ### Reading values ​​from file
 ################################### 
 read_defaults_from_file() {
-  if [[ -f "${DIR_REVERSE_PROXY}default.conf" ]]; then
+  if [[ -f "${DIR_XCORE}/default.conf" ]]; then
     # Чтение и выполнение строк из файла
     while IFS= read -r line; do
       # Пропускаем пустые строки и комментарии
       [[ -z "$line" || "$line" =~ ^# ]] && continue
       eval "$line"
-    done < "${DIR_REVERSE_PROXY}default.conf"
+    done < "${DIR_XCORE}/default.conf"
   else
     # Если файл не найден, используем значения по умолчанию
     defaults[utils]=true
@@ -366,7 +369,7 @@ read_defaults_from_file() {
     defaults[mon]=true
     defaults[shell]=true
     defaults[nginx]=true
-    defaults[xcore]=true
+    defaults[xray]=true
     defaults[custom]=true
     defaults[firewall]=true
     defaults[ssh]=true
@@ -378,7 +381,7 @@ read_defaults_from_file() {
 ### Writing values ​​to a file
 ###################################
 write_defaults_to_file() {
-  cat > "${DIR_REVERSE_PROXY}default.conf"<<EOF
+  cat > "${DIR_XCORE}/default.conf"<<EOF
 defaults[utils]=false
 defaults[addu]=false
 defaults[autoupd]=false
@@ -389,7 +392,7 @@ defaults[cert]=false
 defaults[mon]=false
 defaults[shell]=false
 defaults[nginx]=true
-defaults[xcore]=true
+defaults[xray]=true
 defaults[custom]=true
 defaults[firewall]=false
 defaults[ssh]=false
@@ -439,7 +442,7 @@ declare -A arg_map=(
   [-m]=mon        [--mon]=mon
   [-l]=shell      [--shell]=shell
   [-n]=nginx      [--nginx]=nginx
-  [-x]=xcore      [--xcore]=xcore
+  [-x]=xray       [--xray]=xray
                   [--custom]=custom
   [-f]=firewall   [--firewall]=firewall
   [-s]=ssh        [--ssh]=ssh
@@ -448,7 +451,7 @@ declare -A arg_map=(
 
 parse_args() {
   local opts
-  opts=$(getopt -o hu:a:r:b:i:w:c:m:l:n:x:f:s:g --long utils:,addu:,autoupd:,bbr:,ipv6:,warp:,cert:,mon:,shell:,nginx:,xcore:,custom:,firewall:,ssh:,generate:,update,depers,help -- "$@")
+  opts=$(getopt -o hu:a:r:b:i:w:c:m:l:n:x:f:s:g --long utils:,addu:,autoupd:,bbr:,ipv6:,warp:,cert:,mon:,shell:,nginx:,xray:,custom:,firewall:,ssh:,generate:,update,depers,help -- "$@")
 
   if [[ $? -ne 0 ]]; then
     return 1
@@ -459,7 +462,7 @@ parse_args() {
     case $1 in
       --update)
         echo
-        update_reverse_proxy
+        update_xcore_proxy
         exit 0
         ;;
       --depers)
@@ -500,8 +503,8 @@ parse_args() {
 ### Logging
 ###################################
 enable_logging() {
-  mkdir -p ${DIR_REVERSE_PROXY}
-  LOGFILE="${DIR_REVERSE_PROXY}reverse_proxy.log"
+  mkdir -p ${DIR_XCORE}/
+  LOGFILE="${DIR_XCORE}/xcore_proxy.log"
   exec > >(tee -a "$LOGFILE") 2>&1
 }
 
@@ -513,7 +516,7 @@ disable_logging() {
 ### Language selection
 ###################################
 select_language() {
-  if [ ! -f "${DIR_REVERSE_PROXY}lang.conf" ]; then  # Если файла нет
+  if [ ! -f "${DIR_XCORE}/lang.conf" ]; then  # Если файла нет
     L=E
     hint " $(text 0) \n" 
     reading " $(text 1) " LANGUAGE
@@ -523,11 +526,11 @@ select_language() {
       2) L=R ;;   # Русский
       *) L=E ;;   # По умолчанию — английский
     esac
-    cat > "${DIR_REVERSE_PROXY}lang.conf" << EOF
+    cat > "${DIR_XCORE}/lang.conf" << EOF
 $L
 EOF
   else
-    L=$(cat "${DIR_REVERSE_PROXY}lang.conf")  # Загружаем язык
+    L=$(cat "${DIR_XCORE}/lang.conf")  # Загружаем язык
   fi
 }
 
@@ -630,9 +633,6 @@ banner_xcore() {
   echo " █░█ ░░ █▀▀█ █▀▀█ █▀▀█ █▀▀ "
   echo " ▄▀▄    █░░  █░░█ █▄▄▀ █▀▀ "
   echo " ▀░▀ ░░ ▀▀▀▀ ▀▀▀▀ ▀░▀▀ ▀▀▀ $VERSION_MANAGER"
-#  echo " █░█ ░░ █▀▀█ █▀▀ ▀█░█▀ █▀▀ █▀▀█ █▀▀ █▀▀ ░░ █▀▀█ █▀▀█ █▀▀█ █░█ █░░█  "
-#  echo " ▄▀▄ ▀▀ █▄▄▀ █▀▀ ░█▄█░ █▀▀ █▄▄▀ ▀▀█ █▀▀ ▀▀ █░░█ █▄▄▀ █░░█ ▄▀▄ █▄▄█  "
-#  echo " ▀░▀ ░░ ▀░▀▀ ▀▀▀ ░░▀░░ ▀▀▀ ▀░▀▀ ▀▀▀ ▀▀▀ ░░ █▀▀▀ ▀░▀▀ ▀▀▀▀ ▀░▀ ▄▄▄█  "
   echo
 }
 
@@ -651,7 +651,7 @@ warning_banner() {
 ###################################
 add_cron_rule() {
   local rule="$1"
-  local logged_rule="${rule} >> ${DIR_REVERSE_PROXY}cron_jobs.log 2>&1"
+  local logged_rule="${rule} >> ${DIR_XCORE}/cron_jobs.log 2>&1"
 
   ( crontab -l | grep -Fxq "$logged_rule" ) || ( crontab -l 2>/dev/null; echo "$logged_rule" ) | crontab -
 }
@@ -1063,7 +1063,7 @@ swapfile() {
   swapon /swapfile
   swapon --show
 
-  cat > ${DIR_REVERSE_PROXY}restart_warp.sh <<EOF
+  cat > ${DIR_XCORE}/restart_warp.sh <<EOF
 #!/bin/bash
 # Получаем количество занятого пространства в swap (в мегабайтах)
 SWAP_USED=\$(free -m | grep Swap | awk '{print \$3}')
@@ -1072,13 +1072,13 @@ if [ "\$SWAP_USED" -gt 200 ]; then
     # Перезапускаем warp-svc.service
     systemctl restart warp-svc.service
     # Записываем дату и время в лог-файл
-    echo "\$(date '+%Y-%m-%d %H:%M:%S') - warp-svc.service перезапущен из-за превышения swap" >> ${DIR_REVERSE_PROXY}warp_restart_time
+    echo "\$(date '+%Y-%m-%d %H:%M:%S') - warp-svc.service перезапущен из-за превышения swap" >> ${DIR_XCORE}/warp_restart_time
 fi
 EOF
-  chmod +x ${DIR_REVERSE_PROXY}restart_warp.sh
+  chmod +x ${DIR_XCORE}/restart_warp.sh
 
   crontab -l | grep -v -- "restart_warp.sh" | crontab -
-  add_cron_rule "* * * * * ${DIR_REVERSE_PROXY}restart_warp.sh"
+  add_cron_rule "* * * * * ${DIR_XCORE}/restart_warp.sh"
 }
 
 ###################################
@@ -1226,9 +1226,9 @@ EOF
 ###################################
 random_site() {
   info " $(text 79) "
-  mkdir -p /var/www/html/ ${DIR_REVERSE_PROXY}
+  mkdir -p /var/www/html/ ${DIR_XCORE}/
 
-  cd ${DIR_REVERSE_PROXY}
+  cd ${DIR_XCORE}/
 
   if [[ ! -d "simple-web-templates-main" ]]; then
       while ! wget -q --progress=dot:mega --timeout=30 --tries=10 --retry-connrefused "https://github.com/cortez24rus/simple-web-templates/archive/refs/heads/main.zip"; do
@@ -1583,20 +1583,20 @@ EOF
 xray_setup() {
   mkdir -p "${DIR_XRAY}"
 
-  while ! wget -q --progress=dot:mega --timeout=30 --tries=10 --retry-connrefused -P "${DIR_REVERSE_PROXY}" "https://github.com/XTLS/Xray-core/releases/download/v${VERSION_XRAY}/Xray-linux-64.zip"; do
+  while ! wget -q --progress=dot:mega --timeout=30 --tries=10 --retry-connrefused -P "${DIR_XCORE}/" "https://github.com/XTLS/Xray-core/releases/download/v${VERSION_XRAY}/Xray-linux-64.zip"; do
     warning " $(text 38) "
     sleep 3
   done
 
-  unzip -o "${DIR_REVERSE_PROXY}Xray-linux-64.*" -d "${DIR_XRAY}"
-  rm -f ${DIR_REVERSE_PROXY}Xray-linux-64.*
+  unzip -o "${DIR_XCORE}/Xray-linux-64.*" -d "${DIR_XRAY}"
+  rm -f ${DIR_XCORE}/Xray-linux-64.*
 }
 
 ###################################
 ### Xray config
 ###################################
 xray_config() {
-  cp -f ${DIR_REVERSE_PROXY}repo/conf_template/server_raw.json ${DIR_XRAY}config.json
+  cp -f ${DIR_XCORE}/repo/conf_template/server_raw.json ${DIR_XRAY}config.json
         
   sed -i \
     -e "s/USERNAME_TEMP/${USERNAME}/g" \
@@ -1608,7 +1608,7 @@ xray_config() {
 ### Xray service
 ###################################
 xray_service() {
-  mv -f ${DIR_REVERSE_PROXY}/repo/services/xray.service /etc/systemd/system/xray.service
+  mv -f ${DIR_XCORE}/repo/services/xray.service /etc/systemd/system/xray.service
 
   systemctl daemon-reload
   systemctl enable xray.service
@@ -1634,7 +1634,7 @@ xray_server_conf() {
 ###################################
 web_sub_page() {
   mkdir -p /var/www/${SUB_JSON_PATH}/vless_raw/
-  cp -r ${DIR_REVERSE_PROXY}repo/sub_page/* /var/www/${SUB_JSON_PATH}/
+  cp -r ${DIR_XCORE}/repo/sub_page/* /var/www/${SUB_JSON_PATH}/
 
   sed -i \
     -e "s/DOMAIN_TEMP/${DOMAIN}/g" \
@@ -1646,7 +1646,7 @@ web_sub_page() {
 ### Client configuration setup
 ###################################
 client_conf() {
-  cp -r ${DIR_REVERSE_PROXY}repo/conf_template/client_raw.json /var/www/${SUB_JSON_PATH}/vless_raw/${USERNAME}.json
+  cp -r ${DIR_XCORE}/repo/conf_template/client_raw.json /var/www/${SUB_JSON_PATH}/vless_raw/${USERNAME}.json
 
   sed -i \
     -e "s/DOMAIN_TEMP/${DOMAIN}/g" \
@@ -1666,26 +1666,26 @@ xray_client_conf() {
   tilda "$(text 10)"
 }
 
-xreverse_service() {
-  chmod +x ${DIR_REVERSE_PROXY}repo/services/xreverse.service
-  mv -f "${DIR_REVERSE_PROXY}repo/services/xreverse.service" "/etc/systemd/system/xreverse.service"
+xcore_service() {
+  chmod +x ${DIR_XCORE}/repo/services/xcore.service
+  mv -f "${DIR_XCORE}/repo/services/xcore.service" "/etc/systemd/system/xcore.service"
 
   systemctl daemon-reload
-  systemctl enable xreverse.service
-  systemctl start xreverse.service
-  systemctl restart xreverse.service
+  systemctl enable xcore.service
+  systemctl start xcore.service
+  systemctl restart xcore.service
 }
 
 ###################################
 ### BACKUP DIRECTORIES
 ###################################
 backup_dir() {
-  cat > ${DIR_REVERSE_PROXY}backup_dir.sh <<EOF
+  cat > ${DIR_XCORE}/backup_dir.sh <<EOF
 #!/bin/bash
 
 # Путь к директории резервного копирования
-DIR_REVERSE_PROXY="/usr/local/reverse_proxy/"
-BACKUP_DIR="\${DIR_REVERSE_PROXY}backup"
+DIR_XCORE="/opt/xcore/"
+BACKUP_DIR="\${DIR_XCORE}/backup"
 CURRENT_DATE=\$(date +"%y-%m-%d")
 ARCHIVE_NAME="\${BACKUP_DIR}/backup_\${CURRENT_DATE}.7z"
 
@@ -1693,7 +1693,7 @@ ARCHIVE_NAME="\${BACKUP_DIR}/backup_\${CURRENT_DATE}.7z"
 mkdir -p "\$BACKUP_DIR"
 
 # Архивируем все три директории в один архив
-7za a -mx9 "\$ARCHIVE_NAME" "/etc/nginx" "/etc/x-ui" "/etc/letsencrypt" || echo "Ошибка при создании архива"
+7za a -mx9 "\$ARCHIVE_NAME" "/etc/nginx" "/usr/local/etc/xray" "/etc/letsencrypt" || echo "Ошибка при создании архива"
 
 # Проверка успешного создания архива
 if [[ -f "\$ARCHIVE_NAME" ]]; then
@@ -1703,31 +1703,31 @@ else
 fi
 
 EOF
-  chmod +x ${DIR_REVERSE_PROXY}backup_dir.sh
-  bash "${DIR_REVERSE_PROXY}backup_dir.sh"
+  chmod +x ${DIR_XCORE}/backup_dir.sh
+  bash "${DIR_XCORE}/backup_dir.sh"
 
   crontab -l | grep -v -- "backup_dir.sh" | crontab -
-  add_cron_rule "0 0 * * * ${DIR_REVERSE_PROXY}backup_dir.sh"
+  add_cron_rule "0 0 * * * ${DIR_XCORE}/backup_dir.sh"
 }
 
 ###################################
 ### ROTATE BACKUPS
 ###################################
 rotation_backup() {
-  cat > ${DIR_REVERSE_PROXY}rotation_backup.sh <<EOF
+  cat > ${DIR_XCORE}/rotation_backup.sh <<EOF
 #!/bin/bash
 
-DIR_REVERSE_PROXY="/usr/local/reverse_proxy/"
-BACKUP_DIR="${DIR_REVERSE_PROXY}backup"
+DIR_XCORE="/opt/xcore/"
+BACKUP_DIR="${DIR_XCORE}/backup"
 DAY_TO_KEEP=6
 
 find "\$BACKUP_DIR" -type f -name "backup_*.7z" -mtime +\$DAY_TO_KEEP -exec rm -f {} \;
 EOF
-  chmod +x ${DIR_REVERSE_PROXY}rotation_backup.sh
-  bash "${DIR_REVERSE_PROXY}rotation_backup.sh"
+  chmod +x ${DIR_XCORE}/rotation_backup.sh
+  bash "${DIR_XCORE}/rotation_backup.sh"
 
   crontab -l | grep -v -- "rotation_backup.sh" | crontab -
-  add_cron_rule "5 0 * * * ${DIR_REVERSE_PROXY}rotation_backup.sh"
+  add_cron_rule "5 0 * * * ${DIR_XCORE}/rotation_backup.sh"
 }
 
 ###################################
@@ -1931,7 +1931,7 @@ migration(){
 ### Unzips the selected backup
 ###################################
 unzip_backup() {
-  BACKUP_DIR="${DIR_REVERSE_PROXY}backup"
+  BACKUP_DIR="${DIR_XCORE}/backup"
 
   if [[ ! -d "$BACKUP_DIR" ]]; then
     echo "Ошибка: Директория $BACKUP_DIR не существует."
@@ -1940,17 +1940,20 @@ unzip_backup() {
 
   echo
   hint " $(text 101) "
+
   mapfile -t backups < <(ls "$BACKUP_DIR"/backup_*.7z 2>/dev/null)
   if [[ ${#backups[@]} -eq 0 ]]; then
     echo "Нет доступных резервных копий."
     exit 1
   fi
+  
   for i in "${!backups[@]}"; do
     hint " $((i + 1))) $(basename "${backups[i]}")"
   done
 
   echo
   reading " $(text 102) " CHOICE_BACKUP
+  
   if [[ ! "$CHOICE_BACKUP" =~ ^[0-9]+$ ]] || (( CHOICE_BACKUP < 1 || CHOICE_BACKUP > ${#backups[@]} )); then
     echo "Ошибка: Неверный ввод."
     exit 1
@@ -1968,18 +1971,20 @@ unzip_backup() {
 ###################################
 backup_migration() {
   echo
-  x-ui stop
+  #x-ui stop
   
-  rm -rf /etc/x-ui/
+  rm -rf /usr/local/etc/xray/
   rm -rf /etc/nginx/
   rm -rf /etc/letsencrypt/
 
-  mv /tmp/restore/x-ui/ /etc/
+  mv /tmp/restore/xray/ /etc/
   mv /tmp/restore/nginx/ /etc/
   mv /tmp/restore/letsencrypt/ /etc/
 
+  systemctl restart xray
   systemctl restart nginx
-  x-ui restart
+  systemctl restart haproxy
+  systemctl restart xcore
   echo
 }
 
@@ -2251,7 +2256,7 @@ sync_client_configs() {
     CLIENT=$(jq ".outbounds[${OUT_VL_NUM}].settings.vnext[].users[]" $FILE_PATH)
   
     rm -rf ${FILE_PATH}
-    cp -r ${DIR_REVERSE_PROXY}repo/conf_template/client_raw.json ${FILE_PATH}
+    cp -r ${DIR_XCORE}/repo/conf_template/client_raw.json ${FILE_PATH}
   
     echo "$(jq ".outbounds[${OUT_VL_NUM}].settings.vnext[].users[] = ${CLIENT}" ${FILE_PATH})" > $FILE_PATH
     sed -i -e "s/DOMAIN_TEMP/${DOMAIN}/g" ${FILE_PATH}
@@ -2457,7 +2462,7 @@ log_clear() {
 ###################################
 ### Конфигурирование Xray core
 ###################################
-xreverse_proxy_menu() {
+xcore_proxy_menu() {
   while true; do
     clear
     banner_xcore
@@ -2515,7 +2520,7 @@ xreverse_proxy_menu() {
         sync_client_configs
         ;;
       0)
-        reverse_proxy_main_menu
+        xcore_manager
         ;;
       *)
         warning " $(text 76) "
@@ -2524,7 +2529,7 @@ xreverse_proxy_menu() {
   done
 }
 
-reverse_proxy_main_menu() {
+xcore_manager() {
   while true; do
     clear
     banner_xcore
@@ -2566,13 +2571,13 @@ reverse_proxy_main_menu() {
         [[ ${args[cert]} == "true" ]] && issuance_of_certificates
         [[ ${args[mon]} == "true" ]] && monitoring
         [[ ${args[shell]} == "true" ]] && shellinabox
-        update_reverse_proxy
+        update_xcore_proxy
         random_site
         [[ ${args[nginx]} == "true" ]] && nginx_setup
         haproxy_setup
-        [[ ${args[xcore]} == "true" ]] && xray_server_conf
-        [[ ${args[xcore]} == "true" ]] && xray_client_conf
-        xreverse_service
+        [[ ${args[xray]} == "true" ]] && xray_server_conf
+        [[ ${args[xray]} == "true" ]] && xray_client_conf
+        xcore_service
         write_defaults_to_file
 #        rotation_and_archiving
         [[ ${args[firewall]} == "true" ]] && enabling_security
@@ -2582,7 +2587,7 @@ reverse_proxy_main_menu() {
         log_clear
         ;;
       2)
-        if [ ! -d "/usr/local/reverse_proxy/backup" ]; then
+        if [ ! -d "/opt/xcore/backup" ]; then
           rotation_and_archiving
         fi
         restore_backup
@@ -2606,11 +2611,11 @@ reverse_proxy_main_menu() {
         traffic_stats
         ;;
       10)
-        rm -rf ${DIR_REVERSE_PROXY}lang.conf
+        rm -rf ${DIR_XCORE}/lang.conf
         select_language
         ;;
       13)
-        xreverse_proxy_menu
+        xcore_proxy_menu
         ;;
       0)
         clear
@@ -2638,7 +2643,7 @@ main() {
   check_operating_system
   echo
   select_language
-  reverse_proxy_main_menu
+  xcore_manager
 }
 
 main "$@"

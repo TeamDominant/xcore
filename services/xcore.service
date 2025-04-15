@@ -1,0 +1,16 @@
+[Unit]
+Description=X Core Service
+After=network.target
+
+[Service]
+User=root
+Group=root
+ExecStart=/opt/xcore/bin/go run main.go -dns=true
+WorkingDirectory=/opt/xcore/bin
+Restart=always
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target
