@@ -3,7 +3,7 @@
 ###################################
 ### Global values
 ###################################
-VERSION_MANAGER='0.7.5'
+VERSION_MANAGER='0.7.6'
 VERSION_XRAY='25.1.30'
 
 DIR_REVERSE_PROXY="/usr/local/reverse_proxy/"
@@ -224,8 +224,8 @@ E[84]="0. Exit script"
 R[84]="0. Выход из скрипта"
 E[85]="Press Enter to return to the menu..."
 R[85]="Нажмите Enter, чтобы вернуться в меню..."
-E[86]="Reverse proxy manager $VERSION_MANAGER"
-R[86]="Reverse proxy manager $VERSION_MANAGER"
+E[86]="X Core $VERSION_MANAGER"
+R[86]="X Core $VERSION_MANAGER"
 E[87]="1. Standard installation"
 R[87]="1. Стандартная установка"
 E[88]="2. Restore from a rescue copy."
@@ -240,12 +240,12 @@ E[92]="6. Integrate custom JSON subscription."
 R[92]="6. Интеграция кастомной JSON подписки."
 E[93]="7. Copy someone else's website to your server."
 R[93]="7. Скопировать чужой сайт на ваш сервер."
-E[94]=""
-R[94]=""
-E[95]=""
-R[95]=""
-E[96]="10. Find out the size of the directory."
-R[96]="10. Узнать размер директории."
+E[94]="8. Find out the size of the directory."
+R[94]="8. Узнать размер директории."
+E[95]="9. Traffic statistics."
+R[95]="9. Статистика трафика."
+E[96]="10. Change language."
+R[96]="10. Изменить язык."
 E[97]="Client migration initiation (experimental feature)."
 R[97]="Начало миграции клиентов (экспериментальная функция)."
 E[98]="Client migration is complete."
@@ -262,12 +262,10 @@ E[103]="Restoration is complete."
 R[103]="Восстановление завершено."
 E[104]="Restoration is complete."
 R[104]="Выбран архив:"
-E[105]="11. Traffic statistics."
-R[105]="11. Статистика трафика."
+E[105]=""
+R[105]=""
 E[106]="Traffic statistics:\n  1. By years \n  2. By months \n  3. By days \n  4. By hours"
 R[106]="Статистика трафика:\n  1. По годам \n  2. По месяцам \n  3. По дням \n  4. По часам"
-E[107]="12. Change language."
-R[107]="12. Изменить язык."
 
 ###################################
 ### Help output
@@ -2330,217 +2328,120 @@ get_dns_stats() {
   done
 }
 
+# Общая функция для отображения списка пользователей
+display_users() {
+  local API_URL="http://localhost:9952/users"
+  local field="$1"  # Поле для извлечения, например "enabled", "lim_ip", "renew", "sub_end"
+  
+  declare -gA user_map
+  local counter=0
+
+  # Получаем данные от API
+  response=$(curl -s -X GET "$API_URL")
+  if [ $? -ne 0 ]; then
+    warning "Ошибка: Не удалось подключиться к API"
+    return 1
+  fi
+
+  # Парсим JSON, извлекая email и указанное поле
+  mapfile -t users < <(echo "$response" | jq -r --arg field "$field" '.[] | [.email, .[$field]] | join("|")')
+
+  if [ ${#users[@]} -eq 0 ]; then
+    info "Нет пользователей для отображения"
+    return 1
+  fi
+
+  info " Список пользователей:"
+  for user in "${users[@]}"; do
+    IFS='|' read -r email value <<< "$user"
+    user_map[$counter]="$email"
+    echo " $((counter+1)). $email ($field: ${value:-не задано})"
+    ((counter++))
+  done
+
+  # Сохраняем user_map и users для использования в вызывающей функции
+  export user_map
+  export users
+  return 0
+}
+
+# Общая функция для обновления параметров
+update_user_param() {
+  local param_name="$1"  # Название параметра, например "lim_ip", "renew", "offset"
+  local api_url="$2"     # URL для PATCH-запроса
+  local prompt="$3"      # Текст для запроса нового значения
+
+  local param_value
+
+  # Запрос нового значения
+  read -p "$prompt: " param_value
+  clear
+
+  while true; do
+    # Получаем и отображаем список пользователей
+    display_users "$param_name"
+    if [ $? -ne 0 ]; then
+      return 1
+    fi
+
+    info " (Выбрано значение $param_name: $param_value)"
+    read -p " Введите номера пользователей (0 - выход, \"reset\" - изменить $param_name): " choice
+
+    if [[ "$choice" == "0" ]]; then
+      info "Выход..."
+      return
+    fi
+
+    if [[ "$choice" == "reset" ]]; then
+      clear
+      read -p "$prompt: " param_value
+      continue
+    fi
+
+    # Разбиваем ввод на массив номеров
+    choices=($(echo "$choice" | tr ',' ' ' | tr -s ' ' | tr ' ' '\n'))
+
+    # Проверяем каждый номер
+    for num in "${choices[@]}"; do
+      if [[ ! "$num" =~ ^[0-9]+$ ]] || (( num < 1 || num > ${#users[@]} )); then
+        warning "Некорректный номер пользователя: $num. Попробуйте снова."
+        continue 2
+      fi
+    done
+
+    clear
+    # Обновляем параметр для выбранных пользователей
+    for num in "${choices[@]}"; do
+      selected_email="${user_map[$((num-1))]}"
+      response=$(curl -s -X PATCH -d "email=$selected_email&$param_name=$param_value" "$api_url")
+      if [ $? -eq 0 ]; then
+        info "$param_name для $selected_email обновлено на $param_value"
+      else
+        warning "Ошибка при обновлении $param_name для $selected_email"
+      fi
+    done
+    echo
+  done
+}
+
+# Функция для включения/отключения пользователей
+toggle_user_status() {
+  update_user_param "enabled" "http://localhost:9952/set-enabled" "Введите true для включения и false отключения"
+}
+
+# Функция для установки лимита IP
 set_lim_ip() {
-  declare -A user_map
-  local counter=0
-
-  # Запрос лимита IP
-  read -p "Введите новый лимит IP: " lim_ip
-  clear
-
-  while true; do
-    # Получаем список пользователей через API
-    response=$(curl -s -X GET "http://127.0.0.1:9952/users")
-    if [ $? -ne 0 ]; then
-      echo "Ошибка подключения к API."
-      return 1
-    fi
-
-    # Парсим пользователей
-    mapfile -t users < <(echo "$response" | jq -r '.[] | "\(.email)|\(.lim_ip)"')
-    if [ ${#users[@]} -eq 0 ]; then
-      echo "Нет пользователей в ответе API."
-      return 1
-    fi
-
-    counter=0
-    info " Список пользователей:"
-    for user in "${users[@]}"; do
-      IFS='|' read -r email lim_ip_value <<< "$user"
-      user_map[$counter]="$email"
-      echo " $((counter+1)). $email (текущий лимит ${lim_ip_value:-не задан})"
-      ((counter++))
-    done
-    echo
-    echo " (Выбран лимит $lim_ip)"
-    read -p " Введите номер пользователя (0 - выход, \"reset\" - изменить лимит IP): " choice
-
-    if [[ "$choice" == "0" ]]; then
-      echo "Выход..."
-      return
-    fi
-
-    if [[ "$choice" == "reset" ]]; then
-      clear
-      read -p "Введите новый лимит IP: " lim_ip
-      continue
-    fi
-
-    # Разбиваем ввод на массив номеров
-    choices=($(echo "$choice" | tr ',' ' ' | tr -s ' ' | tr ' ' '\n'))
-
-    # Проверяем каждый номер
-    for num in "${choices[@]}"; do
-      if [[ ! "$num" =~ ^[0-9]+$ ]] || (( num < 1 || num > counter )); then
-        echo "Некорректный номер пользователя: $num. Попробуйте снова."
-        continue 2
-      fi
-    done
-
-    clear
-    # Обновляем лимит для выбранных пользователей
-    for num in "${choices[@]}"; do
-      selected_email="${user_map[$((num-1))]}"
-      curl -X PATCH -d "username=${selected_email}&lim_ip=${lim_ip}" "http://127.0.0.1:9952/update_lim_ip"
-    done
-    echo
-  done
+  update_user_param "lim_ip" "http://127.0.0.1:9952/update_lim_ip" "Введите новый лимит IP"
 }
 
+# Функция для обновления значения renew
 update_user_renew() {
-  declare -A user_map
-  local counter=0
-
-  # Запрос значения renew
-  read -p "Введите новое значение renew: " renew_value
-  clear
-
-  while true; do
-    # Получаем список пользователей через API
-    response=$(curl -s -X GET "http://localhost:9952/users")
-    if [ $? -ne 0 ]; then
-      warning "Ошибка подключения к API."
-      return 1
-    fi
-
-    # Парсим пользователей (email и renew)
-    mapfile -t users < <(echo "$response" | jq -r '.[] | "\(.email)|\(.renew)"')
-    if [ ${#users[@]} -eq 0 ]; then
-      info "Нет пользователей в ответе API."
-      return 1
-    fi
-
-    counter=0
-    info " Список пользователей:"
-    for user in "${users[@]}"; do
-      IFS='|' read -r email renew <<< "$user"
-      user_map[$counter]="$email"
-      echo " $((counter+1)). $email (текущий renew: ${renew:-не задан})"
-      ((counter++))
-    done
-    echo
-    echo " (Выбрано значение renew: $renew_value)"
-    read -p " Введите номера пользователей (через запятую, 0 - выход, \"reset\" - изменить renew): " choice
-
-    if [[ "$choice" == "0" ]]; then
-      info "Выход..."
-      return
-    fi
-
-    if [[ "$choice" == "reset" ]]; then
-      clear
-      read -p "Введите новое значение renew: " renew_value
-      continue
-    fi
-
-    # Разбиваем ввод на массив номеров
-    choices=($(echo "$choice" | tr ',' ' ' | tr -s ' ' | tr ' ' '\n'))
-
-    # Проверяем каждый номер
-    for num in "${choices[@]}"; do
-      if [[ ! "$num" =~ ^[0-9]+$ ]] || (( num < 1 || num > counter )); then
-        warning "Некорректный номер пользователя: $num. Попробуйте снова."
-        continue 2
-      fi
-    done
-
-    clear
-    # Обновляем renew для выбранных пользователей
-    for num in "${choices[@]}"; do
-      selected_email="${user_map[$((num-1))]}"
-      response=$(curl -s -X PATCH -d "email=$selected_email&renew=$renew_value" "http://127.0.0.1:9952/update_renew")
-      if [ $? -eq 0 ]; then
-        info "Автопродление для $selected_email обновлено на $renew_value"
-      else
-        warning "Ошибка при обновлении автопродления для $selected_email"
-      fi
-    done
-    echo
-    sleep 2
-  done
+  update_user_param "renew" "http://127.0.0.1:9952/update_renew" "Введите новое значение renew"
 }
 
+# Функция для корректировки даты подписки
 adjust_user_subscription_date() {
-  declare -A user_map
-  local counter=0
-
-  # Запрос значения offset
-  read -p "Введите значение offset (например, +1, -1:3, 0): " offset_value
-  clear
-
-  while true; do
-    # Получаем список пользователей через API
-    response=$(curl -s -X GET "http://localhost:9952/users")
-    if [ $? -ne 0 ]; then
-      warning "Ошибка подключения к API."
-      return 1
-    fi
-
-    # Парсим пользователей (email и sub_end)
-    mapfile -t users < <(echo "$response" | jq -r '.[] | "\(.email)|\(.sub_end)"')
-    if [ ${#users[@]} -eq 0 ]; then
-      info "Нет пользователей в ответе API."
-      return 1
-    fi
-
-    counter=0
-    info " Список пользователей:"
-    for user in "${users[@]}"; do
-      IFS='|' read -r email sub_end <<< "$user"
-      user_map[$counter]="$email"
-      echo " $((counter+1)). $email (дата окончания: ${sub_end:-не задана})"
-      ((counter++))
-    done
-    echo
-    echo " (Выбрано значение offset: $offset_value)"
-    read -p " Введите номера пользователей (через запятую, 0 - выход, \"reset\" - изменить offset): " choice
-
-    if [[ "$choice" == "0" ]]; then
-      info "Выход..."
-      return
-    fi
-
-    if [[ "$choice" == "reset" ]]; then
-      clear
-      read -p "Введите новое значение offset (например, +1, -1:3, 0): " offset_value
-      continue
-    fi
-
-    # Разбиваем ввод на массив номеров
-    choices=($(echo "$choice" | tr ',' ' ' | tr -s ' ' | tr ' ' '\n'))
-
-    # Проверяем каждый номер
-    for num in "${choices[@]}"; do
-      if [[ ! "$num" =~ ^[0-9]+$ ]] || (( num < 1 || num > counter )); then
-        warning "Некорректный номер пользователя: $num. Попробуйте снова."
-        continue 2
-      fi
-    done
-
-    clear
-    # Обновляем sub_end для выбранных пользователей
-    for num in "${choices[@]}"; do
-      selected_email="${user_map[$((num-1))]}"
-      response=$(curl -s -X PATCH -d "email=$selected_email&offset=$offset_value" "http://localhost:9952/adjust-date")
-      if [ $? -eq 0 ]; then
-        info "Дата подписки для $selected_email обновлена с offset $offset_value"
-      else
-        warning "Ошибка при обновлении даты подписки для $selected_email"
-      fi
-    done
-    echo
-    sleep 2
-  done
+  update_user_param "sub_end" "http://localhost:9952/adjust-date" "Введите значение offset (например, +1, -1:3, 0)"
 }
 
 ###################################
@@ -2560,19 +2461,20 @@ xreverse_proxy_menu() {
     tilda "|--------------------------------------------------------------------------|"
     info " $(text 86) "                      # MENU
     tilda "|--------------------------------------------------------------------------|"
-    info " 1. Вывод статистики."
-    info " 2. Вывод статистики dns запросов клиентов." 
-    echo    
-    info " 3. Добавление пользователей."
-    info " 4. Удаление пользователей."
-    info " 5. Включение/Отключение клиента."
+    info " 1. Статистика Xray сервера"
+    info " 2. DNS-запросы клиентов"
     echo
-    info " 6. Синхронизация клиентских конфигураций."
-    info " 7. Смена лимита ip адресов для пользователя."
-    info " 8. Обновление автопродления подписки пользователя."
-    info " 9. Изменение даты окончания подписки."
+    info " 3. Добавить клиента"
+    info " 4. Удалить клиента"
+    info " 5. Включить / Отключить клиента"
     echo
-    info " 0. Назад в основное меню."         # 0. Return
+    info " 6. Установить лимит IP-адресов"
+    info " 7. Обновить автопродление подписки"
+    info " 8. Изменить дату окончания подписки"
+    echo
+    info " 9. Синхронизация конфигураций"
+    echo
+    info " $(text 84) "                      # Exit
     tilda "|--------------------------------------------------------------------------|"
     echo
     reading " $(text 1) " CHOICE_MENU        # Choise
@@ -2600,16 +2502,16 @@ xreverse_proxy_menu() {
         toggle_user_status
         ;;
       6)
-        sync_client_configs
-        ;;
-      7)
         set_lim_ip
         ;;
-      8)
+      7)
         update_user_renew
         ;;
-      9)
+      8)
         adjust_user_subscription_date
+        ;;
+      9)
+        sync_client_configs
         ;;
       0)
         reverse_proxy_main_menu
@@ -2637,9 +2539,9 @@ reverse_proxy_main_menu() {
     echo
     info " $(text 93) "                      # 7. Steal web site
     echo
-    info " $(text 96) "                      # 10. Directory size
-    info " $(text 105) "                     # 11. Traffic statistics
-    info " $(text 107) "                     # 12. Change language
+    info " $(text 94) "                      # 8. Directory size
+    info " $(text 95) "                      # 9. Traffic statistics
+    info " $(text 96) "                      # 10. Change language
     echo
     info " 13. Конфигурирование Xray "       # 13. Конфигурирование Xray
     echo
@@ -2698,13 +2600,13 @@ reverse_proxy_main_menu() {
       7)
         download_website
         ;;
-      10)
+      8)
         directory_size
         ;;
-      11)
+      9)
         traffic_stats
         ;;
-      12)
+      10)
         rm -rf ${DIR_REVERSE_PROXY}lang.conf
         select_language
         ;;

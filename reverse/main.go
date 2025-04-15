@@ -1555,19 +1555,28 @@ func setEnabledHandler(memDB *sql.DB) http.HandlerFunc {
 		email := r.FormValue("email")
 		enabledStr := r.FormValue("enabled")
 
-		if email == "" || enabledStr == "" {
-			http.Error(w, "email и enabled обязательны", http.StatusBadRequest)
-			return
-		}
+		if email == "" {
+            http.Error(w, "email обязателен", http.StatusBadRequest)
+            return
+        }
 
-		enabled, err := strconv.ParseBool(enabledStr)
-		if err != nil {
-			http.Error(w, "enabled должны быть true или false", http.StatusBadRequest)
-			return
-		}
+        // Устанавливаем значение enabled: по умолчанию true, если параметр не передан
+        var enabled bool
+        if enabledStr == "" {
+            enabled = true
+            enabledStr = "true" // Для записи в базу и логов
+        } else {
+            var err error
+            enabled, err = strconv.ParseBool(enabledStr)
+            if err != nil {
+                http.Error(w, "enabled должно быть true или false", http.StatusBadRequest)
+                return
+            }
+        }
 
 		// Извлекаем uuid из базы данных по email
 		var uuid string
+		var err error
 		err = memDB.QueryRow("SELECT uuid FROM clients_stats WHERE email = ?", email).Scan(&uuid)
 		if err != nil {
 			if err == sql.ErrNoRows {
@@ -1585,6 +1594,9 @@ func setEnabledHandler(memDB *sql.DB) http.HandlerFunc {
 			http.Error(w, "Ошибка обновления файла авторизация", http.StatusInternalServerError)
 			return
 		}
+
+		// Обновляем значение enabled в memDB сразу
+		updateEnabledInDB(memDB, uuid, enabledStr)
 
 		log.Printf("Для email %s (uuid %s) установлено значение = %t", email, uuid, enabled)
 		w.WriteHeader(http.StatusOK)
