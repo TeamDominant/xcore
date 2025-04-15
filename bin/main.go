@@ -51,6 +51,7 @@ var (
 	clientPreviousStats string
 	notifiedUsers       = make(map[string]bool) // Глобальная карта для отслеживания уведомлений
 	notifiedMutex       sync.Mutex
+	luaMutex            sync.Mutex
 )
 
 // Глобальные регулярные выражения
@@ -1478,6 +1479,9 @@ func adjustDateOffsetHandler(memDB *sql.DB) http.HandlerFunc {
 			return
 		}
 
+		dbMutex.Lock()
+        defer dbMutex.Unlock()
+
 		baseDate := time.Now().UTC()
 
 		var subEndStr string
@@ -1607,6 +1611,9 @@ func setEnabledHandler(memDB *sql.DB) http.HandlerFunc {
 			http.Error(w, "Ошибка сервера при запросе к БД", http.StatusInternalServerError)
 			return
 		}
+
+		luaMutex.Lock()
+        defer luaMutex.Unlock()
 
 		err = updateLuaUuid(uuid, enabled)
 		if err != nil {
@@ -1949,11 +1956,10 @@ func main() {
 				}
 
 				// Синхронизация данных
-				log.Println("Начало синхронизации данных с файлом...")
 				if err := syncToFileDB(memDB); err != nil {
 					log.Printf("Ошибка синхронизации: %v", err)
 				} else {
-					log.Println("Данные успешно синхронизированы")
+					log.Println("База данных успешно синхронизирована.")
 				}
 			case <-ctx.Done():
 				return
