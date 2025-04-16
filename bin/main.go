@@ -1042,12 +1042,12 @@ type User struct {
 func usersHandler(memDB *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		
+
 		if r.Method != http.MethodGet {
 			http.Error(w, "Неверный метод. Используйте GET", http.StatusMethodNotAllowed)
 			return
 		}
-		
+
 		if memDB == nil {
 			http.Error(w, "База данных не инициализирована", http.StatusInternalServerError)
 			return
@@ -1097,19 +1097,19 @@ func statsHandler(memDB *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Устанавливаем заголовок ответа
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		
+
 		// Проверяем, что используется метод GET
 		if r.Method != http.MethodGet {
 			http.Error(w, "Неверный метод. Используйте GET", http.StatusMethodNotAllowed)
 			return
 		}
-		
+
 		// Проверяем, что база данных инициализирована
 		if memDB == nil {
 			http.Error(w, "База данных не инициализирована", http.StatusInternalServerError)
 			return
 		}
-		
+
 		dbMutex.Lock()
 		defer dbMutex.Unlock()
 
@@ -1238,37 +1238,37 @@ func statsHandler(memDB *sql.DB) http.HandlerFunc {
 func dnsStatsHandler(memDB *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		
+
 		if r.Method != http.MethodGet {
 			http.Error(w, "Неверный метод. Используйте GET", http.StatusMethodNotAllowed)
 			return
 		}
-		
+
 		if memDB == nil {
 			http.Error(w, "База данных не инициализирована", http.StatusInternalServerError)
 			return
 		}
-		
+
 		email := r.URL.Query().Get("email")
 		count := r.URL.Query().Get("count")
-		
+
 		if email == "" {
 			http.Error(w, "Missing email parameter", http.StatusBadRequest)
 			return
 		}
-		
+
 		if count == "" {
 			count = "20"
 		}
-		
+
 		if _, err := strconv.Atoi(count); err != nil {
 			http.Error(w, "Invalid count parameter", http.StatusBadRequest)
 			return
 		}
-		
+
 		dbMutex.Lock()
 		defer dbMutex.Unlock()
-		
+
 		stats := " 📊 Статистика dns запросов:\n============================\n"
 		stats += fmt.Sprintf("%-12s %-6s %-s\n", "Email", "Count", "Domain")
 		stats += "-------------------------------------------------------------\n"
@@ -1758,6 +1758,9 @@ func syncToFileDB(memDB *sql.DB) error {
 	_, err := os.Stat(config.DatabasePath)
 	fileExists := !os.IsNotExist(err)
 
+	dbMutex.Lock()
+	defer dbMutex.Unlock()
+
 	// Открываем или создаем fileDB
 	fileDB, err := sql.Open("sqlite3", config.DatabasePath)
 	if err != nil {
@@ -1938,7 +1941,7 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		ticker := time.NewTicker(5 * time.Minute)
+		ticker := time.NewTicker(1 * time.Minute)
 		defer ticker.Stop()
 		for {
 			select {
@@ -1978,7 +1981,7 @@ func main() {
 			select {
 			case <-ticker.C:
 				// starttime := time.Now()
-				
+
 				clients := extractUsersXrayServer()
 				if err := addUserToDB(memDB, clients); err != nil {
 					log.Printf("Ошибка при добавлении пользователя: %v", err)
@@ -1986,7 +1989,7 @@ func main() {
 				if err := delUserFromDB(memDB, clients); err != nil {
 					log.Printf("Ошибка при удалении пользователей: %v", err)
 				}
-				
+
 				apiData, err := getApiResponse()
 				if err != nil {
 					log.Printf("Ошибка получения данных из API: %v", err)
@@ -1995,7 +1998,7 @@ func main() {
 					updateClientStats(memDB, apiData)
 				}
 				readNewLines(memDB, accessLog, &offset)
-				
+
 				// elapsed := time.Since(starttime)
 				// fmt.Printf("Время выполнения программы: %s\n", elapsed)
 			case <-ctx.Done():
