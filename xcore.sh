@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 
 ###################################
-### Global values
+### GLOBAL CONSTANTS AND VARIABLES
 ###################################
-VERSION_MANAGER='0.8.5'
+VERSION_MANAGER='0.9.7'
 VERSION_XRAY='25.1.30'
 
 DIR_XCORE="/opt/xcore"
-DIR_XRAY="/usr/local/etc/xray/"
-LUA_PATH="/etc/haproxy/.auth.lua"
+DIR_XRAY="/usr/local/etc/xray"
+DIR_HAPROXY="/etc/haproxy"
 
 REPO_URL="https://github.com/cortez24rus/XCore/archive/refs/heads/main.tar.gz"
 
 ###################################
-### Initialization and Declarations
+### INITIALIZATION AND DECLARATIONS
 ###################################
 declare -A defaults
 declare -A args
@@ -21,12 +21,12 @@ declare -A regex
 declare -A generate
 
 ###################################
-### Regex Patterns for Validation
+### REGEX PATTERNS FOR VALIDATION
 ###################################
 regex[domain]="^([a-zA-Z0-9-]+)\.([a-zA-Z0-9-]+\.[a-zA-Z]{2,})$"
 regex[port]="^[1-9][0-9]*$"
 regex[username]="^[a-zA-Z0-9]+$"
-regex[ip]="^([0-9]{1,3}\.){3}[0-9]{1,3}$"
+regex[ipv4]="^([0-9]{1,3}\.){3}[0-9]{1,3}$"
 regex[tgbot_token]="^[0-9]{8,10}:[a-zA-Z0-9_-]{35}$"
 regex[tgbot_admins]="^[a-zA-Z][a-zA-Z0-9_]{4,31}(,[a-zA-Z][a-zA-Z0-9_]{4,31})*$"
 regex[domain_port]="^[a-zA-Z0-9]+([-.][a-zA-Z0-9]+)*\.[a-zA-Z]{2,}(:[1-9][0-9]*)?$"
@@ -35,7 +35,7 @@ regex[url]="^(http|https)://([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})(:[0-9]{1,5})?(/.*)?$"
 generate[path]="tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 30"
 
 ###################################
-### INFO
+### OUTPUT FORMATTING FUNCTIONS
 ###################################
 out_data()   { echo -e "\e[1;33m$1\033[0m \033[1;37m$2\033[0m"; }
 tilda()      { echo -e "\033[31m\033[38;5;214m$*\033[0m"; }
@@ -49,7 +49,7 @@ text()       { eval echo "\${${L}[$*]}"; }
 text_eval()  { eval echo "\$(eval echo "\${${L}[$*]}")"; }
 
 ###################################
-### Languages
+### LANGUAGE STRINGS
 ###################################
 E[0]="Language:\n  1. English (default) \n  2. Русский"
 R[0]="Язык:\n  1. English (по умолчанию) \n  2. Русский"
@@ -235,16 +235,16 @@ E[90]="4. Change the domain name for the proxy."
 R[90]="4. Изменить доменное имя для прокси."
 E[91]="5. Forced reissue of certificates."
 R[91]="5. Принудительный перевыпуск сертификатов."
-E[92]="6. Integrate custom JSON subscription."
-R[92]="6. Интеграция кастомной JSON подписки."
-E[93]="7. Copy someone else's website to your server."
-R[93]="7. Скопировать чужой сайт на ваш сервер."
-E[94]="8. Find out the size of the directory."
-R[94]="8. Узнать размер директории."
-E[95]="9. Traffic statistics."
-R[95]="9. Статистика трафика."
-E[96]="10. Change language."
-R[96]="10. Изменить язык."
+E[92]="6. Copy someone else's website to your server."
+R[92]="6. Скопировать чужой сайт на ваш сервер."
+E[93]="7. Find out the size of the directory."
+R[93]="7. Узнать размер директории."
+E[94]="8. Traffic statistics."
+R[94]="8. Статистика трафика."
+E[95]="9. Change language."
+R[95]="9. Изменить язык."
+E[96]="X. Xray management."
+R[96]="X. Управление Xray."
 E[97]="Client migration initiation (experimental feature)."
 R[97]="Начало миграции клиентов (экспериментальная функция)."
 E[98]="Client migration is complete."
@@ -267,9 +267,9 @@ E[106]="Traffic statistics:\n  1. By years \n  2. By months \n  3. By days \n  4
 R[106]="Статистика трафика:\n  1. По годам \n  2. По месяцам \n  3. По дням \n  4. По часам"
 
 ###################################
-### Help output
+### HELP MESSAGE DISPLAY
 ###################################
-show_help() {
+display_help_message() {
   echo
   echo "Usage: xcore [-u|--utils <true|false>] [-a|--addu <true|false>]"
   echo "         [-r|--autoupd <true|false>] [-b|--bbr <true|false>] [-i|--ipv6 <true|false>] [-w|--warp <true|false>]"
@@ -317,9 +317,9 @@ show_help() {
 }
 
 ###################################
-### X Core manager
+### X CORE UPDATE MANAGER
 ###################################
-update_xcore() {
+update_xcore_manager() {
   info " Script update and integration."
 
   # Получение последней версии из репозитория
@@ -348,20 +348,20 @@ update_xcore() {
   REPO_URL="https://api.github.com/repos/cortez24rus/XCore/tarball/main"
   mkdir -p "${DIR_XCORE}/repo/"
   wget --header="Authorization: Bearer $TOKEN" -qO- $REPO_URL | tar xz --strip-components=1 -C "${DIR_XCORE}/repo/"
-  
+
   chmod +x "${DIR_XCORE}/repo/xcore.sh"
   ln -sf "${DIR_XCORE}/repo/xcore.sh" /usr/local/bin/xcore
 
   crontab -l | grep -v -- "--update" | crontab -
-  add_cron_rule "0 0 * * * /usr/local/xcore/repo/xcore.sh --update"
+  schedule_cron_job "0 0 * * * /opt/xcore/repo/xcore.sh --update"
 
   tilda "\n|-----------------------------------------------------------------------------|\n"
 }
 
 ###################################
-### Reading values ​​from file
-################################### 
-read_defaults_from_file() {
+### LOAD DEFAULTS FROM CONFIG FILE
+###################################
+load_defaults_from_config() {
   if [[ -f "${DIR_XCORE}/default.conf" ]]; then
     # Чтение и выполнение строк из файла
     while IFS= read -r line; do
@@ -390,9 +390,9 @@ read_defaults_from_file() {
 }
 
 ###################################
-### Writing values ​​to a file
+### SAVE DEFAULTS TO CONFIG FILE
 ###################################
-write_defaults_to_file() {
+save_defaults_to_config() {
   cat > "${DIR_XCORE}/default.conf"<<EOF
 defaults[utils]=false
 defaults[addu]=false
@@ -413,17 +413,17 @@ EOF
 }
 
 ###################################
-### Lowercase characters
-################################### 
-normalize_case() {
+### NORMALIZE CASE FOR ARGUMENTS
+###################################
+normalize_argument_case() {
   local key=$1
   args[$key]="${args[$key],,}"
 }
 
 ###################################
-### Validation of true/false value
+### VALIDATE BOOLEAN VALUES
 ###################################
-validate_true_false() {
+validate_boolean_value() {
   local key=$1
   local value=$2
   case ${value} in
@@ -441,7 +441,7 @@ validate_true_false() {
 }
 
 ###################################
-### Parse args
+### PARSE COMMAND-LINE ARGUMENTS
 ###################################
 declare -A arg_map=(
   [-u]=utils      [--utils]=utils
@@ -461,9 +461,9 @@ declare -A arg_map=(
   [-g]=generate   [--generate]=generate
 )
 
-parse_args() {
+parse_command_line_args() {
   local opts
-  opts=$(getopt -o hu:a:r:b:i:w:c:m:l:n:x:f:s:g --long utils:,addu:,autoupd:,bbr:,ipv6:,warp:,cert:,mon:,shell:,nginx:,xray:,custom:,firewall:,ssh:,generate:,update,depers,help -- "$@")
+  opts=$(getopt -o hu:a:r:b:i:w:c:m:l:n:x:f:s:g --long utils:,addu:,autoupd:,bbr:,ipv6:,warp:,cert:,mon:,shell:,nginx:,xray:,custom:,firewall:,ssh:,generate:,update,help -- "$@")
 
   if [[ $? -ne 0 ]]; then
     return 1
@@ -474,12 +474,7 @@ parse_args() {
     case $1 in
       --update)
         echo
-        update_xcore
-        exit 0
-        ;;
-      --depers)
-        echo "Depersonalization database..."
-        depersonalization_db
+        update_xcore_manager
         exit 0
         ;;
       -h|--help)
@@ -493,8 +488,8 @@ parse_args() {
         if [[ -n "${arg_map[$1]}" ]]; then
           local key="${arg_map[$1]}"
           args[$key]="$2"
-          normalize_case "$key"
-          validate_true_false "$key" "$2" || return 1
+          normalize_argument_case "$key"
+          validate_boolean_value "$key" "$2" || return 1
           shift 2
           continue
         fi
@@ -512,7 +507,7 @@ parse_args() {
 }
 
 ###################################
-### Logging
+### LOGGING SETUP
 ###################################
 enable_logging() {
   mkdir -p ${DIR_XCORE}/
@@ -525,9 +520,9 @@ disable_logging() {
 }
 
 ###################################
-### Language selection
+### LANGUAGE SELECTION
 ###################################
-select_language() {
+configure_language() {
   if [ ! -f "${DIR_XCORE}/lang.conf" ]; then  # Если файла нет
     L=E
     hint " $(text 0) \n" 
@@ -547,9 +542,9 @@ EOF
 }
 
 ###################################
-### Checking the operating system
+### OPERATING SYSTEM DETECTION
 ###################################
-check_operating_system() {
+detect_operating_system() {
   if [ -s /etc/os-release ]; then
     SYS="$(grep -i pretty_name /etc/os-release | cut -d \" -f2)"
   elif [ -x "$(type -p hostnamectl)" ]; then
@@ -590,9 +585,9 @@ check_operating_system() {
 }
 
 ###################################
-### Checking and installing dependencies
+### DEPENDENCY CHECK AND INSTALLATION
 ###################################
-check_dependencies() {
+install_dependencies() {
   # Зависимости, необходимые для трех основных систем
   [ "${SYSTEM}" = 'CentOS' ] && ${PACKAGE_INSTALL[int]} vim-common epel-release
   DEPS_CHECK=("ping" "wget" "curl" "systemctl" "ip" "sudo")
@@ -612,35 +607,38 @@ check_dependencies() {
 }
 
 ###################################
-### Root check
+### ROOT PRIVILEGE CHECK
 ###################################
-check_root() {
+verify_root_privileges() {
   if [[ $EUID -ne 0 ]]; then
     error " $(text 8) "
   fi
 }
 
 ###################################
-### Obtaining your external IP address
+### EXTERNAL IP ADDRESS DETECTION
 ###################################
-check_ip() {
-  IP4_REGEX="^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$"
-  IP4=$(ip route get 8.8.8.8 2>/dev/null | grep -Po -- 'src \K\S*')
+detect_external_ip() {
+  IP4=$(curl -s https://cloudflare.com/cdn-cgi/trace | grep "ip" | cut -d "=" -f 2)
 
-  if [[ ! $IP4 =~ $IP4_REGEX ]]; then
-      IP4=$(curl -s --max-time 5 ipinfo.io/ip 2>/dev/null)
+  if [[ ! $IP4 =~ ${regex[ipv4]} ]]; then
+    IP4=$(curl -s ipinfo.io/ip)
   fi
 
-  if [[ ! $IP4 =~ $IP4_REGEX ]]; then
+  if [[ ! $IP4 =~ ${regex[ipv4]} ]]; then
+    IP4=$(curl -s 2ip.io)
+  fi
+
+  if [[ ! $IP4 =~ ${regex[ipv4]} ]]; then
     echo "Не удалось получить внешний IP."
     return 1
   fi
 }
 
 ###################################
-### Banner
+### BANNER DISPLAY
 ###################################
-banner_xcore() {
+display_xcore_banner() {
   echo
   echo " █░█ ░░ █▀▀█ █▀▀█ █▀▀█ █▀▀ "
   echo " ▄▀▄    █░░  █░░█ █▄▄▀ █▀▀ "
@@ -649,9 +647,9 @@ banner_xcore() {
 }
 
 ###################################
-### Installation request
+### PRE-INSTALLATION WARNING
 ###################################
-warning_banner() {
+display_pre_install_warning() {
   warning " $(text 5) "
   echo
   info " $(text 6) "
@@ -659,9 +657,9 @@ warning_banner() {
 }
 
 ###################################
-### Cron rules
+### CRON JOB MANAGEMENT
 ###################################
-add_cron_rule() {
+schedule_cron_job() {
   local rule="$1"
   local logged_rule="${rule} >> ${DIR_XCORE}/cron_jobs.log 2>&1"
 
@@ -669,9 +667,9 @@ add_cron_rule() {
 }
 
 ###################################
-### Request and response from Cloudflare API
+### CLOUDFLARE API TEST REQUEST
 ###################################
-get_test_response() {
+fetch_cloudflare_test_response() {
   testdomain=$(echo "${DOMAIN}" | rev | cut -d '.' -f 1-2 | rev)
 
   if [[ "$CFTOKEN" =~ [A-Z] ]]; then
@@ -682,9 +680,9 @@ get_test_response() {
 }
 
 ###################################
-### Function to clean the URL (removes the protocol, port, and path)
+### URL CLEANUP UTILITY
 ###################################
-clean_url() {
+clean_url_string() {
   local INPUT_URL_L="$1"  # Входной URL, который нужно очистить от префикса, порта и пути.
   # Убираем префикс https:// или http:// и порт/путь
   local CLEANED_URL_L=$(echo "$INPUT_URL_L" | sed -E 's/^https?:\/\///' | sed -E 's/(:[0-9]+)?(\/[a-zA-Z0-9_\-\/]+)?$//')
@@ -692,9 +690,9 @@ clean_url() {
 }
 
 ###################################
-### Function to crop the domain to the last two parts
+### DOMAIN CROPPING UTILITY
 ###################################
-crop_domain() {
+crop_domain_to_base() {
   local DOMAIN_L=$1  # Получаем домен как аргумент
   IFS='.' read -r -a parts <<< "$DOMAIN_L"  # Разбиваем домен на части по точкам.
 
@@ -709,9 +707,9 @@ crop_domain() {
 }
 
 ###################################
-### Domain validation in cloudflare
+### CLOUDFLARE TOKEN VALIDATION
 ###################################
-check_cf_token() {
+validate_cloudflare_token() {
   while ! echo "$test_response" | grep -qE "\"${testdomain}\"|\"#dns_records:edit\"|\"#dns_records:read\"|\"#zone:read\""; do
     DOMAIN=""
     EMAIL=""
@@ -719,7 +717,7 @@ check_cf_token() {
 
     while [[ -z "$DOMAIN" ]]; do
       reading " $(text 13) " DOMAIN
-      DOMAIN=$(clean_url "$DOMAIN")
+      DOMAIN=$(clean_url_string "$DOMAIN")
     done
     echo
     while [[ -z $EMAIL ]]; do
@@ -730,15 +728,15 @@ check_cf_token() {
       reading " $(text 16) " CFTOKEN
     done
 
-    get_test_response
+    fetch_cloudflare_test_response
     info " $(text 17) "
   done
 }
 
 ###################################
-### Processing paths with a loop
+### PATH VALIDATION AND PROCESSING
 ###################################
-validate_path() {
+validate_and_process_path() {
   local VARIABLE_NAME="$1"
   local PATH_VALUE
 
@@ -785,32 +783,32 @@ validate_path() {
 }
 
 ###################################
-### Data entry
+### USER DATA INPUT COLLECTION
 ###################################
-data_entry() {
+collect_user_data() {
   tilda "$(text 10)"
 
   reading " $(text 11) " USERNAME
   echo
   reading " $(text 12) " PASSWORD
-  [[ ${args[addu]} == "true" ]] && add_user
+  [[ ${args[addu]} == "true" ]] && create_system_user
 
   tilda "$(text 10)"
 
-  check_cf_token
+  validate_cloudflare_token
 
   if [[ ${args[generate]} == "true" ]]; then
     SUB_JSON_PATH=$(eval ${generate[path]})
   else
     echo
-    validate_path SUB_JSON_PATH
+    validate_and_process_path SUB_JSON_PATH
   fi
   if [[ ${args[mon]} == "true" ]]; then
     if [[ ${args[generate]} == "true" ]]; then
       METRICS=$(eval ${generate[path]})
     else
       echo
-      validate_path METRICS
+      validate_and_process_path METRICS
     fi
   fi
   if [[ ${args[shell]} == "true" ]]; then
@@ -818,7 +816,7 @@ data_entry() {
       SHELLBOX=$(eval ${generate[path]})
     else
       echo
-      validate_path SHELLBOX
+      validate_and_process_path SHELLBOX
     fi
   fi
 
@@ -857,118 +855,144 @@ data_entry() {
       SSH_OK=false
     fi
   fi
-  
+
   tilda "$(text 10)"
 }
 
 ###################################
-### Install NGINX
+### NGINX INSTALLATION
 ###################################
-nginx_gpg() {
+install_nginx() {
   case "$SYSTEM" in
-    Debian)
-      ${PACKAGE_INSTALL[int]} debian-archive-keyring
-      curl https://nginx.org/keys/nginx_signing.key | gpg --dearmor \
-        | tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null
-      gpg --dry-run --quiet --no-keyring --import --import-options import-show /usr/share/keyrings/nginx-archive-keyring.gpg
-      echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] \
-      http://nginx.org/packages/debian `lsb_release -cs` nginx" \
-        | tee /etc/apt/sources.list.d/nginx.list
-      echo -e "Package: *\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 900\n" \
-        | tee /etc/apt/preferences.d/99nginx
-      ;;
-
-    Ubuntu)
-      ${PACKAGE_INSTALL[int]} ubuntu-keyring
-      curl https://nginx.org/keys/nginx_signing.key | gpg --dearmor \
-        | tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null
-      gpg --dry-run --quiet --no-keyring --import --import-options import-show /usr/share/keyrings/nginx-archive-keyring.gpg
-      echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] \
-      http://nginx.org/packages/ubuntu `lsb_release -cs` nginx" \
-        | tee /etc/apt/sources.list.d/nginx.list
-      echo -e "Package: *\nPin: origin nginx.org\nPin: release o=nginx\nPin-Priority: 900\n" \
-        | tee /etc/apt/preferences.d/99nginx
+    Debian|Ubuntu)
+      DEPS_BUILD_CHECK=("git" "gcc" "make" "libpcre2-dev" "libssl-dev" "libgeoip-dev" "libxslt1-dev" "zlib1g-dev" "libgd-dev" "libmaxminddb0" "libmaxminddb-dev" "mmdb-bin")
+      DEPS_BUILD_INSTALL=("git" "build-essential" "libpcre2-dev" "libssl-dev" "libgeoip-dev" "libxslt1-dev" "zlib1g-dev" "libgd-dev" "libmaxminddb0" "libmaxminddb-dev" "mmdb-bin")
+      USERNGINX="www-data"
       ;;
 
     CentOS|Fedora)
-      ${PACKAGE_INSTALL[int]} yum-utils
-      cat <<EOL > /etc/yum.repos.d/nginx.repo
-[nginx-stable]
-name=nginx stable repo
-baseurl=http://nginx.org/packages/centos/\$releasever/\$basearch/
-gpgcheck=1
-enabled=1
-gpgkey=https://nginx.org/keys/nginx_signing.key
-module_hotfixes=true
-
-[nginx-mainline]
-name=nginx mainline repo
-baseurl=http://nginx.org/packages/mainline/centos/\$releasever/\$basearch/
-gpgcheck=1
-enabled=0
-gpgkey=https://nginx.org/keys/nginx_signing.key
-module_hotfixes=true
-EOL
+      DEPS_BUILD_CHECK=("git" "gcc" "make" "pcre-devel" "openssl-devel" "libxslt-devel" "zlib-devel" "gd-devel" "libmaxminddb-devel")
+      DEPS_BUILD_INSTALL=("git" "gcc" "make" "pcre-devel" "openssl-devel" "libxslt-devel" "zlib-devel" "gd-devel" "libmaxminddb-devel")
+      USERNGINX="nginx"
       ;;
   esac
-  ${PACKAGE_UPDATE[int]}
-  ${PACKAGE_INSTALL[int]} nginx
+
+  for g in "${!DEPS_BUILD_CHECK[@]}"; do
+    [ ! -x "$(type -p ${DEPS_BUILD_CHECK[g]})" ] && [[ ! "${DEPS_BUILD[@]}" =~ "${DEPS_BUILD_INSTALL[g]}" ]] && DEPS_BUILD+=(${DEPS_BUILD_INSTALL[g]})
+  done
+
+  if [ "${#DEPS_BUILD[@]}" -ge 1 ]; then
+    echo "Список зависимостей для установки ${DEPS_BUILD[@]}"
+    ${PACKAGE_UPDATE[int]} >/dev/null 2>&1
+    ${PACKAGE_INSTALL[int]} ${DEPS_BUILD[@]} >/dev/null 2>&1
+  else
+    echo "Все зависимости уже установлены и не требуют дополнительной установки."
+  fi
+
+  NGINX_VERSION="1.27.5"
+  wget https://nginx.org/download/nginx-$NGINX_VERSION.tar.gz
+  tar -xvf nginx-$NGINX_VERSION.tar.gz
+  cd nginx-$NGINX_VERSION
+  git clone https://github.com/leev/ngx_http_geoip2_module.git /tmp/ngx_http_geoip2_module
+
+./configure \
+    --prefix=/usr \
+    --sbin-path=/usr/sbin/nginx \
+    --modules-path=/usr/lib/nginx/modules \
+    --conf-path=/etc/nginx/nginx.conf \
+    --error-log-path=/var/log/nginx/error.log \
+    --http-log-path=/var/log/nginx/access.log \
+    --pid-path=/run/nginx.pid \
+    --lock-path=/run/nginx.lock \
+    --http-client-body-temp-path=/var/cache/nginx/client_temp \
+    --http-proxy-temp-path=/var/cache/nginx/proxy_temp \
+    --http-fastcgi-temp-path=/var/cache/nginx/fastcgi_temp \
+    --http-uwsgi-temp-path=/var/cache/nginx/uwsgi_temp \
+    --http-scgi-temp-path=/var/cache/nginx/scgi_temp \
+    --user=$USERNGINX \
+    --group=$USERNGINX \
+    --with-compat \
+    --with-file-aio \
+    --with-threads \
+    --with-http_addition_module \
+    --with-http_auth_request_module \
+    --with-http_dav_module \
+    --with-http_flv_module \
+    --with-http_gunzip_module \
+    --with-http_gzip_static_module \
+    --with-http_mp4_module \
+    --with-http_random_index_module \
+    --with-http_realip_module \
+    --with-http_secure_link_module \
+    --with-http_slice_module \
+    --with-http_ssl_module \
+    --with-http_stub_status_module \
+    --with-http_sub_module \
+    --with-http_v2_module \
+    --with-http_v3_module \
+    --with-stream \
+    --with-stream_realip_module \
+    --with-stream_ssl_module \
+    --with-stream_ssl_preread_module \
+    --add-dynamic-module=/tmp/ngx_http_geoip2_module \
+    --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -fPIC" \
+    --with-ld-opt="-Wl,-z,relro -Wl,-z,now -Wl,--as-needed -pie"
+  make
+  make install
+
+  mkdir -p /var/cache/nginx/{client_temp,proxy_temp,fastcgi_temp,uwsgi_temp,scgi_temp}
+  chown -R $USERNGINX:$USERNGINX /var/cache/nginx
+  chmod -R 700 /var/cache/nginx
+
+  chmod +x ${DIR_XCORE}/repo/services/nginx.service
+  mv -f "${DIR_XCORE}/repo/services/nginx.service" "/etc/systemd/system/nginx.service"
+
   systemctl daemon-reload
   systemctl start nginx
   systemctl enable nginx
   systemctl restart nginx
   systemctl status nginx --no-pager
+
+  rm -rf nginx-$NGINX_VERSION.tar.gz nginx-$NGINX_VERSION /tmp/ngx_http_geoip2_module
 }
 
 ###################################
-### Installing packages
+### UTILITY PACKAGE INSTALLATION
 ###################################
-installation_of_utilities() {
+install_utility_packages() {
   info " $(text 36) "
   case "$SYSTEM" in
     Debian|Ubuntu)
-      DEPS_PACK_CHECK=("jq" "ufw" "zip" "wget" "gpg" "nano" "cron" "sqlite3" "haproxy" "certbot" "vnstat" "openssl" "netstat" "htpasswd" "update-ca-certificates" "add-apt-repository" "unattended-upgrades" "certbot-dns-cloudflare")
-      DEPS_PACK_INSTALL=("jq" "ufw" "zip" "wget" "gnupg2" "nano" "cron" "sqlite3" "haproxy" "certbot" "vnstat" "openssl" "net-tools" "apache2-utils" "ca-certificates" "software-properties-common" "unattended-upgrades" "python3-certbot-dns-cloudflare")
-
-      for g in "${!DEPS_PACK_CHECK[@]}"; do
-        [ ! -x "$(type -p ${DEPS_PACK_CHECK[g]})" ] && [[ ! "${DEPS_PACK[@]}" =~ "${DEPS_PACK_INSTALL[g]}" ]] && DEPS_PACK+=(${DEPS_PACK_INSTALL[g]})
-      done
-
-      if [ "${#DEPS_PACK[@]}" -ge 1 ]; then
-        info " $(text 77) ": ${DEPS_PACK[@]}
-        ${PACKAGE_UPDATE[int]}
-        ${PACKAGE_INSTALL[int]} ${DEPS_PACK[@]}
-      else
-        info " $(text 78) "
-      fi
+      DEPS_PACK_CHECK=("jq" "ufw" "zip" "wget" "gpg" "nano" "cron" "rsync" "sqlite3" "haproxy" "certbot" "vnstat" "openssl" "netstat" "htpasswd" "update-ca-certificates" "add-apt-repository" "unattended-upgrades" "certbot-dns-cloudflare")
+      DEPS_PACK_INSTALL=("jq" "ufw" "zip" "wget" "gnupg2" "nano" "cron" "rsync" "sqlite3" "haproxy" "certbot" "vnstat" "openssl" "net-tools" "apache2-utils" "ca-certificates" "software-properties-common" "unattended-upgrades" "python3-certbot-dns-cloudflare")
       ;;
 
     CentOS|Fedora)
-      DEPS_PACK_CHECK=("jq" "zip" "tar" "wget" "gpg" "nano" "sqlite3" "crontab" "haproxy" "openssl" "netstat" "nslookup" "htpasswd" "certbot" "update-ca-certificates" "certbot-dns-cloudflare")
-      DEPS_PACK_INSTALL=("jq" "zip" "tar" "wget" "gnupg2" "nano" "sqlite3" "cronie" "haproxy" "openssl" "net-tools" "bind-utils" "httpd-tools" "certbot" "ca-certificates" "python3-certbot-dns-cloudflare")
-
-      for g in "${!DEPS_PACK_CHECK[@]}"; do
-        [ ! -x "$(type -p ${DEPS_PACK_CHECK[g]})" ] && [[ ! "${DEPS_PACK[@]}" =~ "${DEPS_PACK_INSTALL[g]}" ]] && DEPS_PACK+=(${DEPS_PACK_INSTALL[g]})
-      done
-
-      if [ "${#DEPS_PACK[@]}" -ge 1 ]; then
-        info " $(text 77) ": ${DEPS_PACK[@]}
-        ${PACKAGE_UPDATE[int]}
-        ${PACKAGE_INSTALL[int]} ${DEPS_PACK[@]}
-      else
-        info " $(text 78) "
-      fi
+      DEPS_PACK_CHECK=("jq" "zip" "tar" "wget" "gpg" "nano" "rsync" "sqlite3" "crontab" "haproxy" "openssl" "netstat" "nslookup" "htpasswd" "certbot" "update-ca-certificates" "certbot-dns-cloudflare")
+      DEPS_PACK_INSTALL=("jq" "zip" "tar" "wget" "gnupg2" "nano" "rsync" "sqlite3" "cronie" "haproxy" "openssl" "net-tools" "bind-utils" "httpd-tools" "certbot" "ca-certificates" "python3-certbot-dns-cloudflare")
       ;;
   esac
 
-  nginx_gpg
+  for g in "${!DEPS_PACK_CHECK[@]}"; do
+    [ ! -x "$(type -p ${DEPS_PACK_CHECK[g]})" ] && [[ ! "${DEPS_PACK[@]}" =~ "${DEPS_PACK_INSTALL[g]}" ]] && DEPS_PACK+=(${DEPS_PACK_INSTALL[g]})
+  done
+
+  if [ "${#DEPS_PACK[@]}" -ge 1 ]; then
+    info " $(text 77) ": ${DEPS_PACK[@]}
+    ${PACKAGE_UPDATE[int]}
+    ${PACKAGE_INSTALL[int]} ${DEPS_PACK[@]}
+  else
+    info " $(text 78) "
+  fi
+
+  install_nginx
   tilda "$(text 10)"
 }
 
 ###################################
-### Creating a user
+### SYSTEM USER CREATION
 ###################################
-add_user() {
+create_system_user() {
   info " $(text 39) "
 
   case "$SYSTEM" in
@@ -980,6 +1004,7 @@ add_user() {
       useradd -m -s $(which bash) -G wheel ${USERNAME}
       ;;
   esac
+
   echo "${USERNAME}:${PASSWORD}" | chpasswd
   mkdir -p /home/${USERNAME}/.ssh/
   touch /home/${USERNAME}/.ssh/authorized_keys
@@ -988,9 +1013,9 @@ add_user() {
 }
 
 ###################################
-### Automatic system update
+### AUTOMATIC UPDATES CONFIGURATION
 ###################################
-setup_auto_updates() {
+configure_auto_updates() {
   info " $(text 40) "
 
   case "$SYSTEM" in
@@ -1023,9 +1048,9 @@ EOF
 }
 
 ###################################
-### BBR
+### BBR OPTIMIZATION
 ###################################
-enable_bbr() {
+enable_bbr_optimization() {
   info " $(text 41) "
 
   if ! grep -q "net.core.default_qdisc = fq" /etc/sysctl.conf; then
@@ -1039,9 +1064,9 @@ enable_bbr() {
 }
 
 ###################################
-### Disable IPv6
+### IPV6 DISABLING
 ###################################
-disable_ipv6() {
+disable_ipv6_support() {
   info " $(text 42) "
   interface_name=$(ifconfig -s | awk 'NR==2 {print $1}')
 
@@ -1090,13 +1115,13 @@ EOF
   chmod +x ${DIR_XCORE}/restart_warp.sh
 
   crontab -l | grep -v -- "restart_warp.sh" | crontab -
-  add_cron_rule "* * * * * ${DIR_XCORE}/restart_warp.sh"
+  schedule_cron_job "* * * * * ${DIR_XCORE}/restart_warp.sh"
 }
 
 ###################################
-### WARP
+### WARP CONFIGURATION
 ###################################
-warp() {
+configure_warp() {
   info " $(text 43) "
 
   case "$SYSTEM" in
@@ -1131,10 +1156,11 @@ warp() {
 }
 
 ###################################
-### Certificates
+### CERTIFICATE ISSUANCE
 ###################################
-issuance_of_certificates() {
+issue_certificates() {
   info " $(text 44) "
+
   CF_CREDENTIALS_PATH="/etc/letsencrypt/.cloudflare.credentials"
   touch ${CF_CREDENTIALS_PATH}
   chown root:root ${CF_CREDENTIALS_PATH}
@@ -1163,27 +1189,30 @@ EOF
     fi
   done
 
-  add_cron_rule "0 5 1 */2 * certbot -q renew"
+  schedule_cron_job "0 5 1 */2 * certbot -q renew"
   tilda "$(text 10)"
 }
 
 ###################################
-### Node exporter
+### SETUP MONITORING WITH NODE EXPORTER
 ###################################
-monitoring() {
+setup_node_exporter() {
   info " $(text 66) "
   mkdir -p /etc/nginx/locations/
   bash <(curl -Ls https://github.com/cortez24rus/grafana-prometheus/raw/refs/heads/main/prometheus_node_exporter.sh)
 
   cat > /etc/nginx/locations/monitoring.conf <<EOF
 location /${METRICS}/ {
-  auth_basic "Restricted Content";
-  auth_basic_user_file /etc/nginx/.htpasswd;
   proxy_pass http://127.0.0.1:9100/metrics;
   proxy_set_header Host \$host;
   proxy_set_header X-Real-IP \$remote_addr;
   proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
   proxy_set_header X-Forwarded-Proto \$scheme;
+
+  auth_basic "Restricted Content";
+  auth_basic_user_file /etc/nginx/.htpasswd;
+
+  access_log off;
   break;
 }
 EOF
@@ -1192,9 +1221,9 @@ EOF
 }
 
 ###################################
-### Shell In A Box
+### SETUP SHELL IN A BOX TERMINAL EMULATOR
 ###################################
-shellinabox() {
+setup_shell_in_a_box() {
   info " $(text 83) "
   apt-get install shellinabox
   mkdir -p /etc/nginx/locations/
@@ -1218,13 +1247,16 @@ EOF
 
   cat > /etc/nginx/locations/shellinabox.conf <<EOF
 location /${SHELLBOX}/ {
-  auth_basic "Restricted Content";
-  auth_basic_user_file /etc/nginx/.htpasswd;
   proxy_pass http://127.0.0.1:4200;
   proxy_set_header Host \$host;
   proxy_set_header X-Real-IP \$remote_addr;
   proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
   proxy_set_header X-Forwarded-Proto \$scheme;
+
+  auth_basic "Restricted Content";
+  auth_basic_user_file /etc/nginx/.htpasswd;
+
+  # access_log off;
   break;
 }
 EOF
@@ -1234,9 +1266,9 @@ EOF
 }
 
 ###################################
-### Selecting a random site
+### SELECT AND APPLY RANDOM WEBSITE TEMPLATE
 ###################################
-random_site() {
+apply_random_website_template() {
   info " $(text 79) "
   mkdir -p /var/www/html/ ${DIR_XCORE}/
 
@@ -1270,10 +1302,12 @@ random_site() {
 }
 
 ###################################
-### http conf
+### CONFIGURE NGINX MAIN CONFIGURATION
 ###################################
-nginx_conf() {
+configure_nginx_main() {
   cat > /etc/nginx/nginx.conf <<EOF
+load_module /usr/lib/nginx/modules/ngx_http_geoip2_module.so;
+
 # Global settings
 user                                   ${USERNGINX};
 pid                                    /run/nginx.pid;
@@ -1290,7 +1324,34 @@ events {
 
 # HTTP settings
 http {
-  # Request mapping
+  # GeoIP2: Determine geographical information from IP (Country)
+  geoip2 /etc/nginx/geolite2/GeoLite2-Country.mmdb {
+    auto_reload 12h;
+    \$geoip2_country_code              country iso_code;
+    \$geoip2_country_name              country names en;
+  }
+
+  # GeoIP2: Determine geographical information from IP (City)
+  geoip2 /etc/nginx/geolite2/GeoLite2-City.mmdb {
+    auto_reload                        12h;
+    \$geoip2_city_name                 city names en;
+  }
+
+  # GeoIP2: Determine geographical information from IP (ASN)
+  geoip2 /etc/nginx/geolite2/GeoLite2-ASN.mmdb {
+    auto_reload 12h;
+    \$geoip2_asn                       autonomous_system_number;
+    \$geoip2_organization              autonomous_system_organization;
+  }
+
+  # Country access map
+  map \$geoip2_country_code \$allow_country {
+    default                            0;
+    NL                                 1;
+    RU                                 1;
+  }
+
+  # Clean URI by removing ?x_padding parameter
   map \$request_uri \$cleaned_request_uri {
     default \$request_uri;
     "~^(.*?)(\?x_padding=[^ ]*)\$" \$1;
@@ -1298,14 +1359,17 @@ http {
 
   # Logging
   log_format json_analytics escape=json '{'
-    '\$time_local, '
-    '\$http_x_forwarded_for, '
-    '\$proxy_protocol_addr, '
-    '\$request_method '
-    '\$status, '
-    '\$http_user_agent, '
-    '\$cleaned_request_uri, '
-    '\$http_referer, '
+    '"local": "\$time_local",'
+    '"addr": "\$remote_addr",'
+    '"request": "\$request_method",'
+    '"status": "\$status",'
+    '"uri": "\$request_uri",'
+    '"country": "\$geoip2_country_name",'
+    '"country_code": "\$geoip2_country_code",'
+    '"city": "\$geoip2_city_name",'
+    '"asn": "\$geoip2_asn",'
+    '"organization": "\$geoip2_organization"'
+    '"agent": "\$http_user_agent",'
     '}';
 
   # Real IP
@@ -1325,6 +1389,8 @@ http {
   # Hash sizes
   types_hash_max_size                  2048;
   types_hash_bucket_size               64;
+  variables_hash_max_size              2048;
+  variables_hash_bucket_size           128;
 
   # Client
   client_max_body_size                 16M;
@@ -1366,13 +1432,23 @@ EOF
 }
 
 ###################################
-### Server conf
+### CONFIGURE NGINX SERVER BLOCK
 ###################################
-local_conf() {
+configure_nginx_server() {
   cat > /etc/nginx/conf.d/local.conf <<EOF
 server {
   listen                               36078;
   server_name                          _;
+
+  # Блокировка по стране
+  if (\$allow_country = 0) {
+    return 403;
+  }
+
+  # Блокировка по ASN
+  if (\$allow_organization = 0) {
+    return 403;
+  }
 
   # Enable locations
   include /etc/nginx/locations/*.conf;
@@ -1381,9 +1457,9 @@ EOF
 }
 
 ###################################
-### Web site
+### CONFIGURE NGINX ROOT LOCATION
 ###################################
-location_root() {
+configure_nginx_root_location() {
   cat > /etc/nginx/locations/root.conf <<EOF
 # Web site
 location / {
@@ -1396,9 +1472,9 @@ EOF
 }
 
 ###################################
-### Hidden_files
+### CONFIGURE NGINX HIDDEN FILES PROTECTION
 ###################################
-location_hidden_files() {
+configure_nginx_hidden_files() {
   cat > /etc/nginx/locations/hidden_files.conf <<EOF
 # . hidden_files.conf
 location ~ /\.(?!well-known) {
@@ -1408,9 +1484,9 @@ EOF
 }
 
 ###################################
-### Sub page
+### CONFIGURE NGINX SUBSCRIPTION PAGE
 ###################################
-location_sub_page() {
+configure_nginx_sub_page() {
   cat > /etc/nginx/locations/sub_page.conf <<EOF
 # Subsciption
 location ~ ^/${SUB_JSON_PATH} {
@@ -1421,12 +1497,51 @@ EOF
 }
 
 ###################################
-### NGINX
+### CONFIGURE NGINX GEOIP CHECK ENDPOINT
 ###################################
-nginx_setup() {
+configure_nginx_geoip_check() {
+  cat > /etc/nginx/locations/geoip.conf <<EOF
+# Geo check
+location = /geoip-check {
+  default_type text/plain;
+  return 200 "Your IP: \$remote_addr\nCountry: \$geoip2_country_code - \$geoip2_country_name\nCity: \$geoip2_city_name\nASN: \$geoip2_asn\nOrg: \$geoip2_organization\n";
+}
+EOF
+}
+
+###################################
+### DOWNLOAD AND SCHEDULE GEOLITE2 DATABASE UPDATES
+###################################
+schedule_geolite2_updates() {
+  cat > ${DIR_XCORE}/geolite2_update.sh <<EOF
+#!/usr/bin/env bash
+DEST_DIR="/etc/nginx/geolite2"
+mkdir -p "\$DEST_DIR"
+
+curl -s https://api.github.com/repos/P3TERX/GeoLite.mmdb/releases/latest \
+| grep "browser_download_url" \
+| cut -d '"' -f 4 \
+| grep '\.mmdb$' \
+| while read -r url; do
+  fname=\$(basename "\$url")
+  wget -qO "\$DEST_DIR/\$fname" "\$url"
+done
+EOF
+  chmod +x ${DIR_XCORE}/geolite2_update.sh
+  bash "${DIR_XCORE}/geolite2_update.sh"
+
+  crontab -l | grep -v -- "geolite2_update.sh" | crontab -
+  schedule_cron_job "0 0 * * * ${DIR_XCORE}/geolite2_update.sh"
+}
+
+###################################
+### FULL NGINX SETUP AND CONFIGURATION
+###################################
+setup_nginx() {
   info " $(text 45) "
 
   mkdir -p /etc/nginx/locations/
+  mkdir -p /etc/nginx/geolite2/
   rm -rf /etc/nginx/conf.d/default.conf
   touch /etc/nginx/.htpasswd
   htpasswd -nb "$USERNAME" "$PASSWORD" > /etc/nginx/.htpasswd
@@ -1441,11 +1556,13 @@ nginx_setup() {
       ;;
   esac
 
-  nginx_conf
-  local_conf
-  location_root
-  location_hidden_files
-  location_sub_page  
+  configure_nginx_main
+  configure_nginx_server
+  configure_nginx_root_location
+  configure_nginx_hidden_files
+  configure_nginx_sub_page
+  configure_nginx_geoip_check
+  schedule_geolite2_updates
 
   systemctl daemon-reload
   systemctl restart nginx
@@ -1455,21 +1572,21 @@ nginx_setup() {
 }
 
 ###################################
-### Функция для генерации UUID
+### GENERATE UUID FOR XRAY CONFIGURATION
 ###################################
-generate_uuids() {
-    local XRAY_UUID=$(cat /proc/sys/kernel/random/uuid)
-    echo "$XRAY_UUID"
+generate_uuid() {
+  local XRAY_UUID=$(cat /proc/sys/kernel/random/uuid)
+  echo "$XRAY_UUID"
 }
 
 ###################################
-### AUTH LUA
+### CREATE LUA AUTHENTICATION SCRIPT FOR HAPROXY
 ###################################
-auth_lua() {
-  read XRAY_UUID < <(generate_uuids)
-  read PLACEBO_XRAY_UUID < <(generate_uuids)
-  
-  cat > ${LUA_PATH} <<EOF
+create_haproxy_auth_lua() {
+  read XRAY_UUID < <(generate_uuid)
+  read PLACEBO_XRAY_UUID < <(generate_uuid)
+
+  cat > ${DIR_HAPROXY}/.auth.lua <<EOF
 local passwords = {
   ["${XRAY_UUID}"] = true,
   ["${PLACEBO_XRAY_UUID}"] = false		-- Заглушка, не удаляй, а то убьет
@@ -1500,7 +1617,7 @@ function vless_auth(txn)
     -- Uncomment to enable logging of sniffed password hashes
     core.Info("Sniffed password: " .. hex)
     if clean_passwords[hex] then
-      return "vless"
+      return "xray"
     end
   end
   return "http"
@@ -1511,12 +1628,12 @@ EOF
 }
 
 ###################################
-### HAPROXY
+### CONFIGURE HAPROXY WITH SSL AND VLESS SUPPORT
 ###################################
-haproxy_setup() {
+configure_haproxy() {
   info " $(text 37) "
   mkdir -p /etc/haproxy/certs
-  auth_lua
+  create_haproxy_auth_lua
 
   openssl dhparam -out /etc/haproxy/dhparam.pem 2048
   cat /etc/letsencrypt/live/${DOMAIN}/fullchain.pem /etc/letsencrypt/live/${DOMAIN}/privkey.pem > /etc/haproxy/certs/${DOMAIN}.pem
@@ -1527,7 +1644,7 @@ global
   # log /dev/log local0
   # log /dev/log local1 notice
   log /dev/log local2 warning
-  lua-load ${LUA_PATH}
+  lua-load ${DIR_HAPROXY}/.auth.lua
   chroot /var/lib/haproxy
   stats socket /run/haproxy/admin.sock mode 660 level admin
   stats timeout 30s
@@ -1545,11 +1662,10 @@ global
   ssl-dh-param-file /etc/haproxy/dhparam.pem
 
 defaults
-  mode http
+  mode tcp
   log global
   option tcplog
   option dontlognull
-  option forwardfor
   timeout connect 5000
   timeout client  50000
   timeout server  50000
@@ -1557,29 +1673,24 @@ defaults
 frontend haproxy-tls
   mode tcp
   timeout client 1h
-  bind :::443 v4v6 ssl crt /etc/haproxy/certs/${DOMAIN}.pem alpn h2,http/1.1
+  bind 0.0.0.0:443 ssl crt /etc/haproxy/certs/${DOMAIN}.pem alpn h2,http/1.1
   acl host_ip hdr(host) -i ${IP4}
   tcp-request content reject if host_ip
   tcp-request inspect-delay 5s
   tcp-request content accept if { req_ssl_hello_type 1 }
-  use_backend http-sub if { path /${SUB_JSON_PATH} } || { path_beg /${SUB_JSON_PATH}/ }
   use_backend %[lua.vless_auth]
-  default_backend main
+  default_backend nginx
 
-backend vless
+backend xray
   mode tcp
   timeout server 1h
-  server xray 127.0.0.1:10550 send-proxy-v2
+  server vless 127.0.0.1:10550 send-proxy-v2
 
-backend main
+backend nginx
   mode http
   timeout server 1h
-  server nginx 127.0.0.1:36078
-
-backend http-sub
-  mode http
-  timeout server 1h
-  server nginx 127.0.0.1:36078
+  option forwardfor
+  server web 127.0.0.1:36078
 
 EOF
 
@@ -1591,9 +1702,9 @@ EOF
 }
 
 ###################################
-### Xray installation
+### DOWNLOAD AND INSTALL XRAY CORE
 ###################################
-xray_setup() {
+install_xray() {
   mkdir -p "${DIR_XRAY}"
 
   while ! wget -q --progress=dot:mega --timeout=30 --tries=10 --retry-connrefused -P "${DIR_XCORE}/" "https://github.com/XTLS/Xray-core/releases/download/v${VERSION_XRAY}/Xray-linux-64.zip"; do
@@ -1606,21 +1717,21 @@ xray_setup() {
 }
 
 ###################################
-### Xray config
+### CONFIGURE XRAY SERVER SETTINGS
 ###################################
-xray_config() {
-  cp -f ${DIR_XCORE}/repo/conf_template/server_raw.json ${DIR_XRAY}config.json
-        
+configure_xray_server() {
+  cp -f ${DIR_XCORE}/repo/conf_template/server_raw.json ${DIR_XRAY}/config.json
+
   sed -i \
     -e "s/USERNAME_TEMP/${USERNAME}/g" \
     -e "s/UUID_TEMP/${XRAY_UUID}/g" \
-    "${DIR_XRAY}config.json"
+    "${DIR_XRAY}/config.json"
 }
 
 ###################################
-### Xray service
+### SETUP XRAY SYSTEMD SERVICE
 ###################################
-xray_service() {
+setup_xray_service() {
   mv -f ${DIR_XCORE}/repo/services/xray.service /etc/systemd/system/xray.service
 
   systemctl daemon-reload
@@ -1630,22 +1741,22 @@ xray_service() {
 }
 
 ###################################
-### Xray server settings
+### FULL XRAY SERVER CONFIGURATION
 ###################################
-xray_server_conf() {
+setup_xray_server() {
   info " $(text 46) "
 
-  xray_setup
-  xray_config
-  xray_service
+  install_xray
+  configure_xray_server
+  setup_xray_service
 
   tilda "$(text 10)"
 }
 
 ###################################
-### Web sub page
+### SETUP XRAY SUBSCRIPTION PAGE
 ###################################
-web_sub_page() {
+setup_xray_subscription_page() {
   mkdir -p /var/www/${SUB_JSON_PATH}/vless_raw/
   cp -r ${DIR_XCORE}/repo/sub_page/* /var/www/${SUB_JSON_PATH}/
 
@@ -1656,9 +1767,9 @@ web_sub_page() {
 }
 
 ###################################
-### Client configuration setup
+### CONFIGURE XRAY CLIENT SETTINGS
 ###################################
-client_conf() {
+configure_xray_client() {
   cp -r ${DIR_XCORE}/repo/conf_template/client_raw.json /var/www/${SUB_JSON_PATH}/vless_raw/${USERNAME}.json
 
   sed -i \
@@ -1668,18 +1779,40 @@ client_conf() {
 }
 
 ###################################
-### Xray client settings
+### FULL XRAY CLIENT CONFIGURATION
 ###################################
-xray_client_conf() {
+setup_xray_client() {
   info " $(text 57) "
 
-  web_sub_page
-  client_conf
+  setup_xray_subscription_page
+  configure_xray_client
 
   tilda "$(text 10)"
 }
 
-xcore_service() {
+###################################
+### CREATE WEEKLY SYNC SCRIPT
+###################################
+create_sync_script() {
+  cat > ${DIR_XCORE}/sync_xcore.sh <<EOF
+#!/bin/bash
+
+chmod +x /opt/xcore/repo/bin/xcore
+rsync -av /opt/xcore/repo/bin/ /usr/local/xcore/
+EOF
+  chmod +x ${DIR_XCORE}/sync_xcore.sh
+  bash "${DIR_XCORE}/sync_xcore.sh"
+
+  crontab -l | grep -v -- "sync_xcore.sh" | crontab -
+  schedule_cron_job "5 0 * * 0 ${DIR_XCORE}/sync_xcore.sh"
+}
+
+###################################
+### SETUP XCORE SYSTEMD SERVICE
+###################################
+setup_xcore_service() {
+  create_sync_script
+
   chmod +x ${DIR_XCORE}/repo/services/xcore.service
   mv -f "${DIR_XCORE}/repo/services/xcore.service" "/etc/systemd/system/xcore.service"
 
@@ -1690,76 +1823,9 @@ xcore_service() {
 }
 
 ###################################
-### BACKUP DIRECTORIES
+### CONFIGURE FIREWALL FOR SECURITY
 ###################################
-backup_dir() {
-  cat > ${DIR_XCORE}/backup_dir.sh <<EOF
-#!/bin/bash
-
-# Путь к директории резервного копирования
-DIR_XCORE="/opt/xcore/"
-BACKUP_DIR="\${DIR_XCORE}/backup"
-CURRENT_DATE=\$(date +"%y-%m-%d")
-ARCHIVE_NAME="\${BACKUP_DIR}/backup_\${CURRENT_DATE}.7z"
-
-# Создаем директорию для резервных копий, если её нет
-mkdir -p "\$BACKUP_DIR"
-
-# Архивируем все три директории в один архив
-7za a -mx9 "\$ARCHIVE_NAME" "/etc/nginx" "/usr/local/etc/xray" "/etc/letsencrypt" || echo "Ошибка при создании архива"
-
-# Проверка успешного создания архива
-if [[ -f "\$ARCHIVE_NAME" ]]; then
-  echo "Архив успешно создан: \$ARCHIVE_NAME"
-else
-  echo "Ошибка при создании архива"
-fi
-
-EOF
-  chmod +x ${DIR_XCORE}/backup_dir.sh
-  bash "${DIR_XCORE}/backup_dir.sh"
-
-  crontab -l | grep -v -- "backup_dir.sh" | crontab -
-  add_cron_rule "0 0 * * * ${DIR_XCORE}/backup_dir.sh"
-}
-
-###################################
-### ROTATE BACKUPS
-###################################
-rotation_backup() {
-  cat > ${DIR_XCORE}/rotation_backup.sh <<EOF
-#!/bin/bash
-
-DIR_XCORE="/opt/xcore/"
-BACKUP_DIR="${DIR_XCORE}/backup"
-DAY_TO_KEEP=6
-
-find "\$BACKUP_DIR" -type f -name "backup_*.7z" -mtime +\$DAY_TO_KEEP -exec rm -f {} \;
-EOF
-  chmod +x ${DIR_XCORE}/rotation_backup.sh
-  bash "${DIR_XCORE}/rotation_backup.sh"
-
-  crontab -l | grep -v -- "rotation_backup.sh" | crontab -
-  add_cron_rule "5 0 * * * ${DIR_XCORE}/rotation_backup.sh"
-}
-
-###################################
-### BACKUP & ROTATION SCHEDULER
-###################################
-rotation_and_archiving() {
-  info " $(text 23) "
-  ${PACKAGE_UPDATE[int]}
-  ${PACKAGE_INSTALL[int]} p7zip-full
-  backup_dir
-  rotation_backup
-  journalctl --vacuum-time=7days
-  tilda "$(text 10)"
-}
-
-###################################
-### Firewall
-###################################
-enabling_security() {
+configure_firewall() {
   info " $(text 47) "
 
   chmod +x "${DIR_XCORE}/repo/security/f2b.sh"
@@ -1789,9 +1855,9 @@ enabling_security() {
 }
 
 ###################################
-### SSH
+### CONFIGURE SSH SECURITY SETTINGS
 ###################################
-ssh_setup() {
+configure_ssh_security() {
   if [[ "${ANSWER_SSH,,}" == "y" ]]; then
     info " $(text 48) "
     sed -i -e "
@@ -1814,9 +1880,9 @@ ssh_setup() {
 }
 
 ###################################
-### Information output
+### DISPLAY FINAL CONFIGURATION OUTPUT
 ###################################
-data_output() {
+display_configuration_output() {
   info " $(text 58) "
   echo
   out_data " $(text 59) " "https://${DOMAIN}/${SUB_JSON_PATH}/sub.html?name=${USERNAME}"
@@ -1839,9 +1905,9 @@ data_output() {
 }
 
 ###################################
-### Downloadr webiste
+### DOWNLOAD AND MIRROR WEBSITE
 ###################################
-download_website() {
+mirror_website() {
   reading " $(text 13) " sitelink
   local NGINX_CONFIG_L="/etc/nginx/conf.d/local.conf"
   wget -P /var/www --mirror --convert-links --adjust-extension --page-requisites --no-parent https://${sitelink}
@@ -1881,52 +1947,50 @@ download_website() {
   sed -i '/^\s*root\s.*/c\ '"$NEW_ROOT" $NGINX_CONFIG_L
   sed -i '/^\s*index\s.*/c\ '"$NEW_INDEX" $NGINX_CONFIG_L
 
-  systemctl restart nginx
+  systemctl restart nginx.service
 }
 
 ###################################
-### Change domain name
+### CHANGE DOMAIN NAME AND UPDATE CONFIGS
 ###################################
-change_domain() {
+change_domain_name() {
+  extract_haproxy_data
 
+  validate_cloudflare_token
+  issue_certificates
+  cat /etc/letsencrypt/live/${DOMAIN}/fullchain.pem /etc/letsencrypt/live/${DOMAIN}/privkey.pem > /etc/haproxy/certs/${DOMAIN}.pem
+  sed -i -e "s/${CURR_DOMAIN}/${DOMAIN}/g" ${DIR_HAPROXY}/haproxy.cfg
 
+  systemctl restart haproxy
   tilda "$(text 10)"
 }
 
 ###################################
-### Reissue of certificates
+### REISSUE SSL CERTIFICATES
 ###################################
-renew_cert() {
-  # Получение домена из конфигурации Nginx
-  NGINX_DOMAIN=$(grep "ssl_certificate" /etc/nginx/conf.d/local.conf | head -n 1)
-  NGINX_DOMAIN=${NGINX_DOMAIN#*"/live/"}
-  NGINX_DOMAIN=${NGINX_DOMAIN%"/"*}
+reissue_certificates() {
+  # Получение домена
+  extract_haproxy_data
 
   # Проверка наличия сертификатов
-  if [ ! -d /etc/letsencrypt/live/${NGINX_DOMAIN} ]; then
-    check_cf_token
-    issuance_of_certificates
+  if [ ! -d /etc/letsencrypt/live/${CURR_DOMAIN} ]; then
+    validate_cloudflare_token
+    issue_certificates
   else
     certbot renew --force-renewal
     if [ $? -ne 0 ]; then
       return 1
     fi
   fi
+
   # Перезапуск Nginx
   systemctl restart nginx
 }
 
 ###################################
-### Depersonalization of the database
+### DISPLAY DIRECTORY SIZE AND SYSTEM STORAGE
 ###################################
-depersonalization_db() {
-  echo ""
-}
-
-###################################
-### Directory size
-###################################
-directory_size() {
+show_directory_size() {
   read -e -p "Enter a directory: " DIRECTORY
   echo
   free -h
@@ -1936,7 +2000,7 @@ directory_size() {
 }
 
 ###################################
-### Migration to a new version
+### MIGRATE TO NEW VERSION (STUB)
 ###################################
 migration(){
   info " $(text 97) "
@@ -1945,9 +2009,81 @@ migration(){
 }
 
 ###################################
-### Unzips the selected backup
+### CREATE BACKUP SCRIPT FOR DIRECTORIES
 ###################################
-unzip_backup() {
+create_backup_script() {
+  cat > ${DIR_XCORE}/backup_dir.sh <<EOF
+#!/bin/bash
+
+# Создаем директорию для резервных копий, если её нет
+mkdir -p "\$BACKUP_DIR"
+
+# Путь к директории резервного копирования
+BACKUP_DIR="/opt/xcore/backup"
+CURRENT_DATE=\$(date +"%y-%m-%d")
+ARCHIVE_NAME="\${BACKUP_DIR}/backup_\${CURRENT_DATE}.7z"
+
+# Ищем в /var/www директорию с именем длиной 30 символов
+DYN_DIR=$(find /var/www -maxdepth 1 -mindepth 1 -type d -printf '%f\n' | awk 'length == 30')
+
+# Архивируем все директории в один архив
+if 7za a -mx9 "\$ARCHIVE_NAME" "/etc/nginx" "/etc/haproxy" "/etc/letsencrypt" "/usr/local/xcore" "/usr/local/etc/xray" "/var/www/\$DYN_DIR"; then
+  echo "Архив успешно создан: \$ARCHIVE_NAME"
+else
+  echo "Ошибка при создании архива"
+  exit 1
+fi
+
+EOF
+  chmod +x ${DIR_XCORE}/backup_dir.sh
+  bash "${DIR_XCORE}/backup_dir.sh"
+
+  crontab -l | grep -v -- "backup_dir.sh" | crontab -
+  schedule_cron_job "0 0 * * * ${DIR_XCORE}/backup_dir.sh"
+}
+
+###################################
+### CREATE BACKUP ROTATION SCRIPT
+###################################
+create_rotation_script() {
+  cat > ${DIR_XCORE}/rotation_backup.sh <<EOF
+#!/bin/bash
+
+BACKUP_DIR="/opt/xcore/backup"
+DAY_TO_KEEP=6
+
+find "\$BACKUP_DIR" -type f -name "backup_*.7z" -mtime +\$DAY_TO_KEEP -exec rm -v -f {} \; | while read -r line; do
+  echo "Удалён файл: \$line"
+done
+
+EOF
+  chmod +x ${DIR_XCORE}/rotation_backup.sh
+  bash "${DIR_XCORE}/rotation_backup.sh"
+
+  crontab -l | grep -v -- "rotation_backup.sh" | crontab -
+  schedule_cron_job "5 0 * * * ${DIR_XCORE}/rotation_backup.sh"
+}
+
+###################################
+### SCHEDULE BACKUP AND ROTATION
+###################################
+rotation_and_archiving() {
+  info " $(text 23) "
+
+  ${PACKAGE_UPDATE[int]}
+  ${PACKAGE_INSTALL[int]} p7zip-full
+  create_backup_script
+  create_rotation_script
+  journalctl --vacuum-time=7days
+
+  tilda "$(text 10)"
+}
+
+###################################
+### UNZIP SELECTED BACKUP ARCHIVE
+###################################
+unzip_selected_backup() {
+  RESTORE_DIR="/tmp/restore"
   BACKUP_DIR="${DIR_XCORE}/backup"
 
   if [[ ! -d "$BACKUP_DIR" ]]; then
@@ -1963,14 +2099,14 @@ unzip_backup() {
     echo "Нет доступных резервных копий."
     exit 1
   fi
-  
+
   for i in "${!backups[@]}"; do
     hint " $((i + 1))) $(basename "${backups[i]}")"
   done
 
   echo
   reading " $(text 102) " CHOICE_BACKUP
-  
+
   if [[ ! "$CHOICE_BACKUP" =~ ^[0-9]+$ ]] || (( CHOICE_BACKUP < 1 || CHOICE_BACKUP > ${#backups[@]} )); then
     echo "Ошибка: Неверный ввод."
     exit 1
@@ -1984,44 +2120,57 @@ unzip_backup() {
 }
 
 ###################################
-### Migrates backup files to the system directories
+### MIGRATE BACKUP FILES TO SYSTEM DIRECTORIES
 ###################################
-backup_migration() {
-  echo
-  #x-ui stop
-  
-  rm -rf /usr/local/etc/xray/
-  rm -rf /etc/nginx/
-  rm -rf /etc/letsencrypt/
+migrate_backup_files() {
+  DYN_DIR=$(find $RESTORE_DIR -maxdepth 1 -mindepth 1 -type d -printf '%f\n' | awk 'length == 30')
 
-  mv /tmp/restore/xray/ /etc/
-  mv /tmp/restore/nginx/ /etc/
-  mv /tmp/restore/letsencrypt/ /etc/
+  # Проверяем, что разархивированные данные существуют
+  for dir in "$RESTORE_DIR/nginx" "$RESTORE_DIR/haproxy" "$RESTORE_DIR/letsencrypt" "$RESTORE_DIR/xcore" "$RESTORE_DIR/xray" "$RESTORE_DIR/$DYN_DIR"; do
+    if [[ ! -d "$dir" ]]; then
+      echo "Ошибка: директория $dir не найдена в разархивированных данных"
+      exit 1
+    fi
+  done
 
-  systemctl restart xray
-  systemctl restart nginx
-  systemctl restart haproxy
-  systemctl restart xcore
-  echo
+  rsync -a --delete "/tmp/restore/nginx/" "/etc/nginx/"
+  rsync -a --delete "/tmp/restore/haproxy/" "/etc/haproxy/"
+  rsync -a --delete "/tmp/restore/letsencrypt/" "/etc/letsencrypt/"
+  rsync -a --delete "/tmp/restore/xray/" "/usr/local/etc/xray/"
+  rsync -a --delete "/tmp/restore/xcore/" "/usr/local/xcore/"
+  rsync -a --delete "/tmp/restore/$DYN_DIR/" "/var/www/$DYN_DIR/"
+
+  # Перезапускаем службы с проверкой
+  for service in nginx haproxy xray xcore; do
+    if systemctl is-active --quiet "$service.service"; then
+      systemctl restart "$service.service"
+      if ! systemctl is-active --quiet "$service.service"; then
+        echo "Ошибка: не удалось перезапустить службу $service"
+      fi
+    else
+      echo "Предупреждение: служба $service не активна или не установлена"
+    fi
+  done
 }
 
 ###################################
-### Restores the backup by first unzipping and then migrating
+### RESTORE FROM BACKUP
 ###################################
-restore_backup() {
+restore_from_backup() {
   info " $(text 100) "
 
   RESTORE_DIR="/tmp/restore"
-  unzip_backup
-  backup_migration
+  unzip_selected_backup
+  migrate_backup_files
+  rm -rf "$RESTORE_DIR"
 
   info " $(text 103) "
 }
 
 ###################################
-### Displays traffic statistics
+### DISPLAY TRAFFIC STATISTICS
 ###################################
-traffic_stats() {
+show_traffic_statistics() {
   ${PACKAGE_UPDATE[int]} >/dev/null 2>&1
   ${PACKAGE_INSTALL[int]} vnstat >/dev/null 2>&1
 
@@ -2029,26 +2178,19 @@ traffic_stats() {
   reading " $(text 1) " CHOICE_STATS  # Запрашивает выбор языка
 
   case $CHOICE_STATS in
-    1)
-      vnstat -y
-      ;;
-    2)
-      vnstat -m
-      ;;
-    3)
-      vnstat -d
-      ;;
-    4)
-      vnstat -h
-      ;;
-    *)
-      vnstat -d
-      ;;
+    1) vnstat -y ;;  # По годам
+    2) vnstat -m ;;  # По месяцам
+    3) vnstat -d ;;  # По дням
+    4) vnstat -h ;;  # По часам
+    *) vnstat -d ;;  # По умолчанию - по дням
   esac
   echo
 }
 
-display_stats() {
+###################################
+### DISPLAY SERVER STATISTICS
+###################################
+display_server_stats() {
   clear
   echo -e " 🖥️  Состояние сервера:\n============================"
   bash /etc/update-motd.d/02-uptime
@@ -2061,25 +2203,32 @@ display_stats() {
 }
 
 ###################################
-### Extracting data from haproxy.cfg
+### EXTRACT DATA FROM HAPROXY CONFIG
 ###################################
-extract_data() {
+extract_haproxy_data() {
+  SUB_JSON_PATH=""
+  for dir in /var/www/*/ ; do
+      dir_name=$(basename "$dir")
+      [ ${#dir_name} -eq 30 ] && SUB_JSON_PATH="$dir_name" && break
+  done
+
   local CONFIG_FILE_HAPROXY="/etc/haproxy/haproxy.cfg"
-
-  SUB_JSON_PATH=$(grep -oP 'use_backend http-sub if \{ path /.*? \}' "$CONFIG_FILE_HAPROXY" | grep -oP '(?<=path /).*?(?= \})')
   IP4=$(grep -oP 'acl host_ip hdr\(host\) -i \K[\d\.]+' "$CONFIG_FILE_HAPROXY")
-  DOMAIN=$(grep -oP 'crt /etc/haproxy/certs/\K[^.]+(?:\.[^.]+)+(?=\.pem)' "$CONFIG_FILE_HAPROXY")
-}
-
-add_user_to_xray_config() {
-  inboundnum=$(jq '[.inbounds[].tag] | index("vless_raw")' ${DIR_XRAY}config.json)
-  jq ".inbounds[${inboundnum}].settings.clients += [{\"email\":\"${USERNAME}\",\"level\":0,\"id\":\"${XRAY_UUID}\"}]" "${DIR_XRAY}config.json" > "${DIR_XRAY}config.json.tmp" && mv "${DIR_XRAY}config.json.tmp" "${DIR_XRAY}config.json"
+  CURR_DOMAIN=$(grep -oP 'crt /etc/haproxy/certs/\K[^.]+(?:\.[^.]+)+(?=\.pem)' "$CONFIG_FILE_HAPROXY")
 }
 
 ###################################
-### Adding user configuration
+### ADD USER TO XRAY CONFIGURATION
 ###################################
-add_user_config() {
+add_user_to_xray() {
+  inboundnum=$(jq '[.inbounds[].tag] | index("vless_raw")' ${DIR_XRAY}/config.json)
+  jq ".inbounds[${inboundnum}].settings.clients += [{\"email\":\"${USERNAME}\",\"level\":0,\"id\":\"${XRAY_UUID}\"}]" "${DIR_XRAY}/config.json" > "${DIR_XRAY}/config.json.tmp" && mv "${DIR_XRAY}/config.json.tmp" "${DIR_XRAY}/config.json"
+}
+
+###################################
+### ADD NEW USER CONFIGURATION
+###################################
+add_new_user() {
   while true; do
     echo -n "Введите имя пользователя (или '0' для возврата в меню): "
     read USERNAME
@@ -2099,16 +2248,16 @@ add_user_config() {
           continue  # Повтор запроса имени
         fi
 
-        read XRAY_UUID < <(generate_uuids)
-        
+        read XRAY_UUID < <(generate_uuid)
+
         # Добавление пользователя
-        client_conf
+        configure_xray_client
 
         # Добавление в файл /etc/haproxy/.auth.lua
-        sed -i "/local passwords = {/a \  [\"$XRAY_UUID\"] = true," ${LUA_PATH}
-    
+        sed -i "/local passwords = {/a \  [\"$XRAY_UUID\"] = true," ${DIR_HAPROXY}/.auth.lua
+
         # Добавляем нового пользователя
-        add_user_to_xray_config
+        add_user_to_xray
 
         systemctl reload nginx && systemctl reload haproxy && systemctl restart xray
 
@@ -2119,35 +2268,48 @@ add_user_config() {
   done
 }
 
-del_sub_client_config() {
+###################################
+### DELETE USER SUBSCRIPTION CONFIG
+###################################
+delete_subscription_config() {
   if [[ -f /var/www/${SUB_JSON_PATH}/vless_raw/${USERNAME}.json ]]; then
     rm -rf /var/www/${SUB_JSON_PATH}/vless_raw/${USERNAME}.json
   fi
 }
 
-del_lua_uuid_config() {
-  sed -i "/\[\"${XRAY_UUID}\"\] = .*/d" ${LUA_PATH}
+###################################
+### DELETE USER UUID FROM LUA CONFIG
+###################################
+delete_lua_uuid() {
+  sed -i "/\[\"${XRAY_UUID}\"\] = .*/d" ${DIR_HAPROXY}/.auth.lua
 }
 
-del_xray_server_config() {
-  inboundnum=$(jq '[.inbounds[].tag] | index("vless_raw")' ${DIR_XRAY}config.json)
-  jq "del(.inbounds[${inboundnum}].settings.clients[] | select(.email==\"${USERNAME}\"))" "${DIR_XRAY}config.json" > "${DIR_XRAY}config.json.tmp" && mv "${DIR_XRAY}config.json.tmp" "${DIR_XRAY}config.json"
+##################################
+### DELETE USER FROM XRAY SERVER CONFIG
+###################################
+delete_from_xray_server() {
+  inboundnum=$(jq '[.inbounds[].tag] | index("vless_raw")' ${DIR_XRAY}/config.json)
+  jq "del(.inbounds[${inboundnum}].settings.clients[] | select(.email==\"${USERNAME}\"))" "${DIR_XRAY}/config.json" > "${DIR_XRAY}/config.json.tmp" && mv "${DIR_XRAY}/config.json.tmp" "${DIR_XRAY}/config.json"
 }
 
-# Функция для извлечения пользователей
-extract_users() {
-  jq -r '.inbounds[] | select(.tag == "vless_raw") | .settings.clients[] | "\(.email) \(.id)"' "${DIR_XRAY}config.json"
+###################################
+### EXTRACT USERS FROM XRAY CONFIG
+###################################
+extract_xray_users() {
+  jq -r '.inbounds[] | select(.tag == "vless_raw") | .settings.clients[] | "\(.email) \(.id)"' "${DIR_XRAY}/config.json"
 }
 
-# Функция для форматирования и выбора пользователя
-delete_user_config() {
+###################################
+### DELETE USER CONFIGURATION
+###################################
+delete_user() {
   while true; do
-    mapfile -t clients < <(extract_users)
+    mapfile -t clients < <(extract_xray_users)
     if [ ${#clients[@]} -eq 0 ]; then
       echo "Нет пользователей для отображения."
       return
     fi
-    
+
     info " Список пользователей:"
     local count=1
     declare -A user_map
@@ -2179,9 +2341,9 @@ delete_user_config() {
           if [[ -n "${user_map[$choice]}" ]]; then
             IFS=' ' read -r USERNAME XRAY_UUID <<< "${user_map[$choice]}"
             echo "Вы выбрали: $USERNAME (ID: $XRAY_UUID)"
-            del_sub_client_config
-            del_lua_uuid_config
-            del_xray_server_config
+            delete_subscription_config
+            delete_lua_uuid
+            delete_from_xray_server
           else
             echo "Некорректный номер: $choice"
           fi
@@ -2194,75 +2356,9 @@ delete_user_config() {
   done
 }
 
-toggle_user_status() {
-  local API_URL="http://localhost:9952/users"
-  local TOGGLE_URL="http://localhost:9952/set-enabled"
-
-  while true; do
-    clear
-
-    # Получаем JSON от API
-    response=$(curl -s -X GET "$API_URL")
-    if [ $? -ne 0 ]; then
-      warning "Ошибка: Не удалось подключиться к API"
-      return 1
-    fi
-
-    # Парсим JSON и извлекаем email и enabled
-    mapfile -t users < <(echo "$response" | jq -r '.[] | [.email, .enabled] | join(" ")')
-
-    # Проверяем, есть ли пользователи
-    if [ ${#users[@]} -eq 0 ]; then
-      info "Нет пользователей для отображения"
-      return 1
-    fi
-
-    # Выводим список
-    info " Список пользователей:"
-    for i in "${!users[@]}"; do
-      IFS=' ' read -r email enabled <<< "${users[$i]}"
-      printf " %d. %s (%s)\n" "$((i+1))" "$email" "$enabled"
-    done
-    echo " 0. Выйти"
-
-    # Запрашиваем выбор
-    reading "Введите номера пользователей (через пробел или запятую): " USER_CHOICE
-
-    if [[ "$USER_CHOICE" == "0" ]]; then
-      return 0
-    fi
-
-    # Преобразуем ввод в массив чисел
-    USER_CHOICE="${USER_CHOICE//,/ }"   # заменяем запятые на пробелы
-    read -ra CHOICES <<< "$USER_CHOICE" # массив номеров
-
-    echo
-    for choice in "${CHOICES[@]}"; do
-      if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "${#users[@]}" ]; then
-        IFS=' ' read -r selected_email current_enabled <<< "${users[$((choice-1))]}"
-
-        # Определяем новый статус
-        new_enabled="false"
-        if [ "$current_enabled" = "false" ]; then
-          new_enabled="true"
-        fi
-
-        # Выполняем PATCH-запрос
-        response=$(curl -s -X PATCH -d "email=$selected_email&enabled=$new_enabled" "$TOGGLE_URL")
-        if [ $? -eq 0 ]; then
-          info "Статус пользователя $selected_email изменяется на $new_enabled"
-        else
-          warning "Ошибка при изменении статуса пользователя $selected_email"
-        fi
-      else
-        warning "Неверный выбор: $choice"
-      fi
-    done
-
-    sleep 10
-  done
-}
-
+###################################
+### SYNCHRONIZE CLIENT CONFIGURATIONS
+###################################
 sync_client_configs() {
   SUB_DIR="/var/www/${SUB_JSON_PATH}/vless_raw/"
 
@@ -2271,18 +2367,21 @@ sync_client_configs() {
 
     OUT_VL_NUM=$(jq '[.outbounds[].tag] | index("vless_raw")' $FILE_PATH)
     CLIENT=$(jq ".outbounds[${OUT_VL_NUM}].settings.vnext[].users[]" $FILE_PATH)
-  
+
     rm -rf ${FILE_PATH}
     cp -r ${DIR_XCORE}/repo/conf_template/client_raw.json ${FILE_PATH}
-  
+
     echo "$(jq ".outbounds[${OUT_VL_NUM}].settings.vnext[].users[] = ${CLIENT}" ${FILE_PATH})" > $FILE_PATH
-    sed -i -e "s/DOMAIN_TEMP/${DOMAIN}/g" ${FILE_PATH}
+    sed -i -e "s/DOMAIN_TEMP/${CURR_DOMAIN}/g" ${FILE_PATH}
 
     echo "Файл $FILENAME успешно обновлен."
   done
 }
 
-get_dns_stats() {
+###################################
+### FETCH AND DISPLAY DNS STATISTICS
+###################################
+fetch_dns_stats() {
   declare -A user_map
   local counter=0
   local last_choice=""
@@ -2353,11 +2452,13 @@ get_dns_stats() {
   done
 }
 
-# Общая функция для отображения списка пользователей
-display_users() {
+###################################
+### DISPLAY USER LIST FROM API
+###################################
+display_user_list() {
   local API_URL="http://localhost:9952/users"
   local field="$1"  # Поле для извлечения, например "enabled", "lim_ip", "renew", "sub_end"
-  
+
   declare -gA user_map
   local counter=0
 
@@ -2390,8 +2491,10 @@ display_users() {
   return 0
 }
 
-# Общая функция для обновления параметров
-update_user_param() {
+###################################
+### UPDATE USER PARAMETER VIA API
+###################################
+update_user_parameter() {
   local param_name="$1"  # Название параметра, например "lim_ip", "renew", "offset"
   local api_url="$2"     # URL для PATCH-запроса
   local prompt="$3"      # Текст для запроса нового значения
@@ -2404,7 +2507,7 @@ update_user_param() {
 
   while true; do
     # Получаем и отображаем список пользователей
-    display_users "$param_name"
+    display_user_list "$param_name"
     if [ $? -ne 0 ]; then
       return 1
     fi
@@ -2449,40 +2552,48 @@ update_user_param() {
   done
 }
 
-# Функция для включения/отключения пользователей
+###################################
+### TOGGLE USER STATUS VIA API
+###################################
 toggle_user_status() {
-  update_user_param "enabled" "http://localhost:9952/set-enabled" "Введите true для включения и false отключения"
-}
-
-# Функция для установки лимита IP
-set_lim_ip() {
-  update_user_param "lim_ip" "http://127.0.0.1:9952/update_lim_ip" "Введите новый лимит IP"
-}
-
-# Функция для обновления значения renew
-update_user_renew() {
-  update_user_param "renew" "http://127.0.0.1:9952/update_renew" "Введите новое значение renew"
-}
-
-# Функция для корректировки даты подписки
-adjust_user_subscription_date() {
-  update_user_param "sub_end" "http://localhost:9952/adjust-date" "Введите значение offset (например, +1, -1:3, 0)"
+  update_user_parameter "enabled" "http://localhost:9952/set-enabled" "Введите true для включения и false отключения"
 }
 
 ###################################
-### Removing all escape sequences
+### SET IP LIMIT FOR USER
 ###################################
-log_clear() {
+set_user_ip_limit() {
+  update_user_parameter "lim_ip" "http://127.0.0.1:9952/update_lim_ip" "Введите новый лимит IP"
+}
+
+###################################
+### UPDATE USER RENEWAL STATUS
+###################################
+update_user_renewal() {
+  update_user_parameter "renew" "http://127.0.0.1:9952/update_renew" "Введите новое значение renew"
+}
+
+###################################
+### ADJUST USER SUBSCRIPTION END DATE
+###################################
+adjust_subscription_date() {
+  update_user_parameter "sub_end" "http://localhost:9952/adjust-date" "Введите значение offset (например, +1, -1:3, 0)"
+}
+
+###################################
+### REMOVE ESCAPE SEQUENCES FROM LOG FILE
+###################################
+clean_log_file() {
   sed -i -e 's/\x1b\[[0-9;]*[a-zA-Z]//g' "$LOGFILE"
 }
 
 ###################################
-### Конфигурирование Xray core
+### XRAY CORE MANAGEMENT MENU
 ###################################
-xcore_proxy_menu() {
+manage_xray_core() {
   while true; do
     clear
-    banner_xcore
+    display_xcore_banner
     tilda "|--------------------------------------------------------------------------|"
     info " 1. Статистика Xray сервера"
     info " 2. DNS-запросы клиентов"
@@ -2502,42 +2613,42 @@ xcore_proxy_menu() {
     echo
     reading " $(text 1) " CHOICE_MENU        # Choise
     tilda "$(text 10)"
-    extract_data
+    extract_haproxy_data
     case $CHOICE_MENU in
       1)
         while true; do
-          display_stats
+          display_server_stats
           echo -n "Введите 0 для выхода (обновление каждые 10 секунд): "
           read -t 10 -r STATS_CHOICE
           [[ "$STATS_CHOICE" == "0" ]] && break
         done
         ;;
       2)
-        get_dns_stats
+        fetch_dns_stats
         ;;
       3)
-        add_user_config
+        add_new_user
         ;;
       4)
-        delete_user_config
+        delete_user
         ;;
       5)
         toggle_user_status
         ;;
       6)
-        set_lim_ip
+        set_user_ip_limit
         ;;
       7)
-        update_user_renew
+        update_user_renewal
         ;;
       8)
-        adjust_user_subscription_date
+        adjust_subscription_date
         ;;
       9)
         sync_client_configs
         ;;
       0)
-        xcore_manager
+        manage_xcore
         ;;
       *)
         warning " $(text 76) "
@@ -2546,10 +2657,13 @@ xcore_proxy_menu() {
   done
 }
 
-xcore_manager() {
+###################################
+### XCORE MANAGEMENT MENU
+###################################
+manage_xcore() {
   while true; do
     clear
-    banner_xcore
+    display_xcore_banner
     tilda "|--------------------------------------------------------------------------|"
     info " $(text 87) "                      # 1. Install
     echo
@@ -2558,13 +2672,13 @@ xcore_manager() {
     info " $(text 90) "                      # 4. Change domain
     info " $(text 91) "                      # 5. Renew cert
     echo
-    info " $(text 93) "                      # 7. Steal web site
+    info " $(text 92) "                      # 6. Steal web site
     echo
-    info " $(text 94) "                      # 8. Directory size
-    info " $(text 95) "                      # 9. Traffic statistics
-    info " $(text 96) "                      # 10. Change language
+    info " $(text 93) "                      # 7. Directory size
+    info " $(text 94) "                      # 8. Traffic statistics
+    info " $(text 95) "                      # 9. Change language
     echo
-    info " 13. Конфигурирование Xray "       # 13. Конфигурирование Xray
+    info " $(text 96) "                      # X. Управление Xray
     echo
     info " $(text 84) "                      # Exit
     tilda "|--------------------------------------------------------------------------|"
@@ -2576,63 +2690,63 @@ xcore_manager() {
       1)
         enable_logging
         clear
-        check_dependencies
-        banner_xcore
-        warning_banner
-        data_entry
-        [[ ${args[utils]} == "true" ]] && installation_of_utilities
-        [[ ${args[autoupd]} == "true" ]] && setup_auto_updates
-        [[ ${args[bbr]} == "true" ]] && enable_bbr
-        [[ ${args[ipv6]} == "true" ]] && disable_ipv6
-      	[[ ${args[warp]} == "true" ]] && warp
-        [[ ${args[cert]} == "true" ]] && issuance_of_certificates
-        [[ ${args[mon]} == "true" ]] && monitoring
-        [[ ${args[shell]} == "true" ]] && shellinabox
-        update_xcore
-        random_site
-        [[ ${args[nginx]} == "true" ]] && nginx_setup
-        haproxy_setup
-        [[ ${args[xray]} == "true" ]] && xray_server_conf
-        [[ ${args[xray]} == "true" ]] && xray_client_conf
-        xcore_service
-        write_defaults_to_file
-#        rotation_and_archiving
-        [[ ${args[firewall]} == "true" ]] && enabling_security
-        [[ ${args[ssh]} == "true" ]] && ssh_setup
-        data_output
+        install_dependencies
+        display_xcore_banner
+        display_pre_install_warning
+        collect_user_data
+        [[ ${args[utils]} == "true" ]] && install_utility_packages
+        [[ ${args[autoupd]} == "true" ]] && configure_auto_updates
+        [[ ${args[bbr]} == "true" ]] && enable_bbr_optimization
+        [[ ${args[ipv6]} == "true" ]] && disable_ipv6_support
+      	[[ ${args[warp]} == "true" ]] && configure_warp
+        [[ ${args[cert]} == "true" ]] && issue_certificates
+        [[ ${args[mon]} == "true" ]] && setup_node_exporter
+        [[ ${args[shell]} == "true" ]] && setup_shell_in_a_box
+        update_xcore_manager
+        apply_random_website_template
+        [[ ${args[nginx]} == "true" ]] && setup_nginx
+        configure_haproxy
+        [[ ${args[xray]} == "true" ]] && setup_xray_server
+        [[ ${args[xray]} == "true" ]] && setup_xray_client
+        setup_xcore_service
+        save_defaults_to_config
+        rotation_and_archiving
+        [[ ${args[firewall]} == "true" ]] && configure_firewall
+        [[ ${args[ssh]} == "true" ]] && configure_ssh_security
+        display_configuration_output
         disable_logging
-        log_clear
+        clean_log_file
         ;;
       2)
         if [ ! -d "/opt/xcore/backup" ]; then
           rotation_and_archiving
         fi
-        restore_backup
+        restore_from_backup
         ;;
       3)
         migration
         ;;
       4)
-        change_domain
+        change_domain_name
         ;;
       5)
-        renew_cert
+        reissue_certificates
+        ;;
+      6)
+        mirror_website
         ;;
       7)
-        download_website
+        show_directory_size
         ;;
       8)
-        directory_size
+        show_traffic_statistics
         ;;
       9)
-        traffic_stats
-        ;;
-      10)
         rm -rf ${DIR_XCORE}/lang.conf
-        select_language
+        configure_language
         ;;
-      13)
-        xcore_proxy_menu
+      x|X)
+        manage_xray_core
         ;;
       0)
         clear
@@ -2646,21 +2760,21 @@ xcore_manager() {
     info " $(text 85) "
     read -r dummy
   done
-  log_clear
+  clean_log_file
 }
 
 ###################################
-### Main function
+### MAIN FUNCTION
 ###################################
 main() {
-  read_defaults_from_file
-  parse_args "$@" || show_help
-  check_root
-  check_ip
-  check_operating_system
+  load_defaults_from_config
+  parse_command_line_args "$@" || display_help_message
+  verify_root_privileges
+  detect_external_ip
+  detect_operating_system
   echo
-  select_language
-  xcore_manager
+  configure_language
+  manage_xcore
 }
 
 main "$@"

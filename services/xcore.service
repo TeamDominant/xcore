@@ -5,10 +5,10 @@ After=network.target
 [Service]
 User=root
 Group=root
-ExecStart=/opt/xcore/bin/go run main.go -dns=true
-WorkingDirectory=/opt/xcore/bin
+ExecStart=/usr/local/xcore/xcore -dns=true
+WorkingDirectory=/usr/local/xcore
 Restart=always
-RestartSec=5
+RestartSec=30
 KillSignal=SIGTERM
 TimeoutStopSec=10
 

@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>XRP SUB</title>
+    <title>X Core</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         * {
@@ -14,26 +14,20 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(255, 255, 255, 0.8)),
-                        url('background.jpg');
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.5), rgba(255, 255, 255, 0.3)),
+                        url('background.png');
             background-size: cover;
             background-blend-mode: overlay;
-            color: #fff;
+            color: #e0e0e0;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             padding: 20px;
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        body.dark-mode {
-            background-color: #181818;
-            color: #f1f1f1;
         }
 
         .container {
-            background: rgba(63, 63, 63, 0.5);
+            background: rgba(80, 80, 80, 0.7);
             padding: 30px;
             border-radius: 30px;
             box-shadow: 0 10px 50px rgba(0, 0, 0, 0.6);
@@ -42,29 +36,17 @@
             margin: auto;
         }
 
-        .container.dark-mode {
-            background: rgba(33, 33, 33, 0.9);
-        }
-
         h1 {
             text-align: center;
             font-size: 2.5rem;
             margin-bottom: 30px;
-            color: #000000;
-        }
-
-        h1.dark-mode {
-            color: #ffffff;
+            color: #e0e0e0;
         }
 
         h2, h3 {
             margin-bottom: 15px;
             font-weight: 600;
-            color: #000000;
-        }
-
-        h2.dark-mode, h3.dark-mode {
-            color: #f1f1f1;
+            color: #e0e0e0;
         }
 
         .section {
@@ -73,49 +55,50 @@
 
         .button-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 1rem;
+        }
+
+        .button-grid--single {
+            grid-template-columns: 1fr;
         }
 
         .button {
             padding: 12px;
-            border: none;
+            border: 1px solid #000; /* Чёрная обводка */
             border-radius: 14px;
             font-size: 16px;
             cursor: pointer;
-            background-color: #d4d4d4;
-            color: #000000;
-            transition: background 0.3s ease;
-        }
-
-        .button.dark-mode {
-            background-color: #444;
+            background-color: #777;
             color: #fff;
+            transition: background 0.3s ease, box-shadow 0.3s ease; /* Добавляем тень в transition */
         }
 
         .button:hover {
-            background-color: #ffffff;
-        }
-
-        .button.dark-mode:hover {
-            background-color: #666;
+            background-color: #999;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); /* Лёгкая тень при наведении */
         }
 
         input[type="text"] {
             width: 100%;
             padding: 10px;
             font-size: 16px;
-            border: 2px solid #000;
+            border: 2px solid #999;
             border-radius: 14px;
-            background-color: #d4d4d4;
-            color: #000000;
+            background-color: #777;
+            color: #fff;
             margin-bottom: 15px;
+            transition: border-color 0.3s ease; /* Плавный переход для бордера */
         }
 
-        input.dark-mode[type="text"] {
-            background-color: #444;
-            color: #fff;
-            border-color: #666;
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #ccc; /* Светлее бордер при фокусе */
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2); /* Лёгкая тень при фокусе */
+        }
+
+        .app-section {
+            margin-bottom: 20px; /* Увеличиваем отступ для замены <br> */
         }
 
         .app-section h3 {
@@ -123,36 +106,16 @@
             margin-bottom: 10px;
         }
 
-        .theme-toggle {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: #444;
-            border: none;
-            padding: 10px;
-            border-radius: 20px;
-            cursor: pointer;
-        }
-
-        .theme-toggle.dark-mode {
-            background: #d4d4d4;
-            color: #fff;
-        }
-
         #qrcode {
             margin-top: 20px;
             text-align: center;
-            background: transparent !important; /* Контейнер остается прозрачным */
+            background: transparent !important;
         }
 
         #qrcode canvas {
-            border-radius: 25px; /* Закругление углов */
-            background: #d4d4d4; /* Фон по умолчанию для светлой темы */
-            box-shadow: none; /* Убираем тень, если она есть */
-        }
-
-        body.dark-mode #qrcode canvas {
-            background: #444; /* Фон для темной темы */
+            border-radius: 25px;
+            background: #777;
+            box-shadow: none;
         }
 
         @media (max-width: 768px) {
@@ -175,12 +138,6 @@
                 padding: 12px;
             }
 
-            .theme-toggle {
-                top: 10px;
-                right: 10px;
-                font-size: 20px;
-            }
-
             .app-section h3 {
                 font-size: 16px;
             }
@@ -196,13 +153,12 @@
                 padding: 10px;
             }
         }
-            </style>
+    </style>
 </head>
 
 <body>
     <div class="container">
-        <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
-        <h1>REVERSE PROXY</h1>
+        <h1>X Core</h1>
 
         <section class="section">
             <h2>1. Скачать приложение</h2>
@@ -214,14 +170,12 @@
                     <button class="button" onclick="window.open('https://github.com/InvisibleManVPN/InvisibleMan-XRayClient/releases/latest', '_blank')">Invisible Man</button>
                 </div>
             </div>
-            <br>
             <div class="app-section">
                 <h3>Android</h3>
                 <div class="button-grid">
                     <button class="button" onclick="window.open('https://play.google.com/store/apps/details?id=com.v2ray.ang', '_blank')">V2rayNG</button>
                 </div>
             </div>
-            <br>
             <div class="app-section">
                 <h3>iOS</h3>
                 <div class="button-grid">
@@ -229,78 +183,42 @@
                     <button class="button" onclick="window.open('https://apps.apple.com/us/app/streisand/id6450534064', '_blank')">Streisand</button>
                 </div>
             </div>
-            <!--
-            <br>
-            <div class="app-section">
-                <h3>Linux</h3>
-                <div class="button-grid">
-                    <button class="button" onclick="window.open('https://github.com/2dust/v2rayN/releases', '_blank')">V2rayN</button>
-                </div>
-            </div>
-            -->
         </section>
         
-        <h2>2. Подключиться к серверу</h2>
-        <form onsubmit="return false;">
-            <input type="text" placeholder="Введите имя пользователя..." id="nameInput" required><br>
-            <div class="app-section">
-                <h3>Android</h3>
-                <div class="button-grid">
-                    <button class="button" onclick="openV2rayNGApp('v2rayng://install-config?url=')">Добавить в V2rayNG</button>
-                    <button class="button" onclick="openApp('invxray://subscription/')">Добавить в Invisible Man</button>
+        <section class="section">
+            <h2>2. Подключиться к серверу</h2>
+            <form onsubmit="return false;">
+                <input type="text" placeholder="Введите имя пользователя..." id="nameInput" required>
+                <div class="app-section">
+                    <h3>Ручная настройка</h3>
+                    <div class="button-grid">
+                        <button class="button" onclick="copyXrayJsonLink()">Скопировать ссылку</button>
+                        <button class="button" onclick="generateQRCode()">Сгенерировать QR-код</button>
+                    </div>
                 </div>
-            </div>
-            <br>
-            <div class="app-section">
-                <h3>iOS</h3>
-                <div class="button-grid">
-                    <button class="button" onclick="openV2boxApp('v2box://install-sub?url=')">Добавить в V2box</button>
-                    <button class="button" onclick="openApp('streisand://import/')">Добавить в Streisand</button>
+                <div class="app-section">
+                    <h3>Android</h3>
+                    <div class="button-grid">
+                        <button class="button" onclick="openV2rayNGApp('v2rayng://install-config?url=')">Добавить в V2rayNG</button>
+                        <button class="button" onclick="openApp('invxray://subscription/')">Добавить в Invisible Man</button>
+                    </div>
                 </div>
-            </div>
-            <br>
-            <div class="app-section">
-                <h3>Ручная настройка</h3>
-                <div class="button-grid">
-                    <button class="button" onclick="copyXrayJsonLink()">Скопировать ссылку</button>
-                    <button class="button" onclick="generateQRCode()">Сгенерировать QR-код</button>
+                <div class="app-section">
+                    <h3>iOS</h3>
+                    <div class="button-grid">
+                        <button class="button" onclick="openV2boxApp('v2box://install-sub?url=')">Добавить в V2box</button>
+                        <button class="button" onclick="openApp('streisand://import/')">Добавить в Streisand</button>
+                    </div>
                 </div>
-            </div>
-            <div id="qrcode"></div>
-        </form>
+                <div id="qrcode"></div>
+            </form>
+        </section>
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     
     <script>
         const baseDomain = "https://DOMAIN_TEMP/SUB_JSON_PATH_TEMP/vless_raw/";
-        
-        function toggleTheme() {
-            const body = document.body;
-            const container = document.querySelector('.container');
-            const buttons = document.querySelectorAll('.button');
-            const inputs = document.querySelectorAll('input');
-            const themeToggleButton = document.querySelector('.theme-toggle');
-            const headers = document.querySelectorAll('h1, h2, h3');
-
-            body.classList.toggle('dark-mode');
-            container.classList.toggle('dark-mode');
-            buttons.forEach(button => button.classList.toggle('dark-mode'));
-            inputs.forEach(input => input.classList.toggle('dark-mode'));
-            themeToggleButton.classList.toggle('dark-mode');
-            headers.forEach(header => header.classList.toggle('dark-mode'));
-
-            if (body.classList.contains('dark-mode')) {
-                themeToggleButton.innerHTML = "☀️";
-            } else {
-                themeToggleButton.innerHTML = "🌙";
-            }
-
-            // Перегенерируем QR-код при смене темы
-            if (document.getElementById('qrcode').innerHTML !== '') {
-                generateQRCode();
-            }
-        }
         
         function generateQRCode() {
             const name = document.getElementById('nameInput').value.trim();
@@ -311,22 +229,17 @@
 
             const fullUrl = `${baseDomain}${encodeURIComponent(name)}.json`;
 
-            // Очищаем предыдущий QR-код
             const qrContainer = document.getElementById('qrcode');
             qrContainer.innerHTML = '';
 
-            // Создаем canvas для QR-кода
             const canvas = document.createElement('canvas');
             qrContainer.appendChild(canvas);
 
-            // Определяем цвета для QR-кода в зависимости от темы
-            const isDarkMode = document.body.classList.contains('dark-mode');
             const qrColors = {
-                dark: isDarkMode ? '#ffffff' : '#000000', // Цвет элементов QR-кода
-                light: isDarkMode ? '#444' : '#d4d4d4' // Фон QR-кода
+                dark: '#000000', // Чёрные элементы QR-кода
+                light: '#777' // Серый фон QR-кода
             };
 
-            // Генерация QR-кода с учетом текущей темы
             QRCode.toCanvas(canvas, fullUrl, {
                 width: 200,
                 color: qrColors
@@ -337,7 +250,21 @@
             });
         }
 
+        function adjustButtonGrids() {
+            const buttonGrids = document.querySelectorAll('.button-grid');
+            buttonGrids.forEach(grid => {
+                const buttons = grid.querySelectorAll('.button');
+                if (buttons.length === 1) {
+                    grid.classList.add('button-grid--single');
+                } else {
+                    grid.classList.remove('button-grid--single');
+                }
+            });
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
+            adjustButtonGrids();
+            
             const params = new URLSearchParams(window.location.search);
             const name = params.get('name');
             if (name) {
