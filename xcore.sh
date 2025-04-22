@@ -898,7 +898,7 @@ install_nginx() {
   cd nginx-$NGINX_VERSION
   git clone https://github.com/leev/ngx_http_geoip2_module.git /tmp/ngx_http_geoip2_module
 
-./configure \
+  ./configure \
     --prefix=/usr \
     --sbin-path=/usr/sbin/nginx \
     --modules-path=/usr/lib/nginx/modules \
@@ -940,6 +940,7 @@ install_nginx() {
     --add-dynamic-module=/tmp/ngx_http_geoip2_module \
     --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -fPIC" \
     --with-ld-opt="-Wl,-z,relro -Wl,-z,now -Wl,--as-needed -pie"
+
   make
   make install
 
@@ -1337,14 +1338,14 @@ http {
   # GeoIP2: Determine geographical information from IP (City)
   geoip2 /etc/nginx/geolite2/GeoLite2-City.mmdb {
     auto_reload                        12h;
-    \$geoip2_city_name                 city names en;
+    \$geoip2_city_name                  city names en;
   }
 
   # GeoIP2: Determine geographical information from IP (ASN)
   geoip2 /etc/nginx/geolite2/GeoLite2-ASN.mmdb {
     auto_reload 12h;
-    \$geoip2_asn                       autonomous_system_number;
-    \$geoip2_organization              autonomous_system_organization;
+    \$geoip2_asn                        autonomous_system_number;
+    \$geoip2_organization               autonomous_system_organization;
   }
 
   # Country access map
@@ -1352,6 +1353,12 @@ http {
     default                            0;
     NL                                 1;
     RU                                 1;
+  }
+
+  # Карта для блокировки по организации
+  map \$geoip2_organization \$allow_organization {
+    default                              1;
+    "Chang Way Technologies Co. Limited" 0;
   }
 
   # Clean URI by removing ?x_padding parameter
@@ -1443,6 +1450,9 @@ server {
   listen                               36078;
   server_name                          _;
 
+  # Access log
+  access_log /var/log/nginx/access.log json_analytics;
+
   # Блокировка по стране
   if (\$allow_country = 0) {
     return 403;
@@ -1518,6 +1528,7 @@ EOF
 schedule_geolite2_updates() {
   cat > ${DIR_XCORE}/geolite2_update.sh <<EOF
 #!/usr/bin/env bash
+
 DEST_DIR="/etc/nginx/geolite2"
 mkdir -p "\$DEST_DIR"
 
@@ -1529,6 +1540,8 @@ curl -s https://api.github.com/repos/P3TERX/GeoLite.mmdb/releases/latest \
   fname=\$(basename "\$url")
   wget -qO "\$DEST_DIR/\$fname" "\$url"
 done
+
+nginx -s reload
 EOF
   chmod +x ${DIR_XCORE}/geolite2_update.sh
   bash "${DIR_XCORE}/geolite2_update.sh"
@@ -2018,13 +2031,13 @@ create_backup_script() {
   cat > ${DIR_XCORE}/backup_dir.sh <<EOF
 #!/usr/bin/env bash
 
-# Создаем директорию для резервных копий, если её нет
-mkdir -p "\$BACKUP_DIR"
-
 # Путь к директории резервного копирования
 BACKUP_DIR="/opt/xcore/backup"
 CURRENT_DATE=\$(date +"%y-%m-%d")
 ARCHIVE_NAME="\${BACKUP_DIR}/backup_\${CURRENT_DATE}.7z"
+
+# Создаем директорию для резервных копий, если её нет
+mkdir -p "\$BACKUP_DIR"
 
 # Ищем в /var/www директорию с именем длиной 30 символов
 DYN_DIR=$(find /var/www -maxdepth 1 -mindepth 1 -type d -printf '%f\n' | awk 'length == 30')
@@ -2036,7 +2049,6 @@ else
   echo "Ошибка при создании архива"
   exit 1
 fi
-
 EOF
   chmod +x ${DIR_XCORE}/backup_dir.sh
   bash "${DIR_XCORE}/backup_dir.sh"
@@ -2058,7 +2070,6 @@ DAY_TO_KEEP=6
 find "\$BACKUP_DIR" -type f -name "backup_*.7z" -mtime +\$DAY_TO_KEEP -exec rm -v -f {} \; | while read -r line; do
   echo "Удалён файл: \$line"
 done
-
 EOF
   chmod +x ${DIR_XCORE}/rotation_backup.sh
   bash "${DIR_XCORE}/rotation_backup.sh"
@@ -2075,6 +2086,7 @@ rotation_and_archiving() {
 
   ${PACKAGE_UPDATE[int]}
   ${PACKAGE_INSTALL[int]} p7zip-full
+  mkdir -p "/opt/xcore/backup"
   create_backup_script
   create_rotation_script
   journalctl --vacuum-time=7days

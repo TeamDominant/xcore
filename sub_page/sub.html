@@ -294,7 +294,7 @@
                 alert("Введите имя пользователя!");
                 return;
             }
-            const fullUrl = `${scheme}${baseDomain}${encodeURIComponent(name)}.json#REVERSE_PROXY`;
+            const fullUrl = `${scheme}${baseDomain}${encodeURIComponent(name)}.json#X-Core`;
             window.open(fullUrl);
         }
 
@@ -314,7 +314,7 @@
                 alert("Введите имя пользователя!");
                 return;
             }
-            const fullUrl = `${scheme}${baseDomain}${encodeURIComponent(name)}.json&name=REVERSE_PROXY`;
+            const fullUrl = `${scheme}${baseDomain}${encodeURIComponent(name)}.json&name=X-Core`;
             window.open(fullUrl);
         }
 
