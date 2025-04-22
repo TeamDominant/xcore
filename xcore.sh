@@ -1,3 +1,7 @@
+# Copyright (c) 2025 xCore Authors
+# This file is part of xCore.
+# xCore is licensed under the xCore Software License. See the LICENSE file for details.
+
 #!/usr/bin/env bash
 
 ###################################
@@ -1100,7 +1104,7 @@ swapfile() {
   swapon --show
 
   cat > ${DIR_XCORE}/restart_warp.sh <<EOF
-#!/bin/bash
+#!/usr/bin/env bash
 # Получаем количество занятого пространства в swap (в мегабайтах)
 SWAP_USED=\$(free -m | grep Swap | awk '{print \$3}')
 # Проверяем, больше ли оно 300 Мб
@@ -1794,7 +1798,7 @@ setup_xray_client() {
 ###################################
 create_sync_script() {
   cat > ${DIR_XCORE}/sync_xcore.sh <<EOF
-#!/bin/bash
+#!/usr/bin/env bash
 
 chmod +x /opt/xcore/repo/bin/xcore
 rsync -av /opt/xcore/repo/bin/ /usr/local/xcore/
@@ -2012,7 +2016,7 @@ migration(){
 ###################################
 create_backup_script() {
   cat > ${DIR_XCORE}/backup_dir.sh <<EOF
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Создаем директорию для резервных копий, если её нет
 mkdir -p "\$BACKUP_DIR"
@@ -2046,7 +2050,7 @@ EOF
 ###################################
 create_rotation_script() {
   cat > ${DIR_XCORE}/rotation_backup.sh <<EOF
-#!/bin/bash
+#!/usr/bin/env bash
 
 BACKUP_DIR="/opt/xcore/backup"
 DAY_TO_KEEP=6
