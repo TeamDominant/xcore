@@ -7,7 +7,7 @@
 ###################################
 ### GLOBAL CONSTANTS AND VARIABLES
 ###################################
-VERSION_MANAGER='0.9.7'
+VERSION_MANAGER='0.9.8'
 VERSION_XRAY='25.1.30'
 
 DIR_XCORE="/opt/xcore"
@@ -356,7 +356,7 @@ update_xcore_manager() {
   ln -sf "${DIR_XCORE}/repo/xcore.sh" /usr/local/bin/xcore
 
   crontab -l | grep -v -- "--update" | crontab -
-  schedule_cron_job "10 5 * * * /opt/xcore/repo/xcore.sh --update"
+  schedule_cron_job "15 5 * * * ${DIR_XCORE}/repo/xcore.sh --update"
 
   tilda "\n|-----------------------------------------------------------------------------|\n"
 }
@@ -1547,7 +1547,7 @@ EOF
   bash "${DIR_XCORE}/geolite2_update.sh"
 
   crontab -l | grep -v -- "geolite2_update.sh" | crontab -
-  schedule_cron_job "0 5 */3 * * ${DIR_XCORE}/geolite2_update.sh"
+  schedule_cron_job "20 5 */3 * * ${DIR_XCORE}/geolite2_update.sh"
 }
 
 ###################################
@@ -2054,7 +2054,7 @@ EOF
   bash "${DIR_XCORE}/backup_dir.sh"
 
   crontab -l | grep -v -- "backup_dir.sh" | crontab -
-  schedule_cron_job "0 5 * * * ${DIR_XCORE}/backup_dir.sh"
+  schedule_cron_job "5 5 * * * ${DIR_XCORE}/backup_dir.sh"
 }
 
 ###################################
@@ -2075,7 +2075,7 @@ EOF
   bash "${DIR_XCORE}/rotation_backup.sh"
 
   crontab -l | grep -v -- "rotation_backup.sh" | crontab -
-  schedule_cron_job "5 5 * * * ${DIR_XCORE}/rotation_backup.sh"
+  schedule_cron_job "10 5 * * * ${DIR_XCORE}/rotation_backup.sh"
 }
 
 ###################################
@@ -2577,7 +2577,7 @@ toggle_user_status() {
 ###################################
 ### SET IP LIMIT FOR USER
 ###################################
-set_user_ip_limit() {
+set_user_lim_ip() {
   update_user_parameter "lim_ip" "http://127.0.0.1:9952/update_lim_ip" "Введите новый лимит IP"
 }
 
@@ -2592,7 +2592,7 @@ update_user_renewal() {
 ### ADJUST USER SUBSCRIPTION END DATE
 ###################################
 adjust_subscription_date() {
-  update_user_parameter "sub_end" "http://localhost:9952/adjust-date" "Введите значение offset (например, +1, -1:3, 0)"
+  update_user_parameter "sub_end" "http://localhost:9952/adjust-date" "Введите значение sub_end (например, +1, -1:3, 0)"
 }
 
 ###################################
@@ -2651,7 +2651,7 @@ manage_xray_core() {
         toggle_user_status
         ;;
       6)
-        set_user_ip_limit
+        set_user_lim_ip
         ;;
       7)
         update_user_renewal
