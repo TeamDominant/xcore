@@ -7,7 +7,7 @@
 ###################################
 ### GLOBAL CONSTANTS AND VARIABLES
 ###################################
-VERSION_MANAGER='0.9.8'
+VERSION_MANAGER='0.9.9'
 VERSION_XRAY='25.1.30'
 
 DIR_XCORE="/opt/xcore"
@@ -1260,7 +1260,7 @@ location /${SHELLBOX}/ {
   auth_basic "Restricted Content";
   auth_basic_user_file /etc/nginx/.htpasswd;
 
-  # access_log off;
+  access_log off;
   break;
 }
 EOF
@@ -1556,6 +1556,7 @@ EOF
 setup_nginx() {
   info " $(text 45) "
 
+  mkdir -p /etc/nginx/conf.d/
   mkdir -p /etc/nginx/locations/
   mkdir -p /etc/nginx/geolite2/
   rm -rf /etc/nginx/conf.d/default.conf
@@ -2365,6 +2366,7 @@ delete_user() {
           ;;
       esac
     done
+  systemctl reload nginx && systemctl reload haproxy && systemctl restart xray
   echo
   echo "|--------------------------------------------------------------------------|"
   echo
