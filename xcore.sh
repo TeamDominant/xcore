@@ -957,6 +957,8 @@ install_nginx() {
   systemctl restart nginx
   systemctl status nginx --no-pager
 
+  cd ..
+
   rm -rf nginx-$NGINX_VERSION.tar.gz nginx-$NGINX_VERSION /tmp/ngx_http_geoip2_module
 }
 
@@ -1853,9 +1855,11 @@ configure_firewall() {
   case "$SYSTEM" in
     Debian|Ubuntu)
       ufw --force reset
+      ufw insert 1 deny from "$BLOCK_ZONE_IP" comment 'Protection from my own subnet (reality of degenerates)'
+      ufw insert 2 deny from 95.161.76.0/24 comment 'TGBOT NL'
+      ufw insert 3 deny from 149.154.161.0/24 comment 'TGBOT NL'
       ufw limit 22/tcp comment 'SSH'
       ufw allow 443/tcp comment 'WEB'
-      ufw insert 1 deny from "$BLOCK_ZONE_IP" comment 'Protection from my own subnet (reality of degenerates)'
       ufw --force enable
       ;;
 
