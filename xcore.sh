@@ -7,7 +7,7 @@
 ###################################
 ### GLOBAL CONSTANTS AND VARIABLES
 ###################################
-VERSION_MANAGER='0.9.13'
+VERSION_MANAGER='0.9.14'
 VERSION_XRAY='25.1.30'
 
 DIR_XCORE="/opt/xcore"
@@ -969,13 +969,13 @@ install_utility_packages() {
   info " $(text 36) "
   case "$SYSTEM" in
     Debian|Ubuntu)
-      DEPS_PACK_CHECK=("jq" "ufw" "zip" "wget" "gpg" "nano" "cron" "rsync" "sqlite3" "haproxy" "certbot" "vnstat" "openssl" "netstat" "htpasswd" "update-ca-certificates" "add-apt-repository" "unattended-upgrades" "certbot-dns-cloudflare")
-      DEPS_PACK_INSTALL=("jq" "ufw" "zip" "wget" "gnupg2" "nano" "cron" "rsync" "sqlite3" "haproxy" "certbot" "vnstat" "openssl" "net-tools" "apache2-utils" "ca-certificates" "software-properties-common" "unattended-upgrades" "python3-certbot-dns-cloudflare")
+      DEPS_PACK_CHECK=("jq" "ufw" "zip" "wget" "gpg" "nano" "rsync" "sqlite3" "haproxy" "certbot" "cron" "vnstat" "openssl" "netstat" "htpasswd" "update-ca-certificates" "add-apt-repository" "unattended-upgrades" "certbot-dns-cloudflare")
+      DEPS_PACK_INSTALL=("jq" "ufw" "zip" "wget" "gnupg2" "nano" "rsync" "sqlite3" "haproxy" "certbot" "cron" "vnstat" "openssl" "net-tools" "apache2-utils" "ca-certificates" "software-properties-common" "unattended-upgrades" "python3-certbot-dns-cloudflare")
       ;;
 
     CentOS|Fedora)
-      DEPS_PACK_CHECK=("jq" "zip" "tar" "wget" "gpg" "nano" "rsync" "sqlite3" "crontab" "haproxy" "openssl" "netstat" "nslookup" "htpasswd" "certbot" "update-ca-certificates" "certbot-dns-cloudflare")
-      DEPS_PACK_INSTALL=("jq" "zip" "tar" "wget" "gnupg2" "nano" "rsync" "sqlite3" "cronie" "haproxy" "openssl" "net-tools" "bind-utils" "httpd-tools" "certbot" "ca-certificates" "python3-certbot-dns-cloudflare")
+      DEPS_PACK_CHECK=("jq" "zip" "tar" "wget" "gpg" "nano" "rsync" "sqlite3" "haproxy" "certbot" "crontab" "vnstat" "openssl" "netstat" "htpasswd" "update-ca-certificates" "certbot-dns-cloudflare" "nslookup")
+      DEPS_PACK_INSTALL=("jq" "zip" "tar" "wget" "gnupg2" "nano" "rsync" "sqlite3" "haproxy" "certbot" "cronie" "vnstat" "openssl" "net-tools" "bind-utils" "httpd-tools" "ca-certificates" "python3-certbot-dns-cloudflare" "bind-utils")
       ;;
   esac
 
@@ -1831,7 +1831,8 @@ EOF
 ###################################
 setup_xcore_service() {
   create_sync_script
-
+  
+  bash <(curl -Ls https://raw.githubusercontent.com/cortez24rus/motd/refs/heads/X/install.sh)
   chmod +x ${DIR_XCORE}/repo/services/xcore.service
   mv -f "${DIR_XCORE}/repo/services/xcore.service" "/etc/systemd/system/xcore.service"
 
@@ -1894,7 +1895,6 @@ configure_ssh_security() {
       s/PermitEmptyPasswords yes/PermitEmptyPasswords no/g;
     " /etc/ssh/sshd_config
 
-    bash <(curl -Ls https://raw.githubusercontent.com/cortez24rus/motd/refs/heads/X/install.sh)
     systemctl restart ssh
     tilda "$(text 10)"
   fi
@@ -1920,8 +1920,6 @@ display_configuration_output() {
   echo
   out_data " $(text 63) " "$USERNAME"
   out_data " $(text 64) " "$PASSWORD"
-  echo
-  out_data " $(text 65) " "$LOGFILE"
   tilda "$(text 10)"
 }
 
@@ -2018,15 +2016,6 @@ show_directory_size() {
   echo
   du -ah ${DIRECTORY} --max-depth=1 | grep -v '/$' | sort -rh | head -10
   echo
-}
-
-###################################
-### MIGRATE TO NEW VERSION (STUB)
-###################################
-migration(){
-  info " $(text 97) "
-
-  info " $(text 98) "
 }
 
 ###################################
@@ -2191,9 +2180,6 @@ restore_from_backup() {
 ### DISPLAY TRAFFIC STATISTICS
 ###################################
 show_traffic_statistics() {
-  ${PACKAGE_UPDATE[int]} >/dev/null 2>&1
-  ${PACKAGE_INSTALL[int]} vnstat >/dev/null 2>&1
-
   hint " $(text 106) \n"  # Показывает информацию о доступных языках
   reading " $(text 1) " CHOICE_STATS  # Запрашивает выбор языка
 
@@ -2689,7 +2675,7 @@ manage_xcore() {
     info " $(text 87) "                      # 1. Install
     echo
     info " $(text 88) "                      # 2. Restore backup
-    info " $(text 89) "                      # 3. Migration
+    #info " $(text 89) "                      # 3. Вывод
     info " $(text 90) "                      # 4. Change domain
     info " $(text 91) "                      # 5. Renew cert
     echo
@@ -2745,7 +2731,7 @@ manage_xcore() {
         restore_from_backup
         ;;
       3)
-        migration
+        #display_configuration_output
         ;;
       4)
         change_domain_name
