@@ -7,7 +7,7 @@
 ###################################
 ### GLOBAL CONSTANTS AND VARIABLES
 ###################################
-VERSION_MANAGER='0.9.15'
+VERSION_MANAGER='0.9.16'
 VERSION_XRAY='v25.3.6'
 
 DIR_XCORE="/opt/xcore"
@@ -2301,6 +2301,8 @@ add_new_user() {
 
         read XRAY_UUID < <(generate_uuid)
 
+        DOMAIN=$CURR_DOMAIN
+
         # Добавление пользователя
         configure_xray_client
 
@@ -2645,6 +2647,7 @@ clean_log_file() {
 manage_xray_core() {
   while true; do
     clear
+    extract_haproxy_data
     display_xcore_banner
     tilda "|--------------------------------------------------------------------------|"
     info " 1. Статистика Xray сервера"
@@ -2665,7 +2668,6 @@ manage_xray_core() {
     echo
     reading " $(text 1) " CHOICE_MENU        # Choise
     tilda "$(text 10)"
-    extract_haproxy_data
     case $CHOICE_MENU in
       1)
         while true; do
