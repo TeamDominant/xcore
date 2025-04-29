@@ -7,7 +7,7 @@
 ###################################
 ### GLOBAL CONSTANTS AND VARIABLES
 ###################################
-VERSION_MANAGER='0.9.16'
+VERSION_MANAGER='0.9.17'
 VERSION_XRAY='v25.3.6'
 
 DIR_XCORE="/opt/xcore"
@@ -356,7 +356,7 @@ update_xcore_manager() {
   ln -sf "${DIR_XCORE}/repo/xcore.sh" /usr/local/bin/xcore
 
   crontab -l | grep -v -- "--update" | crontab -
-  schedule_cron_job "15 5 * * * ${DIR_XCORE}/repo/xcore.sh --update"
+  # schedule_cron_job "15 5 * * * ${DIR_XCORE}/repo/xcore.sh --update"
 
   tilda "\n|-----------------------------------------------------------------------------|\n"
 }
@@ -2433,6 +2433,47 @@ sync_client_configs() {
 }
 
 ###################################
+### UPDATE XRAY CHAIN OUTBOUNDS
+###################################
+update_xray_chain_outbounds() {
+  read -rp "Введи ссылку на подписку: " link
+
+  resp=$(curl -s -w '%{http_code}' "$link")
+  http_code="${resp: -3}"
+  body="${resp::-3}"
+
+  if [[ "$http_code" != 2* ]]; then
+    echo "Ошибка HTTP: код $http_code" >&2
+    return 1
+  fi
+
+  # 2) Проверяем JSON синтаксис
+  if ! jq -e . >/dev/null 2>&1 <<<"$body"; then
+    echo "Невалидный JSON по ссылке $link" >&2
+    return 1
+  fi
+
+  # 3) Извлекаем нужный outbound
+  remote_outbound=$(jq -c '.outbounds
+      | map(select(.tag=="vless_raw"))
+      | .[0]
+      | if . then (.tag="vless_raw_chain") else empty end' \
+    <<<"$body")
+
+  if [[ -z "$remote_outbound" ]]; then
+    echo "Тег vless_raw не найден" >&2
+    return 1
+  fi
+
+  jq --argjson new_outbound "$remote_outbound" \
+    '.outbounds |= [$new_outbound] + .' \
+    "${DIR_XRAY}/config.json" > "${DIR_XRAY}/config.json.tmp" \
+    && mv "${DIR_XRAY}/config.json.tmp" "${DIR_XRAY}/config.json"
+  
+  systemctl restart xray
+}
+
+###################################
 ### FETCH AND DISPLAY DNS STATISTICS
 ###################################
 fetch_dns_stats() {
@@ -2662,6 +2703,7 @@ manage_xray_core() {
     info " 8. Изменить дату окончания подписки"
     echo
     info " 9. Синхронизация конфигураций"
+    info " 10. Настроить цепочку из серверов"
     echo
     info " $(text 84) "                      # Exit
     tilda "|--------------------------------------------------------------------------|"
@@ -2700,6 +2742,9 @@ manage_xray_core() {
         ;;
       9)
         sync_client_configs
+        ;;
+      10)
+        update_xray_chain_outbounds
         ;;
       0)
         manage_xcore
