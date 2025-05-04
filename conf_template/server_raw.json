@@ -8,39 +8,55 @@
     "maskAddress": ""
   },
   "dns": {
-    "queryStrategy": "ForceIPv4",
     "servers": [
       {
         "address": "https://1.1.1.1/dns-query",
         "skipFallback": false
       }
-    ]
+    ],
+    "queryStrategy": "UseIPv4"
   },
   "routing": {
-    "domainStrategy": "AsIs",
+    "domainStrategy": "IPIfNonMatch",
+    "domainMatcher": "hybrid",
+    "network": "tcp,udp",
     "rules": [
       {
-        "inboundTag": [
-          "api"
-        ],
+        "inboundTag": ["api"],
         "outboundTag": "api"
       },
       {
-        "protocol": [
-          "bittorrent"
-        ],
+        "protocol": ["bittorrent"],
         "outboundTag": "direct"
       },
       {
-        "ip": [
-          "geoip:private"
-        ],
+        "ip": ["geoip:private"],
         "outboundTag": "direct"
+      },
+      {
+        "domain": [
+          "geosite:category-ads-all",
+          "keyword:reklama",
+          "keyword:firebase",
+          "keyword:analytics",
+          "keyword:telemetry",
+          "keyword:bongacams",
+          "keyword:tracking",
+          "vkuser.net",
+          "okcdn.ru"
+        ],
+        "outboundTag": "block"
       },
       {
         "domain": [
           "geosite:intel",
           "domain:gemini.google.com"
+        ],
+        "outboundTag": "warp"
+      },
+      {
+        "ip": [
+          "geoip:ru"
         ],
         "outboundTag": "warp"
       }
@@ -58,27 +74,6 @@
       "streamSettings": null,
       "sniffing": null,
       "allocate": null
-    },
-    {
-      "tag": "socks",
-      "port": 10808,
-      "protocol": "socks",
-      "settings": {
-        "udp": true,
-        "auth": "noauth",
-        "userLevel": 8
-      },
-      "sniffing": {
-        "enabled": true,
-        "destOverride": [
-          "http",
-          "tls",
-          "quic",
-          "fakedns"
-        ]
-      },
-      "routeOnly": false,
-      "metadataOnly": false
     },
     {
       "tag": "vless_raw",
@@ -134,7 +129,7 @@
       }
     },
     {
-      "tag": "blocked",
+      "tag": "block",
       "protocol": "blackhole",
       "settings": {}
     },
@@ -177,7 +172,7 @@
   },
   "api": {
     "tag": "api",
-    "listen": "127.0.0.1:8080",
+    "listen": "127.0.0.1:9953",
     "services": [
       "HandlerService",
       "LoggerService",

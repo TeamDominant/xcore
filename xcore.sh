@@ -7,7 +7,7 @@
 ###################################
 ### GLOBAL CONSTANTS AND VARIABLES
 ###################################
-VERSION_MANAGER='0.9.17'
+VERSION_MANAGER='0.9.26'
 VERSION_XRAY='v25.3.6'
 
 DIR_XCORE="/opt/xcore"
@@ -2433,9 +2433,9 @@ sync_client_configs() {
 }
 
 ###################################
-### UPDATE XRAY CHAIN OUTBOUNDS
+### ADD XRAY CHAIN OUTBOUNDS
 ###################################
-update_xray_chain_outbounds() {
+add_xray_chain_outbounds() {
   read -rp "Введи ссылку на подписку: " link
 
   resp=$(curl -s -w '%{http_code}' "$link")
@@ -2455,10 +2455,10 @@ update_xray_chain_outbounds() {
 
   # 3) Извлекаем нужный outbound
   remote_outbound=$(jq -c '.outbounds
-      | map(select(.tag=="vless_raw"))
-      | .[0]
-      | if . then (.tag="vless_raw_chain") else empty end' \
-    <<<"$body")
+    | map(select(.tag=="vless_raw"))
+    | .[0]
+    | if . then (.tag="vless_raw_chain") else empty end' \
+  <<<"$body")
 
   if [[ -z "$remote_outbound" ]]; then
     echo "Тег vless_raw не найден" >&2
@@ -2469,8 +2469,118 @@ update_xray_chain_outbounds() {
     '.outbounds |= [$new_outbound] + .' \
     "${DIR_XRAY}/config.json" > "${DIR_XRAY}/config.json.tmp" \
     && mv "${DIR_XRAY}/config.json.tmp" "${DIR_XRAY}/config.json"
-  
-  systemctl restart xray
+}
+
+###################################
+### UPDATE XRAY CHAIN OUTBOUNDS
+###################################
+update_xray_chain_outbounds() {
+  local CLIENT_TEMPLATE="${DIR_XCORE}/repo/conf_template/client_raw.json"
+  local SERVER_TEMPLATE="${DIR_XRAY}/config.json"
+
+  server_dns=$(jq -c '.dns' "${CLIENT_TEMPLATE}")
+  server_routing=$(jq -c '.routing' "${CLIENT_TEMPLATE}")
+
+  client_dns=$(jq -c '.dns' "${SERVER_TEMPLATE}")
+  client_routing='{
+    "domainStrategy": "IPIfNonMatch",
+    "domainMatcher": "hybrid",
+    "network": "tcp,udp",
+    "rules": [
+      {
+        "inboundTag": ["api"],
+        "outboundTag": "api"
+      },
+      {
+        "protocol": ["bittorrent"],
+        "outboundTag": "direct"
+      },
+      {
+        "ip": ["geoip:private"],
+        "outboundTag": "direct"
+      },
+      {
+        "domain": [
+          "geosite:category-ads-all",
+          "keyword:reklama",
+          "keyword:firebase",
+          "keyword:analytics",
+          "keyword:telemetry",
+          "keyword:bongacams",
+          "keyword:tracking",
+          "vkuser.net",
+          "okcdn.ru"
+        ],
+        "outboundTag": "block"
+      }
+    ]
+  }'
+
+  jq --argjson dns "$server_dns" \
+     --argjson routing "$server_routing" \
+     '.dns = $dns | .routing = $routing' \
+     "${DIR_XRAY}/config.json" > "${DIR_XRAY}/config.json.tmp" && mv "${DIR_XRAY}/config.json.tmp" "${DIR_XRAY}/config.json"
+
+  jq --argjson dns "$client_dns" \
+     --argjson routing "$client_routing" \
+     '.dns = $dns | .routing = $routing' \
+     "${CLIENT_TEMPLATE}" > "${CLIENT_TEMPLATE}.tmp" && mv "${CLIENT_TEMPLATE}.tmp" "${CLIENT_TEMPLATE}"
+
+  dns_routing='[
+    {
+      "ip": ["1.1.1.1", "1.0.0.1"],
+      "port": 443,
+      "outboundTag": "direct"
+    }
+  ]'
+
+  jq --argjson extra "$dns_routing" \
+    '.routing.rules |= ([.[0]] + $extra + .[1:])' \
+    "${DIR_XRAY}/config.json" > "${DIR_XRAY}/config.json.tmp" && mv "${DIR_XRAY}/config.json.tmp" "${DIR_XRAY}/config.json"
+
+  sed -i \
+    -e "s/DOMAIN_TEMP/${CURR_DOMAIN}/g" \
+    "${DIR_XRAY}/config.json"
+}
+
+###################################
+### MANAGE XRAY CHAIN MENU
+###################################
+manage_xray_chain_menu() {
+  while true; do
+    clear
+    display_xcore_banner
+    tilda "|--------------------------------------------------------------------------|"
+    info " 1. Создать цепочку серверов"
+    info " 2. Убрать цепочку серверов"
+    echo
+    info " $(text 84) "                      # Exit
+    tilda "|--------------------------------------------------------------------------|"
+    echo
+    reading " $(text 1) " CHOICE_MENU        # Choise
+    tilda "$(text 10)"
+    case $CHOICE_MENU in
+      1)
+        add_xray_chain_outbounds
+        if [[ $? -eq 0 ]]; then
+          update_xray_chain_outbounds
+          systemctl restart xray
+        else
+          warning "Ошибка при создании цепочки серверов. Обновление конфигурации пропущено."
+          sleep 3
+        fi
+        ;;
+      2)
+        remove_xray_chain_outbounds
+        ;;
+      0)
+        manage_xray_core
+        ;;
+      *)
+        warning " $(text 76) "
+        ;;
+    esac
+  done
 }
 
 ###################################
@@ -2744,7 +2854,7 @@ manage_xray_core() {
         sync_client_configs
         ;;
       10)
-        update_xray_chain_outbounds
+        manage_xray_chain_menu
         ;;
       0)
         manage_xcore
