@@ -7,7 +7,7 @@
 ###################################
 ### GLOBAL CONSTANTS AND VARIABLES
 ###################################
-VERSION_MANAGER='0.9.26'
+VERSION_MANAGER='0.9.32'
 VERSION_XRAY='v25.3.6'
 
 DIR_XCORE="/opt/xcore"
@@ -223,8 +223,8 @@ E[82]="Enter Shell in a box path:"
 R[82]="Введите путь к Shell in a box:"
 E[83]="Terminal emulator Shell in a box."
 R[83]="Эмулятор терминала Shell in a box."
-E[84]="0. Exit script"
-R[84]="0. Выход из скрипта"
+E[84]="0. Previous menu"
+R[84]="0. Предыдущее меню"
 E[85]="Press Enter to return to the menu..."
 R[85]="Нажмите Enter, чтобы вернуться в меню..."
 E[86]="X Core $VERSION_MANAGER"
@@ -1901,11 +1901,12 @@ configure_firewall() {
   case "$SYSTEM" in
     Debian|Ubuntu)
       ufw --force reset
-      ufw insert 1 deny from "$BLOCK_ZONE_IP" comment 'Protection from my own subnet (reality of degenerates)'
-      ufw insert 2 deny from 95.161.76.0/24 comment 'TGBOT NL'
-      ufw insert 3 deny from 149.154.161.0/24 comment 'TGBOT NL'
+      ufw deny from "$BLOCK_ZONE_IP" comment 'Protection from my own subnet (reality of degenerates)'
+      ufw deny from 95.161.76.0/24 comment 'TGBOT NL'
+      ufw deny from 149.154.161.0/24 comment 'TGBOT NL'
       ufw limit 22/tcp comment 'SSH'
-      ufw allow 443/tcp comment 'WEB'
+      # ufw allow 80/tcp comment 'WEB over HTTP'
+      ufw allow 443/tcp comment 'WEB over HTTPS'
       ufw --force enable
       ;;
 
@@ -2250,7 +2251,7 @@ display_server_stats() {
   bash /etc/update-motd.d/05-disk-usage
   bash /etc/update-motd.d/09-status
   echo
-  curl -X GET http://localhost:9952/stats
+  curl -X GET http://127.0.0.1:9952/api/v1/stats
 }
 
 ###################################
@@ -2544,124 +2545,10 @@ update_xray_chain_outbounds() {
 }
 
 ###################################
-### MANAGE XRAY CHAIN MENU
-###################################
-manage_xray_chain_menu() {
-  while true; do
-    clear
-    display_xcore_banner
-    tilda "|--------------------------------------------------------------------------|"
-    info " 1. Создать цепочку серверов"
-    info " 2. Убрать цепочку серверов"
-    echo
-    info " $(text 84) "                      # Exit
-    tilda "|--------------------------------------------------------------------------|"
-    echo
-    reading " $(text 1) " CHOICE_MENU        # Choise
-    tilda "$(text 10)"
-    case $CHOICE_MENU in
-      1)
-        add_xray_chain_outbounds
-        if [[ $? -eq 0 ]]; then
-          update_xray_chain_outbounds
-          systemctl restart xray
-        else
-          warning "Ошибка при создании цепочки серверов. Обновление конфигурации пропущено."
-          sleep 3
-        fi
-        ;;
-      2)
-        remove_xray_chain_outbounds
-        ;;
-      0)
-        manage_xray_core
-        ;;
-      *)
-        warning " $(text 76) "
-        ;;
-    esac
-  done
-}
-
-###################################
-### FETCH AND DISPLAY DNS STATISTICS
-###################################
-fetch_dns_stats() {
-  declare -A user_map
-  local counter=0
-  local last_choice=""
-
-  # Запрос количества строк
-  read -p "Введите количество строк для вывода статистики: " count
-  clear
-
-  # Получаем список пользователей через API
-  response=$(curl -s -X GET "http://127.0.0.1:9952/users")
-  if [ $? -ne 0 ]; then
-    echo "Ошибка подключения к API."
-    return 1
-  fi
-
-  # Парсим JSON в массив
-  mapfile -t users < <(echo "$response" | jq -r '.[] | .email')
-
-  # Проверяем, есть ли пользователи
-  if [ ${#users[@]} -eq 0 ]; then
-    echo "Нет пользователей в базе данных."
-    return 1
-  fi
-
-  # Заполняем user_map и выводим список пользователей
-  while true; do
-    counter=0
-    info " Список пользователей:"
-    for user in "${users[@]}"; do
-      user_map[$counter]="$user"
-      echo "$((counter+1)). $user"
-      ((counter++))
-    done
-    echo
-    if [[ -n "$last_choice" ]]; then
-      echo "(Enter - обновить статистику для ${user_map[$((last_choice-1))]})"
-    fi
-    read -p "Введите номер пользователя (0 - выход, \"reset\" - сброс статистики): " choice
-
-    if [[ "$choice" == "0" ]]; then
-      echo "Выход..."
-      return
-    fi
-
-    if [[ "$choice" == "reset" ]]; then
-      echo "Очищаю статистику..."
-      curl -X POST http://127.0.0.1:9952/delete_dns_stats
-      echo "Статистика удалена."
-      echo
-      continue
-    fi
-
-    if [[ -z "$choice" && -n "$last_choice" ]]; then
-      choice="$last_choice"  # Используем предыдущий выбор
-    fi
-
-    if [[ ! "$choice" =~ ^[0-9]+$ ]] || (( choice < 1 || choice > counter )); then
-      echo "Некорректный ввод. Попробуйте снова."
-      continue
-    fi
-
-    selected_email="${user_map[$((choice-1))]}"
-    last_choice="$choice"  # Сохраняем текущий выбор
-
-    # Выполняем запрос к API
-    clear
-    curl -X GET "http://127.0.0.1:9952/dns_stats?email=${selected_email}&count=${count}"
-  done
-}
-
-###################################
 ### DISPLAY USER LIST FROM API
 ###################################
 display_user_list() {
-  local API_URL="http://localhost:9952/users"
+  local API_URL="http://127.0.0.1:9952/api/v1/users"
   local field="$1"  # Поле для извлечения, например "enabled", "lim_ip", "renew", "sub_end"
 
   declare -gA user_map
@@ -2696,10 +2583,66 @@ display_user_list() {
   return 0
 }
 
+
 ###################################
 ### UPDATE USER PARAMETER VIA API
 ###################################
-update_user_parameter() {
+update_user_parameter_get() {
+  local param_name="$1"  # Название параметра, например "lim_ip", "renew", "offset", "count"
+  local api_url="$2"     # URL для GET-запроса
+  local prompt="$3"      # Текст для запроса нового значения
+
+  local param_value
+
+  # Запрос нового значения
+  read -p "$prompt: " param_value
+  clear
+
+  while true; do
+    # Получаем и отображаем список пользователей
+    display_user_list "$param_name"
+    if [ $? -ne 0 ]; then
+      return 1
+    fi
+
+    info " (Выбрано значение $param_name: $param_value)"
+    read -p " Введите номера пользователей (0 - выход, \"reset\" - изменить $param_name): " choice
+
+    if [[ "$choice" == "0" ]]; then
+      info "Выход..."
+      return
+    fi
+
+    if [[ "$choice" == "reset" ]]; then
+      clear
+      read -p "$prompt: " param_value
+      continue
+    fi
+
+    # Разбиваем ввод на массив номеров
+    choices=($(echo "$choice" | tr ',' ' ' | tr -s ' ' | tr ' ' '\n'))
+
+    # Проверяем каждый номер
+    for num in "${choices[@]}"; do
+      if [[ ! "$num" =~ ^[0-9]+$ ]] || (( num < 1 || num > ${#users[@]} )); then
+        warning "Некорректный номер пользователя: $num. Попробуйте снова."
+        continue 2
+      fi
+    done
+
+    clear
+    # Обновляем параметр для выбранных пользователей
+    for num in "${choices[@]}"; do
+      selected_email="${user_map[$((num-1))]}"
+      curl -s -X GET "${api_url}?email=${selected_email}&$param_name=${param_value}"
+    done
+  done
+}
+
+###################################
+### UPDATE USER PARAMETER VIA API
+###################################
+update_user_parameter_patch() {
   local param_name="$1"  # Название параметра, например "lim_ip", "renew", "offset"
   local api_url="$2"     # URL для PATCH-запроса
   local prompt="$3"      # Текст для запроса нового значения
@@ -2746,7 +2689,7 @@ update_user_parameter() {
     # Обновляем параметр для выбранных пользователей
     for num in "${choices[@]}"; do
       selected_email="${user_map[$((num-1))]}"
-      response=$(curl -s -X PATCH -d "email=$selected_email&$param_name=$param_value" "$api_url")
+      response=$(curl -s -X PATCH "$api_url" -d "email=$selected_email&$param_name=$param_value")
       if [ $? -eq 0 ]; then
         info "$param_name для $selected_email обновлено на $param_value"
       else
@@ -2758,31 +2701,38 @@ update_user_parameter() {
 }
 
 ###################################
+### DNS
+###################################
+fetch_dns_stats() {
+  update_user_parameter_get "count" "http://127.0.0.1:9952/api/v1/dns_stats" "Введите значение для вывода строк DNS запросов"
+}
+
+###################################
 ### TOGGLE USER STATUS VIA API
 ###################################
 toggle_user_status() {
-  update_user_parameter "enabled" "http://localhost:9952/set-enabled" "Введите true для включения и false отключения"
+  update_user_parameter_patch "enabled" "http://127.0.0.1:9952/api/v1/set-enabled" "Введите true для включения и false отключения клиента"
 }
 
 ###################################
 ### SET IP LIMIT FOR USER
 ###################################
 set_user_lim_ip() {
-  update_user_parameter "lim_ip" "http://127.0.0.1:9952/update_lim_ip" "Введите новый лимит IP"
+  update_user_parameter_patch "lim_ip" "http://127.0.0.1:9952/api/v1/update_lim_ip" "Введите лимит IP"
 }
 
 ###################################
 ### UPDATE USER RENEWAL STATUS
 ###################################
 update_user_renewal() {
-  update_user_parameter "renew" "http://127.0.0.1:9952/update_renew" "Введите новое значение renew"
+  update_user_parameter_patch "renew" "http://127.0.0.1:9952/api/v1/update_renew" "Введите значение для продления подписки"
 }
 
 ###################################
 ### ADJUST USER SUBSCRIPTION END DATE
 ###################################
 adjust_subscription_date() {
-  update_user_parameter "sub_end" "http://localhost:9952/adjust-date" "Введите значение sub_end (например, +1, -1:3, 0)"
+  update_user_parameter_patch "sub_end" "http://127.0.0.1:9952/api/v1/adjust-date" "Введите значение sub_end (например, +1, -1:3, 0)"
 }
 
 ###################################
@@ -2790,6 +2740,85 @@ adjust_subscription_date() {
 ###################################
 clean_log_file() {
   sed -i -e 's/\x1b\[[0-9;]*[a-zA-Z]//g' "$LOGFILE"
+}
+
+###################################
+### RESET STATISTICS SUBMENU
+###################################
+reset_stats_menu() {
+  while true; do
+    clear
+    display_xcore_banner
+    tilda "|--------------------------------------------------------------------------|"
+    info " 1. Очистить DNS-статистику"
+    info " 2. Сброс статистики загрузки и отдачи инбаундов"
+    info " 3. Сброс статистики загрузки и отдачи клиентов"
+    echo
+    warning " $(text 84) "                   # Exit
+    tilda "|--------------------------------------------------------------------------|"
+    echo
+    reading " $(text 1) " CHOICE_MENU        # Choise
+    case $CHOICE_MENU in
+      1)
+        curl -s -X POST http://127.0.0.1:9952/api/v1/delete_dns_stats && echo "DNS-статистика очищена" || warning "Ошибка при очистке DNS-статистики"
+        sleep 2
+        ;;
+      2)
+        curl -s -X POST http://127.0.0.1:9952/api/v1/reset_traffic_stats && echo "traffic_stats очищены" || warning "Ошибка при очистке traffic_stats"
+        sleep 2
+        ;;
+      3)
+        curl -s -X POST http://127.0.0.1:9952/api/v1/reset_clients_stats && echo "clients_stats очищены" || warning "Ошибка при очистке clients_stats"
+        sleep 2
+        ;;
+      0)
+        break
+        ;;
+      *)
+        warning "Неверный выбор, попробуйте снова"
+        ;;
+    esac
+  done
+}
+
+###################################
+### MANAGE XRAY CHAIN MENU
+###################################
+manage_xray_chain_menu() {
+  while true; do
+    clear
+    display_xcore_banner
+    tilda "|--------------------------------------------------------------------------|"
+    info " 1. Создать цепочку серверов"
+    info " 2. Убрать цепочку серверов"
+    echo
+    warning " $(text 84) "                   # Exit
+    tilda "|--------------------------------------------------------------------------|"
+    echo
+    reading " $(text 1) " CHOICE_MENU        # Choise
+    tilda "$(text 10)"
+    case $CHOICE_MENU in
+      1)
+        add_xray_chain_outbounds
+        if [[ $? -eq 0 ]]; then
+          update_xray_chain_outbounds
+          systemctl restart xray
+        else
+          warning "Ошибка при создании цепочки серверов. Обновление конфигурации пропущено."
+          sleep 3
+        fi
+        ;;
+      2)
+        remove_xray_chain_outbounds
+        ;;
+      0)
+        manage_xray_core
+        ;;
+      *)
+        warning " $(text 76) "
+        ;;
+    esac
+  done
 }
 
 ###################################
@@ -2803,22 +2832,23 @@ manage_xray_core() {
     tilda "|--------------------------------------------------------------------------|"
     info " 1. Статистика Xray сервера"
     info " 2. DNS-запросы клиентов"
+    info " 3. Сброс статистики Xray сервера"
     echo
-    info " 3. Добавить клиента"
-    info " 4. Удалить клиента"
-    info " 5. Включить / Отключить клиента"
+    info " 4. Добавить клиента"
+    info " 5. Удалить клиента"
+    info " 6. Включить / Отключить клиента"
     echo
-    info " 6. Установить лимит IP-адресов"
-    info " 7. Обновить автопродление подписки"
-    info " 8. Изменить дату окончания подписки"
+    info " 7. Установить лимит IP-адресов"
+    info " 8. Обновить автопродление подписки"
+    info " 9. Изменить дату окончания подписки"
     echo
-    info " 9. Синхронизация конфигураций"
-    info " 10. Настроить цепочку из серверов"
+    info " 10. Синхронизация конфигураций"
+    info " 11. Настроить цепочку из серверов"
     echo
-    info " $(text 84) "                      # Exit
+    warning " $(text 84) "                        # Exit
     tilda "|--------------------------------------------------------------------------|"
     echo
-    reading " $(text 1) " CHOICE_MENU        # Choise
+    reading " $(text 1) " CHOICE_MENU             # Choise
     tilda "$(text 10)"
     case $CHOICE_MENU in
       1)
@@ -2833,27 +2863,30 @@ manage_xray_core() {
         fetch_dns_stats
         ;;
       3)
-        add_new_user
+        reset_stats_menu
         ;;
       4)
-        delete_user
+        add_new_user
         ;;
       5)
-        toggle_user_status
+        delete_user
         ;;
       6)
-        set_user_lim_ip
+        toggle_user_status
         ;;
       7)
-        update_user_renewal
+        set_user_lim_ip
         ;;
       8)
-        adjust_subscription_date
+        update_user_renewal
         ;;
       9)
-        sync_client_configs
+        adjust_subscription_date
         ;;
       10)
+        sync_client_configs
+        ;;
+      11)
         manage_xray_chain_menu
         ;;
       0)
@@ -2889,7 +2922,7 @@ manage_xcore() {
     echo
     info " $(text 96) "                      # 9. Change language
     echo
-    info " $(text 84) "                      # Exit
+    warning " $(text 84) "                   # Exit
     tilda "|--------------------------------------------------------------------------|"
     echo
     reading " $(text 1) " CHOICE_MENU        # Choise
