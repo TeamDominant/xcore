@@ -188,7 +188,12 @@
   },
   "stats": {},
   "reverse": null,
-  "fakedns": null,
+  "fakedns": [
+    {
+      "ipPool": "198.18.0.0/16",
+      "poolSize": 65535
+    }
+  ],
   "observatory": null,
   "burstObservatory": null
 }
