@@ -3,13 +3,27 @@
   "log": {
     "loglevel": "warning"
   },
+  "fakedns": [
+    {
+      "ipPool": "198.18.0.0/16",
+      "poolSize": 512
+    },
+    {
+      "ipPool" : "fc00::/64",
+      "poolSize" : 512
+    }
+  ],
   "dns": {
-    "queryStrategy": "UseIP",
+    "hosts": {
+      "DOMAIN_TEMP": [
+        "IP_TEMP"
+      ]
+    },
     "servers": [
       {
         "address": "https+local://1.1.1.1/dns-query",
         "domains": [
-          "domain:DOMAIN_TEMP",
+          "DOMAIN_TEMP",
           "geosite:category-android-app-download",
           "geosite:sciencedirect",
           "geosite:category-ru",
@@ -88,21 +102,33 @@
           "keyword:ipleak"
         ],
         "skipFallback": true,
-		    "disableFallback": true,
-        "queryStrategy": "UseIP"
+        "disableFallback": true,
+        "queryStrategy": "UseIPv4",
+        "allowUnexpectedIPs": true,
+        "timeoutMs": 1000
       },
       {
-        "address": "https://8.8.8.8/dns-query",
+        "address": "8.8.8.8",
         "skipFallback": false,
-        "queryStrategy": "UseIPv4"
+        "queryStrategy": "UseIP",
+        "allowUnexpectedIPs": true,
+        "timeoutMs": 1000
       }
-    ]
+    ],
+    "queryStrategy": "UseIP"
   },
   "routing": {
     "domainStrategy": "IPIfNonMatch",
     "domainMatcher": "hybrid",
     "network": "tcp,udp",
     "rules": [
+      {
+        "inboundTag": [
+          "socks"
+        ],
+        "port": 53,
+        "outboundTag": "dns-out"
+      },
       {
         "inboundTag": [
           "api"
@@ -137,7 +163,7 @@
       },
       {
         "domain": [
-          "domain:DOMAIN_TEMP",
+          "DOMAIN_TEMP",
           "geosite:category-android-app-download",
           "geosite:sciencedirect",
           "geosite:category-ru",
@@ -238,8 +264,7 @@
       "protocol": "socks",
       "settings": {
         "udp": true,
-        "auth": "noauth",
-        "userLevel": 8
+        "auth": "noauth"
       },
       "sniffing": {
         "enabled": true,
@@ -258,6 +283,7 @@
     {
       "tag": "vless_raw",
       "protocol": "vless",
+      "userLevel": 1,
       "streamSettings": {
         "network": "tcp",
         "security": "tls",
@@ -270,7 +296,7 @@
           "utls": {
             "alpn": [
               "h2",
-              "http/1.1"
+              "quic"
             ],
             "fingerprint": "chrome"
           }
@@ -278,11 +304,16 @@
       },
       "mux": {
         "enabled": true,
-        "concurrency": 8,
-        "xudpConcurrency": 16,
+        "concurrency": 2,
+        "xudpConcurrency": 8,
         "xudpProxyUDP443": "allow"
       },
+      "sockopt": {
+        "tcpMaxSeg": 1492,
+        "tcpFastOpen": true
+      },
       "settings": {
+        "domainStrategy": "UseIP",
         "vnext": [
           {
             "address": "DOMAIN_TEMP",
@@ -290,8 +321,7 @@
             "users": [
               {
                 "encryption": "none",
-                "id": "UUID_TEMP",
-                "level": 8
+                "id": "UUID_TEMP"
               }
             ]
           }
@@ -301,13 +331,27 @@
     {
       "tag": "direct",
       "protocol": "freedom",
+      "userLevel": 0,
       "settings": {
         "domainStrategy": "UseIPv4"
       },
       "sockopt": {
-        "tcpMaxSeg": 1460,
+        "tcpMaxSeg": 1492,
         "tcpFastOpen": true
       }
+    },
+    {
+      "protocol": "dns",
+      "settings": {
+        "nonIPQuery": "skip",
+        "network": "udp",
+        "address": "8.8.8.8",
+        "port": 53
+      },
+      "proxySettings": {
+        "tag": "vless_raw"
+      },
+      "tag": "dns-out"
     },
     {
       "tag": "block",
@@ -319,7 +363,6 @@
       }
     }
   ],
-  "transport": null,
   "policy": {
     "levels": {
       "1": {
@@ -327,7 +370,7 @@
       },
       "0": {
         "handshake": 4,
-        "connIdle": 300,
+        "connIdle": 120,
         "uplinkOnly": 2,
         "downlinkOnly": 5,
         "statsUserUplink": true,
@@ -354,12 +397,7 @@
   },
   "stats": {},
   "reverse": null,
-  "fakedns": [
-    {
-      "ipPool": "198.18.0.0/16",
-      "poolSize": 65535
-    }
-  ],
+  "transport": null,
   "observatory": null,
   "burstObservatory": null
 }

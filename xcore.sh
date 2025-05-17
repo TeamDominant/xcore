@@ -7,7 +7,7 @@
 ###################################
 ### GLOBAL CONSTANTS AND VARIABLES
 ###################################
-VERSION_MANAGER='0.9.38'
+VERSION_MANAGER='0.9.36'
 VERSION_XRAY='v25.3.6'
 
 DIR_XCORE="/opt/xcore"
@@ -2295,7 +2295,7 @@ extract_haproxy_data() {
 ###################################
 add_user_to_xray() {
   inboundnum=$(jq '[.inbounds[].tag] | index("vless_raw")' ${DIR_XRAY}/config.json)
-  jq ".inbounds[${inboundnum}].settings.clients += [{\"email\":\"${USERNAME}\",\"level\":0,\"id\":\"${XRAY_UUID}\"}]" "${DIR_XRAY}/config.json" > "${DIR_XRAY}/config.json.tmp" && mv "${DIR_XRAY}/config.json.tmp" "${DIR_XRAY}/config.json"
+  jq ".inbounds[${inboundnum}].settings.clients += [{\"email\":\"${USERNAME}\",\"id\":\"${XRAY_UUID}\"}]" "${DIR_XRAY}/config.json" > "${DIR_XRAY}/config.json.tmp" && mv "${DIR_XRAY}/config.json.tmp" "${DIR_XRAY}/config.json"
 }
 
 ###################################
@@ -2449,6 +2449,12 @@ sync_client_configs() {
 
     echo "$(jq ".outbounds[${OUT_VL_NUM}].settings.vnext[].users[] = ${CLIENT}" ${FILE_PATH})" > $FILE_PATH
     sed -i -e "s/DOMAIN_TEMP/${CURR_DOMAIN}/g" ${FILE_PATH}
+    sed -i -e "s/IP_TEMP/${IP4}/g" ${FILE_PATH}
+
+    sed -i \
+      -e "s/DOMAIN_TEMP/${CURR_DOMAIN}/g" \
+      -e "s/IP_TEMP/${IP4}/g" \
+      "${FILE_PATH}"
 
     echo "Файл $FILENAME успешно обновлен."
   done
