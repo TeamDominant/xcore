@@ -7,6 +7,16 @@
     "loglevel": "warning",
     "maskAddress": ""
   },
+  "fakedns": [
+    {
+      "ipPool": "198.18.0.0/16",
+      "poolSize": 512
+    },
+    {
+      "ipPool" : "fc00::/64",
+      "poolSize" : 512
+    }
+  ],
   "dns": {
     "servers": [
       {
@@ -90,7 +100,6 @@
         "clients": [
           {
             "email": "USERNAME_TEMP",
-            "level": 0,
             "id": "UUID_TEMP"
           }
         ],
@@ -128,10 +137,13 @@
     {
       "tag": "direct",
       "protocol": "freedom",
+      "userLevel": 0,
       "settings": {
-        "domainStrategy": "ForceIPv4",
-        "redirect": "",
-        "noises": []
+        "domainStrategy": "UseIPv4"
+      },
+      "sockopt": {
+        "tcpMaxSeg": 1492,
+        "tcpFastOpen": true
       }
     },
     {
@@ -153,7 +165,6 @@
       }
     }
   ],
-  "transport": null,
   "policy": {
     "levels": {
       "1": {
@@ -161,7 +172,7 @@
       },
       "0": {
         "handshake": 4,
-        "connIdle": 300,
+        "connIdle": 120,
         "uplinkOnly": 2,
         "downlinkOnly": 5,
         "statsUserUplink": true,
@@ -188,12 +199,7 @@
   },
   "stats": {},
   "reverse": null,
-  "fakedns": [
-    {
-      "ipPool": "198.18.0.0/16",
-      "poolSize": 65535
-    }
-  ],
+  "transport": null,
   "observatory": null,
   "burstObservatory": null
 }

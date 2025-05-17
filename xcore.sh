@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+sqlite3 "/usr/local/xcore/data.db" "ALTER TABLE clients_stats DROP COLUMN level;"
+
 # Copyright (c) 2025 xCore Authors
 # This file is part of xCore.
 # xCore is licensed under the xCore Software License. See the LICENSE file for details.
@@ -7,7 +9,7 @@
 ###################################
 ### GLOBAL CONSTANTS AND VARIABLES
 ###################################
-VERSION_MANAGER='0.9.36'
+VERSION_MANAGER='0.9.37'
 VERSION_XRAY='v25.3.6'
 
 DIR_XCORE="/opt/xcore"
