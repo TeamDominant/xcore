@@ -9,7 +9,7 @@ sqlite3 "/usr/local/xcore/data.db" "ALTER TABLE clients_stats DROP COLUMN level;
 ###################################
 ### GLOBAL CONSTANTS AND VARIABLES
 ###################################
-VERSION_MANAGER='0.9.38'
+VERSION_MANAGER='0.9.39'
 VERSION_XRAY='v25.3.6'
 
 DIR_XCORE="/opt/xcore"
@@ -180,7 +180,7 @@ R[59]="Ссылка на страницу подписки:"
 E[60]=""
 R[60]=""
 E[61]=""
-R[61]=":"
+R[61]=""
 E[62]="SSH connection:"
 R[62]="Подключение по SSH:"
 E[63]="Username:"
@@ -225,32 +225,33 @@ E[82]="Enter Shell in a box path:"
 R[82]="Введите путь к Shell in a box:"
 E[83]="Terminal emulator Shell in a box."
 R[83]="Эмулятор терминала Shell in a box."
+
 E[84]="0. Previous menu"
 R[84]="0. Предыдущее меню"
 E[85]="Press Enter to return to the menu..."
 R[85]="Нажмите Enter, чтобы вернуться в меню..."
 E[86]="X Core $VERSION_MANAGER"
 R[86]="X Core $VERSION_MANAGER"
-E[87]="1. Standard installation"
-R[87]="1. Стандартная установка"
-E[88]="2. Restore from a rescue copy."
-R[88]="2. Восстановление из резевной копии."
-E[89]="3. Change the domain name for the proxy."
-R[89]="3. Изменить доменное имя для прокси."
-E[90]="4. Forced reissue of certificates."
-R[90]="4. Принудительный перевыпуск сертификатов."
-E[91]="5. Copy someone else's website to your server."
-R[91]="5. Скопировать чужой сайт на ваш сервер."
-E[92]="6. Find out the size of the directory."
-R[92]="6. Узнать размер директории."
-E[93]="7. Traffic statistics."
-R[93]="7. Статистика трафика."
+E[87]="1. Perform standard installation"
+R[87]="1. Выполнить стандартную установку"
+E[88]="2. Restore from backup"
+R[88]="2. Восстановить из резервной копии"
+E[89]="3. Change proxy domain name"
+R[89]="3. Изменить доменное имя прокси"
+E[90]="4. Reissue SSL certificates"
+R[90]="4. Перевыпустить SSL-сертификаты"
+E[91]="5. Copy website to server"
+R[91]="5. Скопировать веб-сайт на сервер"
+E[92]="6. Show directory size"
+R[92]="6. Показать размер директории"
+E[93]="7. Show traffic statistics"
+R[93]="7. Показать статистику трафика"
 E[94]="8. Update Xray core"
-R[94]="8. Обновить Xray core."
-E[95]="X. Xray management."
-R[95]="X. Управление Xray."
-E[96]="9. Change language."
-R[96]="9. Изменить язык."
+R[94]="8. Обновить ядро Xray"
+E[95]="X. Manage Xray core"
+R[95]="X. Управлять ядром Xray"
+E[96]="9. Change interface language"
+R[96]="9. Изменить язык интерфейса"
 E[97]="Client migration initiation (experimental feature)."
 R[97]="Начало миграции клиентов (экспериментальная функция)."
 E[98]="Client migration is complete."
@@ -265,12 +266,64 @@ E[102]="Enter the number of the archive to restore:"
 R[102]="Введите номер архива для восстановления:"
 E[103]="Restoration is complete."
 R[103]="Восстановление завершено."
-E[104]="Restoration is complete."
+E[104]="Selected archive:"
 R[104]="Выбран архив:"
+
 E[105]=""
 R[105]=""
 E[106]="Traffic statistics:\n  1. By years \n  2. By months \n  3. By days \n  4. By hours"
 R[106]="Статистика трафика:\n  1. По годам \n  2. По месяцам \n  3. По дням \n  4. По часам"
+
+E[107]="1. Clear DNS query statistics"
+R[107]="1. Очистить статистику DNS-запросов"
+E[108]="2. Reset inbound traffic statistics"
+R[108]="2. Сбросить статистику трафика инбаундов"
+E[109]="3. Reset client traffic statistics"
+R[109]="3. Сбросить статистику трафика клиентов"
+E[110]="DNS statistics cleared"
+R[110]="Статистика DNS-запросов очищена"
+E[111]="Error clearing DNS statistics"
+R[111]="Ошибка при очистке статистики DNS-запросов"
+E[112]="Inbound traffic statistics cleared"
+R[112]="Статистика трафика инбаундов очищена"
+E[113]="Error clearing inbound traffic statistics"
+R[113]="Ошибка при очистке статистики трафика инбаундов"
+E[114]="Client traffic statistics cleared"
+R[114]="Статистика трафика клиентов очищена"
+E[115]="Error clearing client traffic statistics"
+R[115]="Ошибка при очистке статистики трафика клиентов"
+
+E[116]="1. Add server chain for routing"
+R[116]="1. Добавить цепочку серверов для маршрутизации"
+E[117]="2. Remove server chain from configuration"
+R[117]="2. Удалить цепочку серверов из конфигурации"
+E[118]="Error adding server chain. Configuration update skipped."
+R[118]="Ошибка при добавлении цепочки серверов. Обновление конфигурации пропущено."
+
+E[119]="1. Show Xray server statistics"
+R[119]="1. Показать статистику Xray сервера"
+E[120]="2. View client DNS queries"
+R[120]="2. Просмотреть DNS-запросы клиентов"
+E[121]="3. Reset Xray server statistics"
+R[121]="3. Сбросить статистику Xray сервера"
+E[122]="4. Add new client"
+R[122]="4. Добавить нового клиента"
+E[123]="5. Delete client"
+R[123]="5. Удалить клиента"
+E[124]="6. Enable or disable client"
+R[124]="6. Включить или отключить клиента"
+E[125]="7. Set client IP address limit"
+R[125]="7. Установить лимит IP-адресов для клиента"
+E[126]="8. Update subscription auto-renewal status"
+R[126]="8. Обновить статус автопродления подписки"
+E[127]="9. Change subscription end date"
+R[127]="9. Изменить дату окончания подписки"
+E[128]="10. Synchronize client subscription configurations"
+R[128]="10. Синхронизировать конфигурации клиентских подписок"
+E[129]="11. Configure server chain"
+R[129]="11. Настроить цепочку серверов"
+E[130]="Enter 0 to exit (updates every 10 seconds): "
+R[130]="Введите 0 для выхода (обновление каждые 10 секунд): "
 
 ###################################
 ### HELP MESSAGE DISPLAY
@@ -2779,33 +2832,29 @@ reset_stats_menu() {
     clear
     display_xcore_banner
     tilda "|--------------------------------------------------------------------------|"
-    info " 1. Очистить DNS-статистику"
-    info " 2. Сброс статистики загрузки и отдачи инбаундов"
-    info " 3. Сброс статистики загрузки и отдачи клиентов"
+    info " $(text 107) "    # 1. Clear DNS query statistics
+    info " $(text 108) "    # 2. Reset inbound traffic statistics
+    info " $(text 109) "    # 3. Reset client traffic statistics
     echo
-    warning " $(text 84) "                   # Exit
+    warning " $(text 84) "  # 0. Previous menu
     tilda "|--------------------------------------------------------------------------|"
     echo
-    reading " $(text 1) " CHOICE_MENU        # Choise
+    reading " $(text 1) " CHOICE_MENU
     case $CHOICE_MENU in
       1)
-        curl -s -X POST http://127.0.0.1:9952/api/v1/delete_dns_stats && echo "DNS-статистика очищена" || warning "Ошибка при очистке DNS-статистики"
+        curl -s -X POST http://127.0.0.1:9952/api/v1/delete_dns_stats && info " $(text 110) " || warning " $(text 111) "
         sleep 2
         ;;
       2)
-        curl -s -X POST http://127.0.0.1:9952/api/v1/reset_traffic_stats && echo "traffic_stats очищены" || warning "Ошибка при очистке traffic_stats"
+        curl -s -X POST http://127.0.0.1:9952/api/v1/reset_traffic_stats && info " $(text 112) " || warning " $(text 113) "
         sleep 2
         ;;
       3)
-        curl -s -X POST http://127.0.0.1:9952/api/v1/reset_clients_stats && echo "clients_stats очищены" || warning "Ошибка при очистке clients_stats"
+        curl -s -X POST http://127.0.0.1:9952/api/v1/reset_clients_stats && info " $(text 114) " || warning " $(text 115) "
         sleep 2
         ;;
-      0)
-        break
-        ;;
-      *)
-        warning "Неверный выбор, попробуйте снова"
-        ;;
+      0) break ;;
+      *) warning " $(text 76) " ;;
     esac
   done
 }
@@ -2818,13 +2867,13 @@ manage_xray_chain_menu() {
     clear
     display_xcore_banner
     tilda "|--------------------------------------------------------------------------|"
-    info " 1. Создать цепочку серверов"
-    info " 2. Убрать цепочку серверов"
+    info " $(text 116) "    # 1. Add server chain for routing
+    info " $(text 117) "    # 2. Remove server chain from configuration
     echo
-    warning " $(text 84) "                   # Exit
+    warning " $(text 84) "  # 0. Previous menu
     tilda "|--------------------------------------------------------------------------|"
     echo
-    reading " $(text 1) " CHOICE_MENU        # Choise
+    reading " $(text 1) " CHOICE_MENU
     tilda "$(text 10)"
     case $CHOICE_MENU in
       1)
@@ -2833,19 +2882,13 @@ manage_xray_chain_menu() {
           update_xray_chain_outbounds
           systemctl restart xray
         else
-          warning "Ошибка при создании цепочки серверов. Обновление конфигурации пропущено."
+          warning " $(text 118) "
           sleep 3
         fi
         ;;
-      2)
-        remove_xray_chain_outbounds
-        ;;
-      0)
-        manage_xray_core
-        ;;
-      *)
-        warning " $(text 76) "
-        ;;
+      2) remove_xray_chain_outbounds ;;
+      0) manage_xray_core ;;
+      *) warning " $(text 76) " ;;
     esac
   done
 }
@@ -2859,71 +2902,47 @@ manage_xray_core() {
     extract_haproxy_data
     display_xcore_banner
     tilda "|--------------------------------------------------------------------------|"
-    info " 1. Статистика Xray сервера"
-    info " 2. DNS-запросы клиентов"
-    info " 3. Сброс статистики Xray сервера"
+    info " $(text 119) "    # 1. Show Xray server statistics
+    info " $(text 120) "    # 2. View client DNS queries
+    info " $(text 121) "    # 3. Reset Xray server statistics
     echo
-    info " 4. Добавить клиента"
-    info " 5. Удалить клиента"
-    info " 6. Включить / Отключить клиента"
+    info " $(text 122) "    # 4. Add new client
+    info " $(text 123) "    # 5. Delete client
+    info " $(text 124) "    # 6. Enable or disable client
     echo
-    info " 7. Установить лимит IP-адресов"
-    info " 8. Обновить автопродление подписки"
-    info " 9. Изменить дату окончания подписки"
+    info " $(text 125) "    # 7. Set client IP address limit
+    info " $(text 126) "    # 8. Update subscription auto-renewal status
+    info " $(text 127) "    # 9. Change subscription end date
     echo
-    info " 10. Синхронизация конфигураций"
-    info " 11. Настроить цепочку из серверов"
+    info " $(text 128) "    # 10. Synchronize client subscription configurations
+    info " $(text 129) "    # 11. Configure server chain
     echo
-    warning " $(text 84) "                        # Exit
+    warning " $(text 84) "  # 0. Previous menu
     tilda "|--------------------------------------------------------------------------|"
     echo
-    reading " $(text 1) " CHOICE_MENU             # Choise
+    reading " $(text 1) " CHOICE_MENU
     tilda "$(text 10)"
     case $CHOICE_MENU in
       1)
         while true; do
           display_server_stats
-          echo -n "Введите 0 для выхода (обновление каждые 10 секунд): "
+          echo -n "$(text 130) "
           read -t 10 -r STATS_CHOICE
           [[ "$STATS_CHOICE" == "0" ]] && break
         done
         ;;
-      2)
-        fetch_dns_stats
-        ;;
-      3)
-        reset_stats_menu
-        ;;
-      4)
-        add_new_user
-        ;;
-      5)
-        delete_user
-        ;;
-      6)
-        toggle_user_status
-        ;;
-      7)
-        set_user_lim_ip
-        ;;
-      8)
-        update_user_renewal
-        ;;
-      9)
-        adjust_subscription_date
-        ;;
-      10)
-        sync_client_configs
-        ;;
-      11)
-        manage_xray_chain_menu
-        ;;
-      0)
-        manage_xcore
-        ;;
-      *)
-        warning " $(text 76) "
-        ;;
+      2) fetch_dns_stats ;;
+      3) reset_stats_menu ;;
+      4) add_new_user ;;
+      5) delete_user ;;
+      6) toggle_user_status ;;
+      7) set_user_lim_ip ;;
+      8) update_user_renewal ;;
+      9) adjust_subscription_date ;;
+      10) sync_client_configs ;;
+      11) manage_xray_chain_menu ;;
+      0) manage_xcore ;;
+      *) warning " $(text 76) " ;;
     esac
   done
 }
@@ -2936,27 +2955,26 @@ manage_xcore() {
     clear
     display_xcore_banner
     tilda "|--------------------------------------------------------------------------|"
-    info " $(text 87) "                      # 1. Install
+    info " $(text 87) "    # 1. Perform standard installation
     echo
-    info " $(text 88) "                      # 2. Restore backup
-    info " $(text 89) "                      # 3. Change domain
-    info " $(text 90) "                      # 4. Renew cert
+    info " $(text 88) "    # 2. Restore from backup
+    info " $(text 89) "    # 3. Change proxy domain name
+    info " $(text 90) "    # 4. Reissue SSL certificates
     echo
-    info " $(text 91) "                      # 5. Steal web site
-    info " $(text 92) "                      # 6. Directory size
-    info " $(text 93) "                      # 7. Traffic statistics
+    info " $(text 91) "    # 5. Copy website to server
+    info " $(text 92) "    # 6. Show directory size
+    info " $(text 93) "    # 7. Show traffic statistics
     echo
-    info " $(text 94) "                      # 8. Обновить Xray core
-    info " $(text 95) "                      # X. Управление Xray
+    info " $(text 94) "    # 8. Update Xray core
+    info " $(text 95) "    # X. Manage Xray core
     echo
-    info " $(text 96) "                      # 9. Change language
+    info " $(text 96) "    # 9. Change interface language
     echo
-    warning " $(text 84) "                   # Exit
+    warning " $(text 84) " # 0. Previous menu
     tilda "|--------------------------------------------------------------------------|"
     echo
     reading " $(text 1) " CHOICE_MENU        # Choise
     tilda "$(text 10)"
-
     case $CHOICE_MENU in
       1)
         enable_logging
@@ -2994,40 +3012,23 @@ manage_xcore() {
         fi
         restore_from_backup
         ;;
-      3)
-        change_domain_name
-        ;;
-      4)
-        reissue_certificates
-        ;;
-      5)
-        mirror_website
-        ;;
-      6)
-        show_directory_size
-        ;;
-      7)
-        show_traffic_statistics
-        ;;
-      8)
-        update_xray
-        ;;
+      3) change_domain_name ;;
+      4) reissue_certificates ;;
+      5) mirror_website ;;
+      6) show_directory_size ;;
+      7) show_traffic_statistics ;;
+      8) update_xray ;;
       9)
         rm -rf ${DIR_XCORE}/lang.conf
         configure_language
         ;;
-      x|X)
-        manage_xray_core
-        ;;
+      x|X) manage_xray_core ;;
       0)
         clear
         exit 0
         ;;
-      *)
-        warning " $(text 76) "
-        ;;
+      *) warning " $(text 76) " ;;
     esac
-
     info " $(text 85) "
     read -r dummy
   done
