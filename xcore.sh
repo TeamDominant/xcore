@@ -73,8 +73,7 @@ E[6]="It is recommended to perform the following actions before running the scri
 R[6]="Перед запуском скрипта рекомендуется выполнить следующие действия"
 E[7]="Annihilation of the system!"
 R[7]="Аннигиляция системы!"
-E[8]=""
-R[8]=""
+
 E[9]="CANCEL"
 R[9]="ОТМЕНА"
 E[10]="\n|--------------------------------------------------------------------------|\n"
@@ -95,8 +94,7 @@ E[17]="Verifying domain, API token/key, and email..."
 R[17]="Проверка домена, API токена/ключа и почты..."
 E[18]="Error: invalid domain, API token/key, or email. Please try again."
 R[18]="Ошибка: неправильно введён домен, API токен/ключ или почта. Попробуйте снова."
-E[19]=""
-R[19]=""
+
 E[20]="Error: failed to connect to WARP. Manual acceptance of the terms of service is required."
 R[20]="Ошибка: не удалось подключиться к WARP. Требуется вручную согласиться с условиями использования."
 E[21]="Access link to node exporter:"
@@ -107,28 +105,18 @@ E[23]="Creating a backup and rotation."
 R[23]="Создание резевной копии и ротация."
 E[24]="Enter Node Exporter path:"
 R[24]="Введите путь к Node Exporter:"
-E[25]=""
-R[25]=""
-E[26]=""
-R[26]=""
+
 E[27]="Enter subscription path:"
 R[27]="Введите путь к подписке:"
-E[28]=""
-R[28]=""
+
 E[29]="Error: path cannot be empty, please re-enter."
 R[29]="Ошибка: путь не может быть пустым, повторите ввод."
 E[30]="Error: path must not contain characters {, }, /, $, \\, please re-enter."
 R[30]="Ошибка: путь не должен содержать символы {, }, /, $, \\, повторите ввод."
-E[31]=""
-R[31]=""
-E[32]=""
-R[32]="."
+
 E[33]="Error: invalid choice, please try again."
 R[33]="Ошибка: неверный выбор, попробуйте снова."
-E[34]=""
-R[34]=""
-E[35]=""
-R[35]=""
+
 E[36]="Updating system and installing necessary packages."
 R[36]="Обновление системы и установка необходимых пакетов."
 E[37]="Configuring Haproxy."
@@ -177,10 +165,7 @@ E[58]="SAVE THIS SCREEN!"
 R[58]="СОХРАНИ ЭТОТ ЭКРАН!"
 E[59]="Subscription page link:"
 R[59]="Ссылка на страницу подписки:"
-E[60]=""
-R[60]=""
-E[61]=""
-R[61]=""
+
 E[62]="SSH connection:"
 R[62]="Подключение по SSH:"
 E[63]="Username:"
@@ -191,12 +176,7 @@ E[65]="Log file path:"
 R[65]="Путь к лог файлу:"
 E[66]="Prometheus monitor."
 R[66]="Мониторинг Prometheus."
-E[67]=""
-R[67]=""
-E[68]=""
-R[68]=""
-E[69]=""
-R[69]=""
+
 E[70]="Secret key:"
 R[70]="Секретный ключ:"
 E[71]="Current operating system is \$SYS.\\\n The system lower than \$SYSTEM \${MAJOR[int]} is not supported. Feedback: [https://github.com/cortez24rus/xcore/issues]"
@@ -268,11 +248,8 @@ E[103]="Restoration is complete."
 R[103]="Восстановление завершено."
 E[104]="Selected archive:"
 R[104]="Выбран архив:"
-
-E[105]=""
-R[105]=""
-E[106]="Traffic statistics:\n  1. By years \n  2. By months \n  3. By days \n  4. By hours"
-R[106]="Статистика трафика:\n  1. По годам \n  2. По месяцам \n  3. По дням \n  4. По часам"
+E[105]="Traffic statistics:\n  1. By years \n  2. By months \n  3. By days \n  4. By hours"
+R[105]="Статистика трафика:\n  1. По годам \n  2. По месяцам \n  3. По дням \n  4. По часам"
 
 E[107]="1. Clear DNS query statistics"
 R[107]="1. Очистить статистику DNS-запросов"
@@ -2302,9 +2279,8 @@ restore_from_backup() {
 ### DISPLAY TRAFFIC STATISTICS
 ###################################
 show_traffic_statistics() {
-  hint " $(text 106) \n"  # Показывает информацию о доступных языках
+  hint " $(text 105) \n"  # Показывает информацию о доступных языках
   reading " $(text 1) " CHOICE_STATS  # Запрашивает выбор языка
-
   case $CHOICE_STATS in
     1) vnstat -y ;;  # По годам
     2) vnstat -m ;;  # По месяцам
