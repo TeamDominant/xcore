@@ -80,18 +80,6 @@
   },
   "inbounds": [
     {
-      "tag": "api",
-      "listen": "127.0.0.1",
-      "port": 10085,
-      "protocol": "dokodemo-door",
-      "settings": {
-        "address": "127.0.0.1"
-      },
-      "streamSettings": null,
-      "sniffing": null,
-      "allocate": null
-    },
-    {
       "tag": "vless_raw",
       "listen": "127.0.0.1",
       "port": 10550,
@@ -131,6 +119,18 @@
         "refresh": 5,
         "concurrency": 3
       }
+    },
+    {
+      "tag": "api",
+      "listen": "127.0.0.1",
+      "port": 10085,
+      "protocol": "dokodemo-door",
+      "settings": {
+        "address": "127.0.0.1"
+      },
+      "streamSettings": null,
+      "sniffing": null,
+      "allocate": null
     }
   ],
   "outbounds": [
@@ -149,7 +149,11 @@
     {
       "tag": "block",
       "protocol": "blackhole",
-      "settings": {}
+      "settings": {
+        "response": {
+          "type": "none"
+        }
+      }
     },
     {
       "tag": "warp",

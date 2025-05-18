@@ -247,18 +247,6 @@
   },
   "inbounds": [
     {
-      "tag": "api",
-      "listen": "127.0.0.1",
-      "port": 10085,
-      "protocol": "dokodemo-door",
-      "settings": {
-        "address": "127.0.0.1"
-      },
-      "streamSettings": null,
-      "sniffing": null,
-      "allocate": null
-    },
-    {
       "tag": "socks",
       "port": 10808,
       "protocol": "socks",
@@ -277,6 +265,18 @@
       },
       "routeOnly": false,
       "metadataOnly": false
+    },
+    {
+      "tag": "api",
+      "listen": "127.0.0.1",
+      "port": 10085,
+      "protocol": "dokodemo-door",
+      "settings": {
+        "address": "127.0.0.1"
+      },
+      "streamSettings": null,
+      "sniffing": null,
+      "allocate": null
     }
   ],
   "outbounds": [
@@ -341,6 +341,15 @@
       }
     },
     {
+      "tag": "block",
+      "protocol": "blackhole",
+      "settings": {
+        "response": {
+          "type": "none"
+        }
+      }
+    },
+    {
       "protocol": "dns",
       "settings": {
         "nonIPQuery": "skip",
@@ -352,15 +361,6 @@
         "tag": "vless_raw"
       },
       "tag": "dns-out"
-    },
-    {
-      "tag": "block",
-      "protocol": "blackhole",
-      "settings": {
-        "response": {
-          "type": "none"
-        }
-      }
     }
   ],
   "policy": {
