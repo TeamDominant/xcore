@@ -1878,6 +1878,7 @@ setup_xray_subscription_page() {
   cp -r ${DIR_XCORE}/repo/sub_page/* /var/www/${SUB_JSON_PATH}/
 
   sed -i \
+    -e "s/IP_TEMP/${IP4}/g" \
     -e "s/DOMAIN_TEMP/${DOMAIN}/g" \
     -e "s/SUB_JSON_PATH_TEMP/${SUB_JSON_PATH}/g" \
     "/var/www/${SUB_JSON_PATH}/sub.html"
@@ -2472,8 +2473,6 @@ sync_client_configs() {
     cp -r ${DIR_XCORE}/repo/conf_template/client_raw.json ${FILE_PATH}
 
     echo "$(jq ".outbounds[${OUT_VL_NUM}].settings.vnext[].users[] = ${CLIENT}" ${FILE_PATH})" > $FILE_PATH
-    sed -i -e "s/DOMAIN_TEMP/${CURR_DOMAIN}/g" ${FILE_PATH}
-    sed -i -e "s/IP_TEMP/${IP4}/g" ${FILE_PATH}
 
     sed -i \
       -e "s/DOMAIN_TEMP/${CURR_DOMAIN}/g" \
