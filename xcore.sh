@@ -9,7 +9,7 @@ sqlite3 "/usr/local/xcore/data.db" "ALTER TABLE clients_stats DROP COLUMN level;
 ###################################
 ### GLOBAL CONSTANTS AND VARIABLES
 ###################################
-VERSION_MANAGER='0.9.37'
+VERSION_MANAGER='0.9.38'
 VERSION_XRAY='v25.3.6'
 
 DIR_XCORE="/opt/xcore"
