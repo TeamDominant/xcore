@@ -396,6 +396,7 @@ update_xcore_manager() {
   mv -f "${DIR_XCORE}/repo/services/xcore.service" "/etc/systemd/system/xcore.service"
 
   bash /opt/xcore/sync_xcore.sh
+  systemctl daemon-reload
   systemctl restart xcore
 
   tilda "\n|-----------------------------------------------------------------------------|\n"
