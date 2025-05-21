@@ -393,6 +393,7 @@ update_xcore_manager() {
 
   # Временно
   chmod +x ${DIR_XCORE}/repo/services/xcore.service
+  chmod +x ${DIR_XCORE}/repo/services/xcore.service
   mv -f "${DIR_XCORE}/repo/services/xcore.service" "/etc/systemd/system/xcore.service"
 
   bash /opt/xcore/sync_xcore.sh
