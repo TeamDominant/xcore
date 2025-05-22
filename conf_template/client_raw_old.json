@@ -98,6 +98,7 @@
           "vk.com",
           "ru.com",
           "ru.net",
+          "keyword:browserleaks",
           "keyword:ipleak"
         ],
         "skipFallback": true,
@@ -106,9 +107,14 @@
         "allowUnexpectedIPs": true,
         "timeoutMs": 1000
       },
-	  "8.8.8.8"
+      {
+        "address": "8.8.8.8",
+        "skipFallback": false,
+        "queryStrategy": "UseIP",
+        "allowUnexpectedIPs": true,
+        "timeoutMs": 1000
+      }
     ],
-    "skipFallback": true,
     "queryStrategy": "UseIP"
   },
   "routing": {
@@ -232,6 +238,7 @@
           "vk.com",
           "ru.com",
           "ru.net",
+          "keyword:browserleaks",
           "keyword:ipleak"
         ],
         "outboundTag": "direct"
@@ -343,13 +350,16 @@
       }
     },
     {
-      "tag": "dns-out",
       "protocol": "dns",
+      "tag": "dns-out",
       "settings": {
         "nonIPQuery": "skip",
         "network": "udp",
         "address": "8.8.8.8",
         "port": 53
+      },
+      "proxySettings": {
+        "tag": "vless_raw"
       }
     }
   ],
@@ -360,7 +370,7 @@
       },
       "0": {
         "handshake": 4,
-        "connIdle": 300,
+        "connIdle": 120,
         "uplinkOnly": 2,
         "downlinkOnly": 5,
         "statsUserUplink": true,
