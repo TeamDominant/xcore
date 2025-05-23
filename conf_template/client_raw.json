@@ -1,7 +1,8 @@
 {
   "remarks": "HAPROXY",
   "log": {
-    "loglevel": "warning"
+    "loglevel": "warning",
+    "dnsLog": false
   },
   "fakedns": [
     {
