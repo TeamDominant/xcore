@@ -32,6 +32,11 @@
     "network": "tcp,udp",
     "rules": [
       {
+        "network": "tcp,udp",
+        "port": 53,
+        "outboundTag": "dns-out"
+      },
+      {
         "inboundTag": [
           "api"
         ],
@@ -147,11 +152,18 @@
       }
     },
     {
+      "tag": "dns-out",
+      "protocol": "dns",
+      "settings": {
+        "nonIPQuery": "drop"
+      }
+    },
+    {
       "tag": "block",
       "protocol": "blackhole",
       "settings": {
         "response": {
-          "type": "none"
+          "type": "http"
         }
       }
     },
@@ -172,11 +184,13 @@
   "policy": {
     "levels": {
       "1": {
-        "connIdle": 0
+        "statsUserUplink": true,
+        "statsUserDownlink": true,
+        "statsUserOnline": true
       },
       "0": {
         "handshake": 4,
-        "connIdle": 120,
+        "connIdle": 300,
         "uplinkOnly": 2,
         "downlinkOnly": 5,
         "statsUserUplink": true,

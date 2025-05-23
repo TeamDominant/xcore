@@ -15,9 +15,9 @@
   ],
   "dns": {
     "hosts": {
-      "DOMAIN_TEMP": [
-        "IP_TEMP"
-      ]
+      "DOMAIN_TEMP": "IP_TEMP",
+      "dns.google": ["8.8.8.8","8.8.4.4"],
+      "dns.cloudflare.com": "1.1.1.1"
     },
     "servers": [
       {
@@ -338,7 +338,7 @@
       "protocol": "blackhole",
       "settings": {
         "response": {
-          "type": "none"
+          "type": "http"
         }
       }
     },
