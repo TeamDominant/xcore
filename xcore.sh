@@ -10,7 +10,7 @@
 ###################################
 ### GLOBAL CONSTANTS AND VARIABLES
 ###################################
-VERSION_MANAGER='0.9.52'
+VERSION_MANAGER='0.9.53'
 VERSION_XRAY='v25.3.6'
 
 DIR_XCORE="/opt/xcore"
@@ -904,28 +904,53 @@ collect_user_data() {
 install_nginx() {
   case "$SYSTEM" in
     Debian|Ubuntu)
-      DEPS_BUILD_CHECK=("git" "gcc" "make" "libpcre2-dev" "libssl-dev" "libgeoip-dev" "libxslt1-dev" "zlib1g-dev" "libgd-dev" "libmaxminddb0" "libmaxminddb-dev" "mmdb-bin")
-      DEPS_BUILD_INSTALL=("git" "build-essential" "libpcre2-dev" "libssl-dev" "libgeoip-dev" "libxslt1-dev" "zlib1g-dev" "libgd-dev" "libmaxminddb0" "libmaxminddb-dev" "mmdb-bin")
+      DEPS_CHECK_BUILD=(
+        gcc                     gcc
+        make                    make
+        mmdb-bin                mmdb-bin
+        libgd-dev               libgd-dev
+        zlib1g-dev              zlib1g-dev
+        libssl-dev              libssl-dev
+        libpcre2-dev            libpcre2-dev
+        libxslt1-dev            libxslt1-dev
+        libmaxminddb0           libmaxminddb0
+        libmaxminddb-dev        libmaxminddb-dev
+        build-essential         build-essential
+      )
       USERNGINX="www-data"
       ;;
 
     CentOS|Fedora)
-      DEPS_BUILD_CHECK=("git" "gcc" "make" "pcre-devel" "openssl-devel" "libxslt-devel" "zlib-devel" "gd-devel" "libmaxminddb-devel")
-      DEPS_BUILD_INSTALL=("git" "gcc" "make" "pcre-devel" "openssl-devel" "libxslt-devel" "zlib-devel" "gd-devel" "libmaxminddb-devel")
+      DEPS_CHECK_BUILD=(
+        gcc                     gcc
+        make                    make
+        gd-devel                gd-devel
+        pcre-devel              pcre-devel
+        zlib-devel              zlib-devel
+        openssl-devel           openssl-devel
+        libxslt-devel           libxslt-devel
+        libmaxminddb-devel      libmaxminddb-devel
+      )
       USERNGINX="nginx"
       ;;
   esac
 
-  for g in "${!DEPS_BUILD_CHECK[@]}"; do
-    [ ! -x "$(type -p ${DEPS_BUILD_CHECK[g]})" ] && [[ ! "${DEPS_BUILD[@]}" =~ "${DEPS_BUILD_INSTALL[g]}" ]] && DEPS_BUILD+=(${DEPS_BUILD_INSTALL[g]})
+  for ((i=0; i<${#DEPS_CHECK_BUILD[@]}; i+=2)); do
+    bin="${DEPS_CHECK_BUILD[i]}"
+    pkg="${DEPS_CHECK_BUILD[i+1]}"
+
+    if command -v "$bin" >/dev/null 2>&1 || dpkg -s "$pkg" >/dev/null 2>&1; then
+      continue
+    fi
+    DEPS_PACK_BUILD+=("$pkg")
   done
 
-  if [ "${#DEPS_BUILD[@]}" -ge 1 ]; then
-    echo "Список зависимостей для установки ${DEPS_BUILD[@]}"
-    ${PACKAGE_UPDATE[int]} >/dev/null 2>&1
-    ${PACKAGE_INSTALL[int]} ${DEPS_BUILD[@]} >/dev/null 2>&1
+  if [ "${#DEPS_PACK_BUILD[@]}" -gt 0 ]; then
+    info " $(text 77) ": ${DEPS_PACK_BUILD[@]}
+    ${PACKAGE_UPDATE[int]}
+    ${PACKAGE_INSTALL[int]} ${DEPS_PACK_BUILD[@]}
   else
-    echo "Все зависимости уже установлены и не требуют дополнительной установки."
+    info " $(text 78) "
   fi
 
   NGINX_VERSION="1.27.5"
@@ -1005,21 +1030,73 @@ install_utility_packages() {
   info " $(text 36) "
   case "$SYSTEM" in
     Debian|Ubuntu)
-      DEPS_PACK_CHECK=("jq" "ufw" "zip" "wget" "gpg" "nano" "rsync" "sqlite3" "haproxy" "certbot" "cron" "vnstat" "openssl" "netstat" "htpasswd" "update-ca-certificates" "add-apt-repository" "unattended-upgrades" "certbot-dns-cloudflare")
-      DEPS_PACK_INSTALL=("jq" "ufw" "zip" "wget" "gnupg2" "nano" "rsync" "sqlite3" "haproxy" "certbot" "cron" "vnstat" "openssl" "net-tools" "apache2-utils" "ca-certificates" "software-properties-common" "unattended-upgrades" "python3-certbot-dns-cloudflare")
+      DEPS_CHECK=(
+        jq                      jq
+        git                     git
+        ufw                     ufw
+        zip                     zip
+        wget                    wget
+        cron                    cron
+        nano                    nano
+        unzip                   unzip
+        rsync                   rsync
+        gpg                     gnupg2
+        vnstat                  vnstat
+        sqlite3                 sqlite3
+        haproxy                 haproxy
+        certbot                 certbot
+        openssl                 openssl
+        netstat                 net-tools
+        htpasswd                apache2-utils
+        update-ca-certificates  ca-certificates
+        unattended-upgrades     unattended-upgrades
+        add-apt-repository      software-properties-common
+        certbot-dns-cloudflare  python3-certbot-dns-cloudflare
+      )
       ;;
 
     CentOS|Fedora)
-      DEPS_PACK_CHECK=("jq" "zip" "tar" "wget" "gpg" "nano" "rsync" "sqlite3" "haproxy" "certbot" "crontab" "vnstat" "openssl" "netstat" "htpasswd" "update-ca-certificates" "certbot-dns-cloudflare" "nslookup")
-      DEPS_PACK_INSTALL=("jq" "zip" "tar" "wget" "gnupg2" "nano" "rsync" "sqlite3" "haproxy" "certbot" "cronie" "vnstat" "openssl" "net-tools" "bind-utils" "httpd-tools" "ca-certificates" "python3-certbot-dns-cloudflare" "bind-utils")
+      DEPS_CHECK=(
+        jq                      jq
+        git                     git
+        ufw                     ufw
+        zip                     zip
+        tar                     tar
+        wget                    wget
+        cron                    cron
+        nano                    nano
+        unzip                   unzip
+        rsync                   rsync
+        gpg                     gnupg2
+        vnstat                  vnstat
+        crontab                 cronie
+        sqlite3                 sqlite3
+        haproxy                 haproxy
+        certbot                 certbot
+        openssl                 openssl
+        netstat                 net-tools
+        nslookup                bind-utils
+        htpasswd                httpd-tools
+        update-ca-certificates  ca-certificates
+        unattended-upgrades     unattended-upgrades
+        add-apt-repository      software-properties-common
+        certbot-dns-cloudflare  python3-certbot-dns-cloudflare
+      )
       ;;
   esac
 
-  for g in "${!DEPS_PACK_CHECK[@]}"; do
-    [ ! -x "$(type -p ${DEPS_PACK_CHECK[g]})" ] && [[ ! "${DEPS_PACK[@]}" =~ "${DEPS_PACK_INSTALL[g]}" ]] && DEPS_PACK+=(${DEPS_PACK_INSTALL[g]})
+  for ((i=0; i<${#DEPS_CHECK[@]}; i+=2)); do
+    bin="${DEPS_CHECK[i]}"
+    pkg="${DEPS_CHECK[i+1]}"
+
+    if command -v "$bin" >/dev/null 2>&1 || dpkg -s "$pkg" >/dev/null 2>&1; then
+      continue
+    fi
+
+    DEPS_PACK+=("$pkg")
   done
 
-  if [ "${#DEPS_PACK[@]}" -ge 1 ]; then
+  if [ "${#DEPS_PACK[@]}" -gt 0 ]; then
     info " $(text 77) ": ${DEPS_PACK[@]}
     ${PACKAGE_UPDATE[int]}
     ${PACKAGE_INSTALL[int]} ${DEPS_PACK[@]}
