@@ -10,7 +10,7 @@
 ###################################
 ### GLOBAL CONSTANTS AND VARIABLES
 ###################################
-VERSION_MANAGER='0.9.53'
+VERSION_MANAGER='0.9.54'
 VERSION_XRAY='v25.3.6'
 
 DIR_XCORE="/opt/xcore"
@@ -2702,11 +2702,12 @@ update_user_parameter_get() {
 ###################################
 ### UPDATE USER PARAMETER VIA API
 ###################################
-update_user_parameter_patch() {
-  local param_name="$1"  # Название параметра, например "lim_ip", "renew", "offset"
-  local api_url="$2"     # URL для PATCH-запроса
+update_user_parameter_get() {
+  local param_name="$1"  # Название параметра, например "lim_ip", "renew", "offset", "count"
+  local api_url="$2"     # URL для GET-запроса
   local prompt="$3"      # Текст для запроса нового значения
 
+  last_selected_num=""
   local param_value
 
   # Запрос нового значения
@@ -2721,7 +2722,17 @@ update_user_parameter_patch() {
     fi
 
     info " (Выбрано значение $param_name: $param_value)"
-    read -p " Введите номера пользователей (0 - выход, \"reset\" - изменить $param_name): " choice
+    # Если последний выбранный номер существует, предлагаем его по умолчанию
+    if [ -n "$last_selected_num" ]; then
+      read -p " Введите номера пользователей (0 - выход, 'reset' - изменить $param_name, Enter - последний выбор $last_selected_num): " choice
+    else
+      read -p " Введите номера пользователей (0 - выход, 'reset' - изменить $param_name): " choice
+    fi
+
+    # Если нажат Enter и есть последний выбор, используем его
+    if [ -z "$choice" ] && [ -n "$last_selected_num" ]; then
+      choice="$last_selected_num"
+    fi
 
     if [[ "$choice" == "0" ]]; then
       info "Выход..."
@@ -2746,17 +2757,13 @@ update_user_parameter_patch() {
     done
 
     clear
-    # Обновляем параметр для выбранных пользователей
+    # Обновляем параметр для выбранных пользователей и запоминаем последний номер
     for num in "${choices[@]}"; do
       selected_email="${user_map[$((num-1))]}"
-      response=$(curl -s -X PATCH "$api_url" -d "email=$selected_email&$param_name=$param_value")
-      if [ $? -eq 0 ]; then
-        info "$param_name для $selected_email обновлено на $param_value"
-      else
-        warning "Ошибка при обновлении $param_name для $selected_email"
-      fi
+      curl -s -X GET "${api_url}?email=${selected_email}&$param_name=${param_value}"
+      # Запоминаем последний выбранный номер
+      last_selected_num="$num"
     done
-    echo
   done
 }
 
