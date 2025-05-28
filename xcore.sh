@@ -10,7 +10,7 @@
 ###################################
 ### GLOBAL CONSTANTS AND VARIABLES
 ###################################
-VERSION_MANAGER='0.9.54'
+VERSION_MANAGER='0.9.55'
 VERSION_XRAY='v25.3.6'
 
 DIR_XCORE="/opt/xcore"
@@ -1629,7 +1629,7 @@ EOF
 ### DOWNLOAD AND SCHEDULE GEOLITE2 DATABASE UPDATES
 ###################################
 schedule_geolite2_updates() {
-  bash "${DIR_XCORE}/geolite2_update.sh"
+  bash "${DIR_XCORE}/repo/cron_jobs/geolite2_update.sh"
 
   crontab -l | grep -v -- "geolite2_update.sh" | crontab -
   schedule_cron_job "20 5 */3 * * ${DIR_XCORE}/repo/cron_jobs/geolite2_update.sh"
@@ -1789,9 +1789,9 @@ defaults
   log global
   option tcplog
   option dontlognull
-  timeout connect 5000
-  timeout client  50000
-  timeout server  50000
+  timeout connect 5s
+  timeout client  1h
+  timeout server  1h
 
 frontend haproxy-tls
   mode tcp
@@ -1806,12 +1806,10 @@ frontend haproxy-tls
 
 backend xray
   mode tcp
-  timeout server 1h
   server vless 127.0.0.1:10550 send-proxy-v2
 
 backend nginx
   mode http
-  timeout server 1h
   option forwardfor
   server web 127.0.0.1:36078
 
@@ -1963,7 +1961,7 @@ setup_xray_client() {
 ### CREATE WEEKLY SYNC SCRIPT
 ###################################
 create_sync_script() {
-  bash "${DIR_XCORE}/sync_xcore.sh"
+  bash "${DIR_XCORE}/repo/cron_jobs/sync_xcore.sh"
 
   crontab -l | grep -v -- "sync_xcore.sh" | crontab -
   schedule_cron_job "0 5 * * 1 ${DIR_XCORE}/repo/cron_jobs/sync_xcore.sh"
@@ -2166,7 +2164,7 @@ show_directory_size() {
 ### CREATE BACKUP SCRIPT FOR DIRECTORIES
 ###################################
 create_backup_script() {
-  bash "${DIR_XCORE}/backup_dir.sh"
+  bash "${DIR_XCORE}/repo/cron_jobs/backup_dir.sh"
 
   crontab -l | grep -v -- "backup_dir.sh" | crontab -
   schedule_cron_job "5 5 * * * ${DIR_XCORE}/repo/cron_jobs/backup_dir.sh"
@@ -2176,7 +2174,7 @@ create_backup_script() {
 ### CREATE BACKUP ROTATION SCRIPT
 ###################################
 create_rotation_script() {
-  bash "${DIR_XCORE}/rotation_backup.sh"
+  bash "${DIR_XCORE}/repo/cron_jobs/rotation_backup.sh"
 
   crontab -l | grep -v -- "rotation_backup.sh" | crontab -
   schedule_cron_job "10 5 * * * ${DIR_XCORE}/repo/cron_jobs/rotation_backup.sh"
