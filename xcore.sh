@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
 
-# Удалена колонка level из xray config, требует удаления с базы данных для работы с 0.8.7 xcore
-# sqlite3 "/usr/local/xcore/data.db" "ALTER TABLE clients_stats DROP COLUMN level;" > /dev/null 2>&1
-
 # Copyright (c) 2025 xCore Authors
 # This file is part of xCore.
 # xCore is licensed under the xCore Software License. See the LICENSE file for details.
@@ -10,7 +7,7 @@
 ###################################
 ### GLOBAL CONSTANTS AND VARIABLES
 ###################################
-VERSION_MANAGER='0.9.55'
+VERSION_MANAGER='0.9.57'
 VERSION_XRAY='v25.3.6'
 
 DIR_XCORE="/opt/xcore"
@@ -552,7 +549,7 @@ parse_command_line_args() {
 ###################################
 enable_logging() {
   mkdir -p ${DIR_XCORE}/
-  LOGFILE="${DIR_XCORE}/xcore_proxy.log"
+  LOGFILE="${DIR_XCORE}/xcore.log"
   exec > >(tee -a "$LOGFILE") 2>&1
 }
 
@@ -1797,10 +1794,11 @@ frontend haproxy-tls
   mode tcp
   timeout client 1h
   bind 0.0.0.0:443 ssl crt /etc/haproxy/certs/${DOMAIN}.pem alpn h2,http/1.1
-  acl host_ip hdr(host) -i ${IP4}
-  tcp-request content reject if host_ip
+
   tcp-request inspect-delay 5s
   tcp-request content accept if { req_ssl_hello_type 1 }
+
+  use_backend forbidden if !{ ssl_fc_sni -i ${DOMAIN} } !{ ssl_fc_sni -m end .${DOMAIN} }
   use_backend %[lua.vless_auth]
   default_backend nginx
 
@@ -1961,10 +1959,10 @@ setup_xray_client() {
 ### CREATE WEEKLY SYNC SCRIPT
 ###################################
 create_sync_script() {
-  bash "${DIR_XCORE}/repo/cron_jobs/sync_xcore.sh"
+  bash "${DIR_XCORE}/repo/cron_jobs/get_v2ray-stat.sh"
 
-  crontab -l | grep -v -- "sync_xcore.sh" | crontab -
-  schedule_cron_job "0 5 * * 1 ${DIR_XCORE}/repo/cron_jobs/sync_xcore.sh"
+  crontab -l | grep -v -- "get_v2ray-stat.sh" | crontab -
+  schedule_cron_job "0 5 * * 1 ${DIR_XCORE}/repo/cron_jobs/get_v2ray-stat.sh"
 }
 
 ###################################
@@ -1974,13 +1972,13 @@ setup_xcore_service() {
   create_sync_script
   
   bash <(curl -Ls https://raw.githubusercontent.com/cortez24rus/motd/refs/heads/X/install.sh)
-  chmod +x ${DIR_XCORE}/repo/services/xcore.service
-  mv -f "${DIR_XCORE}/repo/services/xcore.service" "/etc/systemd/system/xcore.service"
+  chmod +x ${DIR_XCORE}/repo/services/v2ray-stat.service
+  mv -f "${DIR_XCORE}/repo/services/v2ray-stat.service" "/etc/systemd/system/v2ray-stat.service"
 
   systemctl daemon-reload
-  systemctl enable xcore.service
-  systemctl start xcore.service
-  systemctl restart xcore.service
+  systemctl enable v2ray-stat.service
+  systemctl start v2ray-stat.service
+  systemctl restart v2ray-stat.service
 }
 
 ###################################
