@@ -7,7 +7,7 @@
 ###################################
 ### GLOBAL CONSTANTS AND VARIABLES
 ###################################
-VERSION_MANAGER='0.9.60'
+VERSION_MANAGER='0.9.61'
 VERSION_XRAY='v25.3.6'
 
 DIR_XCORE="/opt/xcore"
@@ -1959,26 +1959,14 @@ setup_xray_client() {
 }
 
 ###################################
-### CREATE WEEKLY SYNC SCRIPT
+### SETUP XCORE SYSTEMD SERVICE
 ###################################
-create_sync_script() {
+setup_xcore_service() {
   chmod +x "${DIR_XCORE}/repo/cron_jobs/get_v2ray-stat.sh"
   bash "${DIR_XCORE}/repo/cron_jobs/get_v2ray-stat.sh"
 
   # crontab -l | grep -v -- "get_v2ray-stat.sh" | crontab -
   schedule_cron_job "0 5 * * 1 ${DIR_XCORE}/repo/cron_jobs/get_v2ray-stat.sh"
-}
-
-###################################
-### SETUP XCORE SYSTEMD SERVICE
-###################################
-setup_xcore_service() {
-  create_sync_script
-
-  systemctl daemon-reload
-  systemctl enable v2ray-stat.service
-  systemctl start v2ray-stat.service
-  systemctl restart v2ray-stat.service
 }
 
 ###################################
