@@ -11,13 +11,15 @@ mkdir -p "$DEST_DIR"
 
 # Get download URL from latest release
 URL=$(curl -s https://api.github.com/repos/$REPO/releases/latest | grep -o "https.*$FILE" | head -1)
-echo $URL
 
 if [ -z "$URL" ]; then
   echo "$(date): Error: File $FILE not found in latest release" >> "$LOG_FILE"
   echo >> "$LOG_FILE"
   exit 1
 fi
+
+echo "$(date): Stopping v2ray-stat service..." >> "$LOG_FILE"
+systemctl stop v2ray-stat.service || echo "$(date): Warning: Failed to stop v2ray-stat service" >> "$LOG_FILE"
 
 # Download and make executable
 echo "$(date): Downloading $FILE to $DEST_DIR..." >> "$LOG_FILE"
