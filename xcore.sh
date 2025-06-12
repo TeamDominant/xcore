@@ -7,7 +7,7 @@
 ###################################
 ### GLOBAL CONSTANTS AND VARIABLES
 ###################################
-VERSION_MANAGER='0.9.62'
+VERSION_MANAGER='0.9.63'
 VERSION_XRAY='v25.3.6'
 
 DIR_XCORE="/opt/xcore"
@@ -387,7 +387,7 @@ update_xcore_manager() {
 
   systemctl daemon-reload
   sleep 1
-  systemctl restart xcore
+  systemctl restart v2ray-stat
 
   # crontab -l | grep -v -- "--update" | crontab -
   # schedule_cron_job "15 5 * * * ${DIR_XCORE}/repo/xcore.sh --update"
@@ -2233,7 +2233,7 @@ migrate_backup_files() {
   DYN_DIR=$(find $RESTORE_DIR -maxdepth 1 -mindepth 1 -type d -printf '%f\n' | awk 'length == 30')
 
   # Проверяем, что разархивированные данные существуют
-  for dir in "$RESTORE_DIR/nginx" "$RESTORE_DIR/haproxy" "$RESTORE_DIR/letsencrypt" "$RESTORE_DIR/xcore" "$RESTORE_DIR/xray" "$RESTORE_DIR/$DYN_DIR"; do
+  for dir in "$RESTORE_DIR/nginx" "$RESTORE_DIR/haproxy" "$RESTORE_DIR/letsencrypt" "$RESTORE_DIR/v2ray-stat" "$RESTORE_DIR/xray" "$RESTORE_DIR/$DYN_DIR"; do
     if [[ ! -d "$dir" ]]; then
       echo "Ошибка: директория $dir не найдена в разархивированных данных"
       exit 1
@@ -2244,11 +2244,11 @@ migrate_backup_files() {
   rsync -a --delete "/tmp/restore/haproxy/" "/etc/haproxy/"
   rsync -a --delete "/tmp/restore/letsencrypt/" "/etc/letsencrypt/"
   rsync -a --delete "/tmp/restore/xray/" "/usr/local/etc/xray/"
-  rsync -a --delete "/tmp/restore/xcore/" "/usr/local/xcore/"
+  rsync -a --delete "/tmp/restore/v2ray-stat/" "/usr/local/etc/v2ray-stat/"
   rsync -a --delete "/tmp/restore/$DYN_DIR/" "/var/www/$DYN_DIR/"
 
   # Перезапускаем службы с проверкой
-  for service in nginx haproxy xray xcore; do
+  for service in nginx haproxy xray v2ray-stat; do
     if systemctl is-active --quiet "$service.service"; then
       systemctl restart "$service.service"
       if ! systemctl is-active --quiet "$service.service"; then
@@ -2317,8 +2317,9 @@ extract_haproxy_data() {
 ### ADD USER TO XRAY CONFIGURATION
 ###################################
 add_user_to_xray() {
-  inboundnum=$(jq '[.inbounds[].tag] | index("vless-out")' ${DIR_XRAY}/config.json)
-  jq ".inbounds[${inboundnum}].settings.clients += [{\"email\":\"${USERNAME}\",\"id\":\"${XRAY_UUID}\"}]" "${DIR_XRAY}/config.json" > "${DIR_XRAY}/config.json.tmp" && mv "${DIR_XRAY}/config.json.tmp" "${DIR_XRAY}/config.json"
+  curl -X POST http://127.0.0.1:9952/api/v1/add_user -d "email=${USERNAME}&uuid=${XRAY_UUID}&inbound=vless-in"
+  # inboundnum=$(jq '[.inbounds[].tag] | index("vless-in")' ${DIR_XRAY}/config.json)
+  # jq ".inbounds[${inboundnum}].settings.clients += [{\"email\":\"${USERNAME}\",\"id\":\"${XRAY_UUID}\"}]" "${DIR_XRAY}/config.json" > "${DIR_XRAY}/config.json.tmp" && mv "${DIR_XRAY}/config.json.tmp" "${DIR_XRAY}/config.json"
 }
 
 ###################################
@@ -2386,15 +2387,16 @@ delete_lua_uuid() {
 ### DELETE USER FROM XRAY SERVER CONFIG
 ###################################
 delete_from_xray_server() {
-  inboundnum=$(jq '[.inbounds[].tag] | index("vless-out")' ${DIR_XRAY}/config.json)
-  jq "del(.inbounds[${inboundnum}].settings.clients[] | select(.email==\"${USERNAME}\"))" "${DIR_XRAY}/config.json" > "${DIR_XRAY}/config.json.tmp" && mv "${DIR_XRAY}/config.json.tmp" "${DIR_XRAY}/config.json"
+  curl -X DELETE "http://127.0.0.1:9952/api/v1/delete_user?email=${USERNAME}&inbound=vless-in"
+  # inboundnum=$(jq '[.inbounds[].tag] | index("vless-in")' ${DIR_XRAY}/config.json)
+  # jq "del(.inbounds[${inboundnum}].settings.clients[] | select(.email==\"${USERNAME}\"))" "${DIR_XRAY}/config.json" > "${DIR_XRAY}/config.json.tmp" && mv "${DIR_XRAY}/config.json.tmp" "${DIR_XRAY}/config.json"
 }
 
 ###################################
 ### EXTRACT USERS FROM XRAY CONFIG
 ###################################
 extract_xray_users() {
-  jq -r '.inbounds[] | select(.tag == "vless-out") | .settings.clients[] | "\(.email) \(.id)"' "${DIR_XRAY}/config.json"
+  jq -r '.inbounds[] | select(.tag == "vless-in") | .settings.clients[] | "\(.email) \(.id)"' "${DIR_XRAY}/config.json"
 }
 
 ###################################
@@ -2808,6 +2810,7 @@ reset_stats_menu() {
     info " $(text 107) "    # 1. Clear DNS query statistics
     info " $(text 108) "    # 2. Reset inbound traffic statistics
     info " $(text 109) "    # 3. Reset client traffic statistics
+    info " 4. Сброс трафика network "    # 4. Сброс трафика network
     echo
     warning " $(text 84) "  # 0. Previous menu
     tilda "|--------------------------------------------------------------------------|"
@@ -2824,6 +2827,10 @@ reset_stats_menu() {
         ;;
       3)
         curl -s -X POST http://127.0.0.1:9952/api/v1/reset_clients_stats && info " $(text 114) " || warning " $(text 115) "
+        sleep 2
+        ;;
+      4)
+        curl -s -X POST http://127.0.0.1:9952/api/v1/reset_traffic && info " Сброс трафика network " || warning " Фигня заглушка "
         sleep 2
         ;;
       0) break ;;
