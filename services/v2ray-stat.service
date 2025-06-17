@@ -5,8 +5,8 @@ After=network.target
 [Service]
 User=root
 Group=root
-ExecStart=/usr/local/v2ray-stat/v2ray-stat --dns --net --stats
-WorkingDirectory=/usr/local/v2ray-stat
+ExecStart=/usr/local/etc/v2ray-stat/v2ray-stat --dns --net --stats
+WorkingDirectory=/usr/local/etc/v2ray-stat
 Restart=always
 RestartSec=5
 KillSignal=SIGTERM
