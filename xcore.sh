@@ -7,7 +7,7 @@
 ###################################
 ### GLOBAL CONSTANTS AND VARIABLES
 ###################################
-VERSION_MANAGER='0.9.66'
+VERSION_MANAGER='0.9.67'
 VERSION_XRAY='v25.3.6'
 
 DIR_XCORE="/opt/xcore"
@@ -1700,37 +1700,46 @@ create_haproxy_auth_lua() {
   read PLACEBO_XRAY_UUID < <(generate_uuid)
 
   cat > ${DIR_HAPROXY}/.auth.lua <<EOF
-local passwords = {
-  ["${XRAY_UUID}"] = true,
-  ["${PLACEBO_XRAY_UUID}"] = false		-- Заглушка, не удаляй, а то убьет
+local users = {
+  ["${USERNAME}"] = "${XRAY_UUID}",
+  ["dummy"] = "${PLACEBO_XRAY_UUID}"  -- заглушка
 }
 
+-- Убираем дефисы из UUID
 local function remove_hyphens(uuid)
   return uuid:gsub("-", "")
 end
 
-local clean_passwords = {}
-for uuid, value in pairs(passwords) do
-  if value then
-    clean_passwords[remove_hyphens(uuid)] = true
-  end
+-- Строим map: clean-uuid -> username
+local uuid_map = {}
+for username, uuid_dash in pairs(users) do
+  local uuid_clean = remove_hyphens(uuid_dash)
+  uuid_map[uuid_clean] = username
 end
 
+-- Ищем логин по чистому hash (UUID без дефисов)
+local function find_user_by_clean_hash(clean_hash)
+  return uuid_map[clean_hash]  -- вернёт username или nil
+end
+
+-- Функция аутентификации для VLESS
 function vless_auth(txn)
   local status, data = pcall(function() return txn.req:dup() end)
   if status and data then
-    -- Uncomment to enable logging of all received data
-    core.Info("Received data from client: " .. data)
+    -- Берём 16 байт пароля из ClientHello
     local sniffed_password = string.sub(data, 2, 17)
+    -- core.Info("Received data from client: " .. data)
+    -- core.Info("Sniffed raw password: " .. sniffed_password)
 
-    local hex = (sniffed_password:gsub(".", function(c)
+    local hex_pass = (sniffed_password:gsub(".", function(c)
       return string.format("%02x", string.byte(c))
     end))
+    -- core.Info("Sniffed password hex: " .. hex_pass)
 
-    -- Uncomment to enable logging of sniffed password hashes
-    core.Info("Sniffed password: " .. hex)
-    if clean_passwords[hex] then
-      return "xray"
+    local found_login = find_user_by_clean_hash(hex_pass)
+    if found_login then
+      -- txn:Info("login: " .. found_login .. "; ip: " .. txn.sf:src()) 
+    return "xray"
     end
   end
   return "http"
@@ -2290,7 +2299,7 @@ show_traffic_statistics() {
 ###################################
 display_server_stats() {
   clear
-  curl -X GET http://127.0.0.1:9952/api/v1/stats?mode=extended
+  curl -X GET http://127.0.0.1:9952/api/v1/stats?mode=standard&sort_by=last_seen&sort_order=DESC
 }
 
 ###################################
