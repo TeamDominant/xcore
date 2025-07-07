@@ -18,7 +18,7 @@ if [ -z "$DYN_DIR" ]; then
 fi
 
 # Проверяем, существуют ли все директории для архивации
-DIRECTORIES=("/etc/nginx" "/etc/haproxy" "/etc/letsencrypt" "/usr/local/xcore" "/usr/local/etc/xray" "/var/www/$DYN_DIR")
+DIRECTORIES=("/etc/nginx" "/etc/haproxy" "/etc/letsencrypt" "/usr/local/etc/v2ray-stat" "/usr/local/etc/xray" "/var/www/$DYN_DIR")
 for dir in "${DIRECTORIES[@]}"; do
   if [ ! -d "$dir" ]; then
     echo "$(date): Directory $dir does not exist" >> "$LOG_FILE"

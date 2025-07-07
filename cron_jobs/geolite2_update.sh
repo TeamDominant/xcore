@@ -15,7 +15,6 @@ mkdir -p "$DEST_DIR" || { echo "$(date): Failed to create $DEST_DIR" >> $LOG_FIL
   /usr/bin/wget -qO "$DEST_DIR/$fname" "$url" || { echo "$(date): Failed to download $url" >> $LOG_FILE; exit 1; }
 done
 
-sleep 2
 /usr/sbin/nginx -s reload || { echo "$(date): Failed to reload nginx" >> $LOG_FILE; exit 1; }
 
 echo "$(date): Completed geo database update" >> $LOG_FILE

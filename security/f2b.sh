@@ -16,7 +16,7 @@ fail2ban() {
   iplimit_banned_log_path="${log_folder}/v2ray-stat-banned.log"
 
   # Use default bantime if not passed => 30 minutes
-  local bantime="${1:-1}"
+  local bantime="${30:-1}"
 
   # Check if log file exists
   if ! test -f "${iplimit_banned_log_path}"; then
@@ -77,4 +77,4 @@ EOF
   systemctl restart fail2ban
 }
 
-fail2ban
+fail2ban "5"

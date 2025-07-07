@@ -7,4 +7,3 @@ if [ "$SWAP_USED" -gt 300 ]; then
   systemctl restart warp-svc.service
   echo "$(date): warp-svc.service successfully restarted due to high swap usage" >> "$LOG_FILE"
 fi
-echo >> "$LOG_FILE"

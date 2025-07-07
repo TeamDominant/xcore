@@ -65,7 +65,7 @@
   },
   "inbounds": [
     {
-      "tag": "vless_raw",
+      "tag": "vless-in",
       "listen": "127.0.0.1",
       "port": 10550,
       "protocol": "vless",
@@ -108,7 +108,7 @@
     {
       "tag": "api",
       "listen": "127.0.0.1",
-      "port": 10085,
+      "port": 9953,
       "protocol": "dokodemo-door",
       "settings": {
         "address": "127.0.0.1"
@@ -187,10 +187,8 @@
   },
   "api": {
     "tag": "api",
-    "listen": "127.0.0.1:9953",
     "services": [
       "HandlerService",
-      "LoggerService",
       "StatsService",
       "ReflectionService"
     ]

@@ -3,8 +3,6 @@
 CONFIG_FILE_HAPROXY="/etc/haproxy/haproxy.cfg"
 CURR_DOMAIN=$(grep -oP 'crt /etc/haproxy/certs/\K[^.]+(?:\.[^.]+)+(?=\.pem)' "$CONFIG_FILE_HAPROXY")
 
-echo $CURR_DOMAIN
-
 LOG_FILE="/opt/xcore/cron_jobs.log"
 CERT_DIR="/etc/letsencrypt/live/${CURR_DOMAIN}"
 HAPROXY_CERT_DIR="/etc/haproxy/certs"

@@ -7,8 +7,8 @@
 ###################################
 ### GLOBAL CONSTANTS AND VARIABLES
 ###################################
-VERSION_MANAGER='0.9.70'
-VERSION_XRAY='v25.3.6'
+VERSION_MANAGER='0.9.75'
+VERSION_XRAY='v25.6.8'
 
 DIR_XCORE="/opt/xcore"
 DIR_XRAY="/usr/local/etc/xray"
@@ -2303,7 +2303,8 @@ show_traffic_statistics() {
 ###################################
 display_server_stats() {
   clear
-  curl -X GET http://127.0.0.1:9952/api/v1/stats?mode=standard&sort_by=last_seen&sort_order=DESC
+  curl -X GET "http://127.0.0.1:9952/api/v1/stats?mode=standard&sort_by=last_seen&sort_order=DESC"
+  echo -n "$(text 131) "
 }
 
 ###################################
@@ -2361,7 +2362,7 @@ add_new_user() {
 
         configure_xray_client
 
-        sed -i "/local passwords = {/a \  [\"$XRAY_UUID\"] = true," ${DIR_HAPROXY}/.auth.lua
+        # sed -i "/local passwords = {/a \  [\"$XRAY_UUID\"] = true," ${DIR_HAPROXY}/.auth.lua
 
         systemctl reload haproxy && systemctl restart xray
 
@@ -2447,7 +2448,7 @@ delete_user() {
             IFS=' ' read -r USERNAME XRAY_UUID <<< "${user_map[$choice]}"
             echo "Вы выбрали: $USERNAME (ID: $XRAY_UUID)"
             delete_subscription_config
-            delete_lua_uuid
+            # delete_lua_uuid
             delete_from_xray_server
           else
             echo "Некорректный номер: $choice"
@@ -2911,7 +2912,6 @@ manage_xray_core() {
       1)
         while true; do
           display_server_stats
-          echo -n "$(text 131) "
           read -t 10 -r STATS_CHOICE
           [[ "$STATS_CHOICE" == "0" ]] && break
         done
