@@ -1624,12 +1624,12 @@ location /statistics-v2ray-stat/ {
   proxy_pass http://127.0.0.1:9952/;
 
   # Добавляем заголовок с IP клиента
-  proxy_set_header X-Real-IP $remote_addr;
-  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-  proxy_set_header Host $host;
+  proxy_set_header X-Real-IP \$remote_addr;
+  proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+  proxy_set_header Host \$host;
 
   # Автообновление страницы каждые 10 секунд
-  add_header Refresh "10; URL=$scheme://$http_host$request_uri";
+  add_header Refresh "10; URL=\$scheme://\$http_host\$request_uri";
 }
 EOF
 }
