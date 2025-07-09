@@ -1660,7 +1660,7 @@ configure_nginx_logrotate() {
     create 0640 www-data adm
     sharedscripts
     postrotate
-        [ -f /run/nginx.pid ] && kill -USR1 \`cat /run/nginx.pid\`
+        [ -f /run/nginx.pid ] && kill -USR1 \$(cat /run/nginx.pid)
     endscript
 }
 EOF
