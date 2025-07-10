@@ -2355,10 +2355,10 @@ extract_data() {
     error "Ошибка: не удалось извлечь домен из haproxy.cfg"
   fi
 
-  echo $SUB_JSON_PATH
-  echo $CURR_DOMAIN
-  echo $CONFIG_FILE_HAPROXY
-  echo $IP4
+#  echo $SUB_JSON_PATH
+#  echo $CURR_DOMAIN
+#  echo $CONFIG_FILE_HAPROXY
+#  echo $IP4
 }
 
 ###################################
