@@ -2544,7 +2544,7 @@ sync_client_configs() {
       continue
     fi
 
-    CLIENT=$(jq ".outbounds[${OUT_VL_NUM}].settings.vnext[].users" "$FILE_PATH")
+    CLIENT=$(jq -c '.outbounds['"$OUT_VL_NUM"'].settings.vnext[].users | if type=="object" then [.] else . end' "$FILE_PATH")
 
     # Проверяем, что CLIENT не пустой и является валидным JSON  
     echo "$CLIENT" | jq . >/dev/null 2>&1
