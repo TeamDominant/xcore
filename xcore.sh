@@ -7,7 +7,7 @@
 ###################################
 ### GLOBAL CONSTANTS AND VARIABLES
 ###################################
-VERSION_MANAGER='0.9.81'
+VERSION_MANAGER='0.9.84'
 VERSION_XRAY='v25.6.8'
 
 DIR_XCORE="/opt/xcore"
@@ -49,251 +49,252 @@ info()       { echo -e "\033[32m\033[01m$*\033[0m"; }
 question()   { echo -e "\033[32m[?]\e[1;33m$*\033[0m"; }
 hint()       { echo -e "\033[33m\033[01m$*\033[0m"; }
 reading()    { read -rp " $(question "$1")" "$2"; }
-text()       { eval echo "\${${L}[$*]}"; }
-text_eval()  { eval echo "\$(eval echo "\${${L}[$*]}")"; }
+text()       { eval echo "\${${LANGUAGE}[$*]}"; }
+text_eval()  { eval echo "\$(eval echo "\${${LANGUAGE}[$*]}")"; }
+
 
 ###################################
 ### LANGUAGE STRINGS
 ###################################
-E[0]="Language:\n  1. English (default) \n  2. Русский"
-R[0]="Язык:\n  1. English (по умолчанию) \n  2. Русский"
-E[1]="Choose an action:"
-R[1]="Выбери действие:"
-E[2]="Error: this script requires superuser (root) privileges to run."
-R[2]="Ошибка: для выполнения этого скрипта необходимы права суперпользователя (root)."
-E[3]="Unable to determine IP address."
-R[3]="Не удалось определить IP-адрес."
-E[4]="Reinstalling script..."
-R[4]="Повторная установка скрипта..."
-E[5]="WARNING!"
-R[5]="ВНИМАНИЕ!"
-E[6]="It is recommended to perform the following actions before running the script"
-R[6]="Перед запуском скрипта рекомендуется выполнить следующие действия"
-E[7]="Annihilation of the system!"
-R[7]="Аннигиляция системы!"
+EU[0]="Language:\n  1. English (default) \n  2. Русский"
+RU[0]="Язык:\n  1. English (по умолчанию) \n  2. Русский"
+EU[1]="Choose an action:"
+RU[1]="Выбери действие:"
+EU[2]="Error: this script requires superuser (root) privileges to run."
+RU[2]="Ошибка: для выполнения этого скрипта необходимы права суперпользователя (root)."
+EU[3]="Unable to determine IP address."
+RU[3]="Не удалось определить IP-адрес."
+EU[4]="Reinstalling script..."
+RU[4]="Повторная установка скрипта..."
+EU[5]="WARNING!"
+RU[5]="ВНИМАНИЕ!"
+EU[6]="It is recommended to perform the following actions before running the script"
+RU[6]="Перед запуском скрипта рекомендуется выполнить следующие действия"
+EU[7]="Annihilation of the system!"
+RU[7]="Аннигиляция системы!"
 
-E[9]="CANCEL"
-R[9]="ОТМЕНА"
-E[10]="\n|--------------------------------------------------------------------------|\n"
-R[10]="\n|--------------------------------------------------------------------------|\n"
-E[11]="Enter username:"
-R[11]="Введите имя пользователя:"
-E[12]="Enter user password:"
-R[12]="Введите пароль пользователя:"
-E[13]="Enter your domain A record:"
-R[13]="Введите доменную запись типа A:"
-E[14]="Error: the entered address '$temp_value' is incorrectly formatted."
-R[14]="Ошибка: введённый адрес '$temp_value' имеет неверный формат."
-E[15]="Enter your email registered with Cloudflare:"
-R[15]="Введите вашу почту, зарегистрированную на Cloudflare:"
-E[16]="Enter your Cloudflare API token (Edit zone DNS) or global API key:"
-R[16]="Введите ваш API токен Cloudflare (Edit zone DNS) или Cloudflare global API key:"
-E[17]="Verifying domain, API token/key, and email..."
-R[17]="Проверка домена, API токена/ключа и почты..."
-E[18]="Error: invalid domain, API token/key, or email. Please try again."
-R[18]="Ошибка: неправильно введён домен, API токен/ключ или почта. Попробуйте снова."
+EU[9]="CANCEL"
+RU[9]="ОТМЕНА"
+EU[10]="\n|--------------------------------------------------------------------------|\n"
+RU[10]="\n|--------------------------------------------------------------------------|\n"
+EU[11]="Enter username:"
+RU[11]="Введите имя пользователя:"
+EU[12]="Enter user password:"
+RU[12]="Введите пароль пользователя:"
+EU[13]="Enter your domain A record:"
+RU[13]="Введите доменную запись типа A:"
+EU[14]="Error: the entered address '$temp_value' is incorrectly formatted."
+RU[14]="Ошибка: введённый адрес '$temp_value' имеет неверный формат."
+EU[15]="Enter your email registered with Cloudflare:"
+RU[15]="Введите вашу почту, зарегистрированную на Cloudflare:"
+EU[16]="Enter your Cloudflare API token (Edit zone DNS) or global API key:"
+RU[16]="Введите ваш API токен Cloudflare (Edit zone DNS) или Cloudflare global API key:"
+EU[17]="Verifying domain, API token/key, and email..."
+RU[17]="Проверка домена, API токена/ключа и почты..."
+EU[18]="Error: invalid domain, API token/key, or email. Please try again."
+RU[18]="Ошибка: неправильно введён домен, API токен/ключ или почта. Попробуйте снова."
 
-E[20]="Error: failed to connect to WARP. Manual acceptance of the terms of service is required."
-R[20]="Ошибка: не удалось подключиться к WARP. Требуется вручную согласиться с условиями использования."
-E[21]="Access link to node exporter:"
-R[21]="Доступ по ссылке к node exporter:"
-E[22]="Access link to shell in a box:"
-R[22]="Доступ по ссылке к shell in a box:"
-E[23]="Creating a backup and rotation."
-R[23]="Создание резевной копии и ротация."
-E[24]="Enter Node Exporter path:"
-R[24]="Введите путь к Node Exporter:"
+EU[20]="Error: failed to connect to WARP. Manual acceptance of the terms of service is required."
+RU[20]="Ошибка: не удалось подключиться к WARP. Требуется вручную согласиться с условиями использования."
+EU[21]="Access link to node exporter:"
+RU[21]="Доступ по ссылке к node exporter:"
+EU[22]="Access link to shell in a box:"
+RU[22]="Доступ по ссылке к shell in a box:"
+EU[23]="Creating a backup and rotation."
+RU[23]="Создание резевной копии и ротация."
+EU[24]="Enter Node Exporter path:"
+RU[24]="Введите путь к Node Exporter:"
 
-E[27]="Enter subscription path:"
-R[27]="Введите путь к подписке:"
+EU[27]="Enter subscription path:"
+RU[27]="Введите путь к подписке:"
 
-E[29]="Error: path cannot be empty, please re-enter."
-R[29]="Ошибка: путь не может быть пустым, повторите ввод."
-E[30]="Error: path must not contain characters {, }, /, $, \\, please re-enter."
-R[30]="Ошибка: путь не должен содержать символы {, }, /, $, \\, повторите ввод."
+EU[29]="Error: path cannot be empty, please re-enter."
+RU[29]="Ошибка: путь не может быть пустым, повторите ввод."
+EU[30]="Error: path must not contain characters {, }, /, $, \\, please re-enter."
+RU[30]="Ошибка: путь не должен содержать символы {, }, /, $, \\, повторите ввод."
 
-E[33]="Error: invalid choice, please try again."
-R[33]="Ошибка: неверный выбор, попробуйте снова."
+EU[33]="Error: invalid choice, please try again."
+RU[33]="Ошибка: неверный выбор, попробуйте снова."
 
-E[36]="Updating system and installing necessary packages."
-R[36]="Обновление системы и установка необходимых пакетов."
-E[37]="Configuring Haproxy."
-R[37]="Настройка Haproxy."
-E[38]="Download failed, retrying..."
-R[38]="Скачивание не удалось, пробуем снова..."
-E[39]="Adding user."
-R[39]="Добавление пользователя."
-E[40]="Enabling automatic security updates."
-R[40]="Автоматическое обновление безопасности."
-E[41]="Enabling BBR."
-R[41]="Включение BBR."
-E[42]="Disabling IPv6."
-R[42]="Отключение IPv6."
-E[43]="Configuring WARP."
-R[43]="Настройка WARP."
-E[44]="Issuing certificates."
-R[44]="Выдача сертификатов."
-E[45]="Configuring NGINX."
-R[45]="Настройка NGINX."
-E[46]="Setting Xray."
-R[46]="Настройка Xray."
-E[47]="Configuring UFW."
-R[47]="Настройка UFW."
-E[48]="Configuring SSH."
-R[48]="Настройка SSH."
-E[49]="Generate a key for your OS (ssh-keygen)."
-R[49]="Сгенерируйте ключ для своей ОС (ssh-keygen)."
-E[50]="In Windows, install the openSSH package and enter the command in PowerShell (recommended to research key generation online)."
-R[50]="В Windows нужно установить пакет openSSH и ввести команду в PowerShell (рекомендуется изучить генерацию ключей в интернете)."
-E[51]="If you are on Linux, you probably know what to do C:"
-R[51]="Если у вас Linux, то вы сами все умеете C:"
-E[52]="Command for Windows:"
-R[52]="Команда для Windows:"
-E[53]="Command for Linux:"
-R[53]="Команда для Linux:"
-E[54]="Configure SSH (optional step)? [y/N]:"
-R[54]="Настроить SSH (необязательный шаг)? [y/N]:"
-E[55]="Error: Keys not found. Please add them to the server before retrying..."
-R[55]="Ошибка: ключи не найдены, добавьте его на сервер, прежде чем повторить..."
-E[56]="Key found, proceeding with SSH setup."
-R[56]="Ключ найден, настройка SSH."
-E[57]="Client-side configuration."
-R[57]="Настройка клиентской части."
-E[58]="SAVE THIS SCREEN!"
-R[58]="СОХРАНИ ЭТОТ ЭКРАН!"
-E[59]="Subscription page link:"
-R[59]="Ссылка на страницу подписки:"
+EU[36]="Updating system and installing necessary packages."
+RU[36]="Обновление системы и установка необходимых пакетов."
+EU[37]="Configuring Haproxy."
+RU[37]="Настройка Haproxy."
+EU[38]="Download failed, retrying..."
+RU[38]="Скачивание не удалось, пробуем снова..."
+EU[39]="Adding user."
+RU[39]="Добавление пользователя."
+EU[40]="Enabling automatic security updates."
+RU[40]="Автоматическое обновление безопасности."
+EU[41]="Enabling BBR."
+RU[41]="Включение BBR."
+EU[42]="Disabling IPv6."
+RU[42]="Отключение IPv6."
+EU[43]="Configuring WARP."
+RU[43]="Настройка WARP."
+EU[44]="Issuing certificates."
+RU[44]="Выдача сертификатов."
+EU[45]="Configuring NGINX."
+RU[45]="Настройка NGINX."
+EU[46]="Setting Xray."
+RU[46]="Настройка Xray."
+EU[47]="Configuring UFW."
+RU[47]="Настройка UFW."
+EU[48]="Configuring SSH."
+RU[48]="Настройка SSH."
+EU[49]="Generate a key for your OS (ssh-keygen)."
+RU[49]="Сгенерируйте ключ для своей ОС (ssh-keygen)."
+EU[50]="In Windows, install the openSSH package and enter the command in PowerShell (recommended to research key generation online)."
+RU[50]="В Windows нужно установить пакет openSSH и ввести команду в PowerShell (рекомендуется изучить генерацию ключей в интернете)."
+EU[51]="If you are on Linux, you probably know what to do C:"
+RU[51]="Если у вас Linux, то вы сами все умеете C:"
+EU[52]="Command for Windows:"
+RU[52]="Команда для Windows:"
+EU[53]="Command for Linux:"
+RU[53]="Команда для Linux:"
+EU[54]="Configure SSH (optional step)? [y/N]:"
+RU[54]="Настроить SSH (необязательный шаг)? [y/N]:"
+EU[55]="Error: Keys not found. Please add them to the server before retrying..."
+RU[55]="Ошибка: ключи не найдены, добавьте его на сервер, прежде чем повторить..."
+EU[56]="Key found, proceeding with SSH setup."
+RU[56]="Ключ найден, настройка SSH."
+EU[57]="Client-side configuration."
+RU[57]="Настройка клиентской части."
+EU[58]="SAVE THIS SCREEN!"
+RU[58]="СОХРАНИ ЭТОТ ЭКРАН!"
+EU[59]="Subscription page link:"
+RU[59]="Ссылка на страницу подписки:"
 
-E[62]="SSH connection:"
-R[62]="Подключение по SSH:"
-E[63]="Username:"
-R[63]="Имя пользователя:"
-E[64]="Password:"
-R[64]="Пароль:"
-E[65]="Log file path:"
-R[65]="Путь к лог файлу:"
-E[66]="Prometheus monitor."
-R[66]="Мониторинг Prometheus."
+EU[62]="SSH connection:"
+RU[62]="Подключение по SSH:"
+EU[63]="Username:"
+RU[63]="Имя пользователя:"
+EU[64]="Password:"
+RU[64]="Пароль:"
+EU[65]="Log file path:"
+RU[65]="Путь к лог файлу:"
+EU[66]="Prometheus monitor."
+RU[66]="Мониторинг Prometheus."
 
-E[70]="Secret key:"
-R[70]="Секретный ключ:"
-E[71]="Current operating system is \$SYS.\\\n The system lower than \$SYSTEM \${MAJOR[int]} is not supported. Feedback: [https://github.com/cortez24rus/xcore/issues]"
-R[71]="Текущая операционная система: \$SYS.\\\n Система с версией ниже, чем \$SYSTEM \${MAJOR[int]}, не поддерживается. Обратная связь: [https://github.com/cortez24rus/xcore/issues]"
-E[72]="Install dependence-list:"
-R[72]="Список зависимостей для установки:"
-E[73]="All dependencies already exist and do not need to be installed additionally."
-R[73]="Все зависимости уже установлены и не требуют дополнительной установки."
-E[74]="OS - $SYS"
-R[74]="OS - $SYS"
-E[75]="Invalid option for --$key: $value. Use 'true' or 'false'."
-R[75]="Неверная опция для --$key: $value. Используйте 'true' или 'false'."
-E[76]="Unknown option: $1"
-R[76]="Неверная опция: $1"
-E[77]="List of dependencies for installation:"
-R[77]="Список зависимостей для установки:"
-E[78]="All dependencies are already installed and do not require additional installation."
-R[78]="Все зависимости уже установлены и не требуют дополнительной установки."
-E[79]="Configuring site template."
-R[79]="Настройка шаблона сайта."
-E[80]="Random template name:"
-R[80]="Случайное имя шаблона:"
-E[81]="Enter your domain CNAME record:"
-R[81]="Введите доменную запись типа CNAME:"
-E[82]="Enter Shell in a box path:"
-R[82]="Введите путь к Shell in a box:"
-E[83]="Terminal emulator Shell in a box."
-R[83]="Эмулятор терминала Shell in a box."
+EU[70]="Secret key:"
+RU[70]="Секретный ключ:"
+EU[71]="Current operating system is \$SYS.\\\n The system lower than \$SYSTEM \${MAJOR[int]} is not supported. Feedback: [https://github.com/cortez24rus/xcore/issues]"
+RU[71]="Текущая операционная система: \$SYS.\\\n Система с версией ниже, чем \$SYSTEM \${MAJOR[int]}, не поддерживается. Обратная связь: [https://github.com/cortez24rus/xcore/issues]"
+EU[72]="Install dependence-list:"
+RU[72]="Список зависимостей для установки:"
+EU[73]="All dependencies already exist and do not need to be installed additionally."
+RU[73]="Все зависимости уже установлены и не требуют дополнительной установки."
+EU[74]="OS - $SYS"
+RU[74]="OS - $SYS"
+EU[75]="Invalid option for --$key: $value. Use 'true' or 'false'."
+RU[75]="Неверная опция для --$key: $value. Используйте 'true' или 'false'."
+EU[76]="Unknown option: $1"
+RU[76]="Неверная опция: $1"
+EU[77]="List of dependencies for installation:"
+RU[77]="Список зависимостей для установки:"
+EU[78]="All dependencies are already installed and do not require additional installation."
+RU[78]="Все зависимости уже установлены и не требуют дополнительной установки."
+EU[79]="Configuring site template."
+RU[79]="Настройка шаблона сайта."
+EU[80]="Random template name:"
+RU[80]="Случайное имя шаблона:"
+EU[81]="Enter your domain CNAME record:"
+RU[81]="Введите доменную запись типа CNAME:"
+EU[82]="Enter Shell in a box path:"
+RU[82]="Введите путь к Shell in a box:"
+EU[83]="Terminal emulator Shell in a box."
+RU[83]="Эмулятор терминала Shell in a box."
 
-E[84]="0. Previous menu"
-R[84]="0. Предыдущее меню"
-E[85]="Press Enter to return to the menu..."
-R[85]="Нажмите Enter, чтобы вернуться в меню..."
-E[86]="X Core $VERSION_MANAGER"
-R[86]="X Core $VERSION_MANAGER"
-E[87]="1. Perform standard installation"
-R[87]="1. Выполнить стандартную установку"
-E[88]="2. Restore from backup"
-R[88]="2. Восстановить из резервной копии"
-E[89]="3. Change proxy domain name"
-R[89]="3. Изменить доменное имя прокси"
-E[90]="4. Reissue SSL certificates"
-R[90]="4. Перевыпустить SSL-сертификаты"
-E[91]="5. Copy website to server"
-R[91]="5. Скопировать веб-сайт на сервер"
-E[92]="6. Show directory size"
-R[92]="6. Показать размер директории"
-E[93]="7. Show traffic statistics"
-R[93]="7. Показать статистику трафика"
-E[94]="8. Update Xray core"
-R[94]="8. Обновить ядро Xray"
-E[95]="X. Manage Xray core"
-R[95]="X. Управлять ядром Xray"
-E[96]="9. Change interface language"
-R[96]="9. Изменить язык интерфейса"
-E[97]="Client migration initiation (experimental feature)."
-R[97]="Начало миграции клиентов (экспериментальная функция)."
-E[98]="Client migration is complete."
-R[98]="Миграция клиентов завершена."
-E[99]="Settings custom JSON subscription."
-R[99]="Настройки пользовательской JSON-подписки."
-E[100]="Restore from backup."
-R[100]="Восстановление из резервной копии."
-E[101]="Backups:"
-R[101]="Резервные копии:"
-E[102]="Enter the number of the archive to restore:"
-R[102]="Введите номер архива для восстановления:"
-E[103]="Restoration is complete."
-R[103]="Восстановление завершено."
-E[104]="Selected archive:"
-R[104]="Выбран архив:"
-E[105]="Traffic statistics:\n  1. By years \n  2. By months \n  3. By days \n  4. By hours"
-R[105]="Статистика трафика:\n  1. По годам \n  2. По месяцам \n  3. По дням \n  4. По часам"
+EU[84]="0. Previous menu"
+RU[84]="0. Предыдущее меню"
+EU[85]="Press Enter to return to the menu..."
+RU[85]="Нажмите Enter, чтобы вернуться в меню..."
+EU[86]="X Core $VERSION_MANAGER"
+RU[86]="X Core $VERSION_MANAGER"
+EU[87]="1. Perform standard installation"
+RU[87]="1. Выполнить стандартную установку"
+EU[88]="2. Restore from backup"
+RU[88]="2. Восстановить из резервной копии"
+EU[89]="3. Change proxy domain name"
+RU[89]="3. Изменить доменное имя прокси"
+EU[90]="4. Reissue SSL certificates"
+RU[90]="4. Перевыпустить SSL-сертификаты"
+EU[91]="5. Copy website to server"
+RU[91]="5. Скопировать веб-сайт на сервер"
+EU[92]="6. Show directory size"
+RU[92]="6. Показать размер директории"
+EU[93]="7. Show traffic statistics"
+RU[93]="7. Показать статистику трафика"
+EU[94]="8. Update Xray core"
+RU[94]="8. Обновить ядро Xray"
+EU[95]="X. Manage Xray core"
+RU[95]="X. Управлять ядром Xray"
+EU[96]="9. Change interface language"
+RU[96]="9. Изменить язык интерфейса"
+EU[97]="Client migration initiation (experimental feature)."
+RU[97]="Начало миграции клиентов (экспериментальная функция)."
+EU[98]="Client migration is complete."
+RU[98]="Миграция клиентов завершена."
+EU[99]="Settings custom JSON subscription."
+RU[99]="Настройки пользовательской JSON-подписки."
+EU[100]="Restore from backup."
+RU[100]="Восстановление из резервной копии."
+EU[101]="Backups:"
+RU[101]="Резервные копии:"
+EU[102]="Enter the number of the archive to restore:"
+RU[102]="Введите номер архива для восстановления:"
+EU[103]="Restoration is complete."
+RU[103]="Восстановление завершено."
+EU[104]="Selected archive:"
+RU[104]="Выбран архив:"
+EU[105]="Traffic statistics:\n  1. By years \n  2. By months \n  3. By days \n  4. By hours"
+RU[105]="Статистика трафика:\n  1. По годам \n  2. По месяцам \n  3. По дням \n  4. По часам"
 
-E[107]="1. Clear DNS query statistics"
-R[107]="1. Очистить статистику DNS-запросов"
-E[108]="2. Reset inbound traffic statistics"
-R[108]="2. Сбросить статистику трафика инбаундов"
-E[109]="3. Reset client traffic statistics"
-R[109]="3. Сбросить статистику трафика клиентов"
-E[110]="4. Reset network traffic statistics."
-R[110]="4. Сбросить статистику трафика network"
+EU[107]="1. Clear DNS query statistics"
+RU[107]="1. Очистить статистику DNS-запросов"
+EU[108]="2. Reset inbound traffic statistics"
+RU[108]="2. Сбросить статистику трафика инбаундов"
+EU[109]="3. Reset client traffic statistics"
+RU[109]="3. Сбросить статистику трафика клиентов"
+EU[110]="4. Reset network traffic statistics."
+RU[110]="4. Сбросить статистику трафика network"
 
-E[111]="Client traffic statistics cleared"
-R[111]="Статистика очищена"
-E[112]="Error clearing client traffic statistics"
-R[112]="Ошибка при очистке статистики"
+EU[111]="Client traffic statistics cleared"
+RU[111]="Статистика очищена"
+EU[112]="Error clearing client traffic statistics"
+RU[112]="Ошибка при очистке статистики"
 
-E[117]="1. Add server chain for routing"
-R[117]="1. Добавить цепочку серверов для маршрутизации"
-E[118]="2. Remove server chain from configuration"
-R[118]="2. Удалить цепочку серверов из конфигурации"
-E[119]="Error adding server chain. Configuration update skipped."
-R[119]="Ошибка при добавлении цепочки серверов. Обновление конфигурации пропущено."
+EU[117]="1. Add server chain for routing"
+RU[117]="1. Добавить цепочку серверов для маршрутизации"
+EU[118]="2. Remove server chain from configuration"
+RU[118]="2. Удалить цепочку серверов из конфигурации"
+EU[119]="Error adding server chain. Configuration update skipped."
+RU[119]="Ошибка при добавлении цепочки серверов. Обновление конфигурации пропущено."
 
-E[120]="1. Show Xray server statistics"
-R[120]="1. Показать статистику Xray сервера"
-E[121]="2. View client DNS queries"
-R[121]="2. Просмотреть DNS-запросы клиентов"
-E[122]="3. Reset Xray server statistics"
-R[122]="3. Сбросить статистику Xray сервера"
-E[123]="4. Add new client"
-R[123]="4. Добавить нового клиента"
-E[124]="5. Delete client"
-R[124]="5. Удалить клиента"
-E[125]="6. Enable or disable client"
-R[125]="6. Включить или отключить клиента"
-E[126]="7. Set client IP address limit"
-R[126]="7. Установить лимит IP-адресов для клиента"
-E[127]="8. Update subscription auto-renewal status"
-R[127]="8. Обновить статус автопродления подписки"
-E[128]="9. Change subscription end date"
-R[128]="9. Изменить дату окончания подписки"
-E[129]="10. Synchronize client subscription configurations"
-R[129]="10. Синхронизировать конфигурации клиентских подписок"
-E[130]="11. Configure server chain"
-R[130]="11. Настроить цепочку серверов"
-E[131]="Enter 0 to exit (updates every 10 seconds): "
-R[131]="Введите 0 для выхода (обновление каждые 10 секунд): "
+EU[120]="1. Show Xray server statistics"
+RU[120]="1. Показать статистику Xray сервера"
+EU[121]="2. View client DNS queries"
+RU[121]="2. Просмотреть DNS-запросы клиентов"
+EU[122]="3. Reset Xray server statistics"
+RU[122]="3. Сбросить статистику Xray сервера"
+EU[123]="4. Add new client"
+RU[123]="4. Добавить нового клиента"
+EU[124]="5. Delete client"
+RU[124]="5. Удалить клиента"
+EU[125]="6. Enable or disable client"
+RU[125]="6. Включить или отключить клиента"
+EU[126]="7. Set client IP address limit"
+RU[126]="7. Установить лимит IP-адресов для клиента"
+EU[127]="8. Update subscription auto-renewal status"
+RU[127]="8. Обновить статус автопродления подписки"
+EU[128]="9. Change subscription end date"
+RU[128]="9. Изменить дату окончания подписки"
+EU[129]="10. Synchronize client subscription configurations"
+RU[129]="10. Синхронизировать конфигурации клиентских подписок"
+EU[130]="11. Configure server chain"
+RU[130]="11. Настроить цепочку серверов"
+EU[131]="Enter 0 to exit (updates every 10 seconds): "
+RU[131]="Введите 0 для выхода (обновление каждые 10 секунд): "
 
 ###################################
 ### HELP MESSAGE DISPLAY
@@ -555,22 +556,20 @@ disable_logging() {
 ### LANGUAGE SELECTION
 ###################################
 configure_language() {
-  if [ ! -f "${DIR_XCORE}/lang.conf" ]; then  # Если файла нет
-    L=E
-    hint " $(text 0) \n" 
-    reading " $(text 1) " LANGUAGE
+  CONF_FILE="${DIR_XCORE}/xcore.conf"
 
-    case "$LANGUAGE" in
-      1) L=E ;;   # Английский
-      2) L=R ;;   # Русский
-      *) L=E ;;   # По умолчанию — английский
-    esac
-    cat > "${DIR_XCORE}/lang.conf" << EOF
-$L
-EOF
-  else
-    L=$(cat "${DIR_XCORE}/lang.conf")  # Загружаем язык
-  fi
+  hint " $(text 0) \n" 
+  reading " $(text 1) " LANGUAGE_CHOISE
+
+  case "$LANGUAGE_CHOISE" in
+    1) NEW_LANGUAGE=EU ;;
+    2) NEW_LANGUAGE=RU ;;
+    *) NEW_LANGUAGE=$LANGUAGE ;; # Оставляем текущий язык, если выбор некорректен
+  esac
+
+  sed -i "s/^LANGUAGE=.*/LANGUAGE=$NEW_LANGUAGE/" "$CONF_FILE"
+
+  source "$CONF_FILE"
 }
 
 ###################################
@@ -1964,7 +1963,14 @@ setup_xray_subscription_page() {
 ### CONFIGURE XRAY CLIENT SETTINGS
 ###################################
 configure_xray_client() {
-  cp -r ${DIR_XCORE}/repo/conf_template/client-vless-raw.json /var/www/${SUB_JSON_PATH}/vless_raw/${USERNAME}.json
+  # Устанавливаем TEMPLATE_FILE в зависимости от значения CHAIN
+  if [ "$CHAIN" = "false" ]; then
+    TEMPLATE_FILE="${DIR_XCORE}/repo/conf_template/client-vless-raw.json"
+  else
+    TEMPLATE_FILE="${DIR_XCORE}/repo/conf_template/client-vless-raw-chain.json"
+  fi
+
+  cp -r "$TEMPLATE_FILE" "/var/www/${SUB_JSON_PATH}/vless_raw/${USERNAME}.json"
 
   sed -i \
     -e "s/IP_TEMP/${IP4}/g" \
@@ -2513,8 +2519,14 @@ delete_user() {
 sync_client_configs() {
   SUB_DIR="/var/www/${SUB_JSON_PATH}/vless_raw/"
 
+  # Устанавливаем TEMPLATE_FILE в зависимости от значения CHAIN
+  if [ "$CHAIN" = "false" ]; then
+    TEMPLATE_FILE="${DIR_XCORE}/repo/conf_template/client-vless-raw.json"
+  else
+    TEMPLATE_FILE="${DIR_XCORE}/repo/conf_template/client-vless-raw-chain.json"
+  fi
+
   # Проверка, является ли шаблон валидным JSON
-  TEMPLATE_FILE="${DIR_XCORE}/repo/conf_template/client-vless-raw.json"
   jq . "$TEMPLATE_FILE" >/dev/null 2>&1
   if [ $? -ne 0 ]; then
     echo "Ошибка: Файл шаблона $TEMPLATE_FILE содержит невалидный JSON"
@@ -2547,7 +2559,7 @@ sync_client_configs() {
 
     # Удаляем старый файл и копируем шаблон
     rm -rf ${FILE_PATH}
-    cp -r ${DIR_XCORE}/repo/conf_template/client-vless-raw.json ${FILE_PATH}
+    cp -r "$TEMPLATE_FILE" "${FILE_PATH}"
 
     # Обновляем массив users в новом файле
     echo "$(jq ".outbounds[${OUT_VL_NUM}].settings.vnext[].users = ${CLIENT}" ${FILE_PATH})" > $FILE_PATH
@@ -2564,9 +2576,9 @@ sync_client_configs() {
 }
 
 ###################################
-### ADD XRAY CHAIN OUTBOUNDS
+### ADD XRAY CHAIN
 ###################################
-add_xray_chain_outbounds() {
+add_xray_config_chain() {
   read -rp "Введи ссылку на подписку: " link
 
   resp=$(curl -s -w '%{http_code}' "$link")
@@ -2578,92 +2590,92 @@ add_xray_chain_outbounds() {
     return 1
   fi
 
-  # 2) Проверяем JSON синтаксис
+  # Проверяем JSON синтаксис
   if ! jq -e . >/dev/null 2>&1 <<<"$body"; then
     echo "Невалидный JSON по ссылке $link" >&2
     return 1
   fi
 
-  # 3) Извлекаем нужный outbound
-  remote_outbound=$(jq -c '.outbounds
-    | map(select(.tag=="vless-out"))
-    | .[0]
-    | if . then (.tag="vless-out-chain") else empty end' \
-  <<<"$body")
-
-  if [[ -z "$remote_outbound" ]]; then
-    echo "Тег vless-out не найден" >&2
+  # Извлекаем нужный outbound
+  remote_outbound=$(jq -c '.outbounds[] | select(.tag=="vless-out") | .tag="vless-out-chain"' <<<"$body")
+  if [ -z "$remote_outbound" ]; then
+    echo "Тег vless-out не найден в JSON по ссылке $link" >&2
+    sleep 3
     return 1
   fi
 
+  echo $remote_outbound
+
+  # Извлекаем массив clients из inbound с тегом "vless-in" из config.json
+  clients=$(jq -c '.inbounds[] | select(.tag=="vless-in") | .settings.clients' "${DIR_XRAY}/config.json")
+  if [ -z "$clients" ] || [ "$clients" = "[]" ]; then
+    echo "Ошибка: Не найден или пустой массив clients в inbound с тегом 'vless-in' в файле ${DIR_XRAY}/config.json"
+    sleep 3
+    return 1
+  fi
+
+  # Копируем шаблон конфигурации
+  cp "${DIR_XCORE}/repo/conf_template/server-vless-raw-chain.json" "${DIR_XRAY}/config.json"
+
+  # Обновляем массив users в outbound с тегом "vless-out-chain"
   jq --argjson new_outbound "$remote_outbound" \
-    '.outbounds |= [$new_outbound] + .' \
+    '.outbounds |= map(if .tag == "vless-out-chain" then $new_outbound else . end)' \
     "${DIR_XRAY}/config.json" > "${DIR_XRAY}/config.json.tmp" \
     && mv "${DIR_XRAY}/config.json.tmp" "${DIR_XRAY}/config.json"
+  if [ $? -ne 0 ]; then
+    echo "Ошибка: Не удалось обновить outbound с тегом 'vless-out-chain' в ${DIR_XRAY}/config.json"
+    sleep 3
+    return 1
+  fi
+
+  # Обновляем массив clients в inbound с тегом "vless-in"
+  jq --argjson new_clients "$clients" \
+    '.inbounds |= map(if .tag == "vless-in" then .settings.clients = $new_clients else . end)' \
+    "${DIR_XRAY}/config.json" > "${DIR_XRAY}/config.json.tmp" \
+    && mv "${DIR_XRAY}/config.json.tmp" "${DIR_XRAY}/config.json"
+  if [ $? -ne 0 ]; then
+    echo "Ошибка: Не удалось обновить массив clients в ${DIR_XRAY}/config.json"
+    sleep 3
+    return 1
+  fi
+
+  # Заменяем заполнители в config.json
+  sed -i \
+    -e "s/IP_TEMP/${IP4}/g" \
+    -e "s/DOMAIN_TEMP/${CURR_DOMAIN}/g" \
+    "${DIR_XRAY}/config.json"
 }
 
+
 ###################################
-### UPDATE XRAY CHAIN OUTBOUNDS
+### REMOVE XRAY CHAIN
 ###################################
-update_xray_chain_outbounds() {
-  local CLIENT_TEMPLATE="${DIR_XCORE}/repo/conf_template/client-vless-raw.json"
-  local SERVER_TEMPLATE="${DIR_XRAY}/config.json"
+remove_xray_config_chain() {
+  # Извлекаем массив clients из inbound с тегом "vless-in" из config.json
+  clients=$(jq -c '.inbounds[] | select(.tag=="vless-in") | .settings.clients' "${DIR_XRAY}/config.json")
+  if [ -z "$clients" ] || [ "$clients" = "[]" ]; then
+    echo "Ошибка: Не найден или пустой массив clients в inbound с тегом 'vless-in' в файле ${DIR_XRAY}/config.json"
+    sleep 3
+    return 1
+  fi
 
-  server_dns=$(jq -c '.dns' "${CLIENT_TEMPLATE}")
-  server_routing=$(jq -c '.routing' "${CLIENT_TEMPLATE}")
+  # Копируем шаблон конфигурации
+  cp "${DIR_XCORE}/repo/conf_template/server-vless-raw.json" "${DIR_XRAY}/config.json"
 
-  client_dns=$(jq -c '.dns' "${SERVER_TEMPLATE}")
-  client_routing='{
-    "domainStrategy": "IPIfNonMatch",
-    "domainMatcher": "hybrid",
-    "network": "tcp,udp",
-    "rules": [
-      {
-        "inboundTag": ["api"],
-        "outboundTag": "api"
-      },
-      {
-        "ip": ["geoip:private"],
-        "outboundTag": "direct"
-      },
-      {
-        "domain": [
-          "geosite:category-ads-all",
-          "keyword:reklama",
-          "keyword:firebase",
-          "keyword:analytics",
-          "keyword:telemetry",
-          "keyword:bongacams",
-          "keyword:tracking"
-        ],
-        "outboundTag": "block"
-      }
-    ]
-  }'
+  # Обновляем массив clients в inbound с тегом "vless-in"
+  jq --argjson new_clients "$clients" \
+    '.inbounds |= map(if .tag == "vless-in" then .settings.clients = $new_clients else . end)' \
+    "${DIR_XRAY}/config.json" > "${DIR_XRAY}/config.json.tmp" \
+    && mv "${DIR_XRAY}/config.json.tmp" "${DIR_XRAY}/config.json"
+  if [ $? -ne 0 ]; then
+    echo "Ошибка: Не удалось обновить массив clients в ${DIR_XRAY}/config.json"
+    sleep 3
+    return 1
+  fi
 
-  jq --argjson dns "$server_dns" \
-     --argjson routing "$server_routing" \
-     '.dns = $dns | .routing = $routing' \
-     "${DIR_XRAY}/config.json" > "${DIR_XRAY}/config.json.tmp" && mv "${DIR_XRAY}/config.json.tmp" "${DIR_XRAY}/config.json"
-
-  jq --argjson dns "$client_dns" \
-     --argjson routing "$client_routing" \
-     '.dns = $dns | .routing = $routing' \
-     "${CLIENT_TEMPLATE}" > "${CLIENT_TEMPLATE}.tmp" && mv "${CLIENT_TEMPLATE}.tmp" "${CLIENT_TEMPLATE}"
-
-  dns_routing='[
-    {
-      "ip": ["1.1.1.1", "1.0.0.1"],
-      "port": 443,
-      "outboundTag": "direct"
-    }
-  ]'
-
-  jq --argjson extra "$dns_routing" \
-    '.routing.rules |= ([.[0]] + $extra + .[1:])' \
-    "${DIR_XRAY}/config.json" > "${DIR_XRAY}/config.json.tmp" && mv "${DIR_XRAY}/config.json.tmp" "${DIR_XRAY}/config.json"
-
+  # Заменяем заполнители в config.json
   sed -i \
+    -e "s/IP_TEMP/${IP4}/g" \
     -e "s/DOMAIN_TEMP/${CURR_DOMAIN}/g" \
     "${DIR_XRAY}/config.json"
 }
@@ -2930,16 +2942,29 @@ manage_xray_chain_menu() {
     tilda "$(text 10)"
     case $CHOICE_MENU in
       1)
-        add_xray_chain_outbounds
+        add_xray_config_chain
         if [[ $? -eq 0 ]]; then
-          update_xray_chain_outbounds
           systemctl restart xray
+          sed -i "s/^CHAIN=.*/CHAIN=true/" "${DIR_XCORE}/xcore.conf"
+          source "${DIR_XCORE}/xcore.conf"
+          sync_client_configs
         else
           warning " $(text 119) "
           sleep 3
         fi
         ;;
-      2) remove_xray_chain_outbounds ;;
+      2) 
+        remove_xray_config_chain
+        if [[ $? -eq 0 ]]; then
+          systemctl restart xray
+          sed -i "s/^CHAIN=.*/CHAIN=false/" "${DIR_XCORE}/xcore.conf"
+          source "${DIR_XCORE}/xcore.conf"
+          sync_client_configs
+        else
+          warning " $(text 119) "
+          sleep 3
+        fi
+        ;;
       0) manage_xray_core ;;
       *) warning " $(text 76) " ;;
     esac
@@ -3074,7 +3099,6 @@ manage_xcore() {
       7) show_traffic_statistics ;;
       8) update_xray ;;
       9)
-        rm -rf ${DIR_XCORE}/lang.conf
         configure_language
         ;;
       x|X) manage_xray_core ;;
@@ -3091,16 +3115,30 @@ manage_xcore() {
 }
 
 ###################################
+### FUNCTION INITIALIZE CONFIG
+###################################
+init_file() {
+  if [ ! -f "${DIR_XCORE}/xcore.conf" ]; then
+    mkdir -p ${DIR_XCORE}
+    cat > "${DIR_XCORE}/xcore.conf" << EOF
+LANGUAGE=EU
+CHAIN=false
+EOF
+  fi
+}
+
+###################################
 ### MAIN FUNCTION
 ###################################
 main() {
+  init_file
+  source "${DIR_XCORE}/xcore.conf"
   load_defaults_from_config
   parse_command_line_args "$@" || display_help_message
   verify_root_privileges
   detect_external_ip
   detect_operating_system
   echo
-  configure_language
   manage_xcore
 }
 
