@@ -1,5 +1,5 @@
 {
-  "remarks": "HAPROXY",
+  "remarks": "CHAIN",
   "log": {
     "access": "./access.log",
     "dnsLog": true,
