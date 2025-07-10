@@ -7,7 +7,7 @@
   "dns": {
     "queryStrategy": "UseIP",
     "servers": [
-	  "fakedns"
+      "fakedns"
     ]
   },
   "routing": {
@@ -16,8 +16,8 @@
     "network": "tcp,udp",
     "rules": [
       {
-		"inboundTag": ["dns-in"],
-		"outboundTag": "dns-out"
+        "inboundTag": ["dns-in"],
+        "outboundTag": "dns-out"
       },
       {
         "inboundTag": [
@@ -156,7 +156,6 @@
         "tcpFastOpen": true
       }
     },
-	
     {
       "tag": "block",
       "protocol": "blackhole",
