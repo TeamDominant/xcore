@@ -129,12 +129,12 @@
         "domainStrategy": "UseIP",
         "vnext": [
           {
-            "address": "ru.theleet.world",
+            "address": "DOMAIN_TEMP",
             "port": 443,
             "users": [
               {
                 "encryption": "none",
-                "id": "f4e86c0a-cd28-4e0e-ab00-891b5dfc9ce2"
+                "id": "UUID_TEMP"
               }
             ]
           }
