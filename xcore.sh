@@ -7,7 +7,7 @@
 ###################################
 ### GLOBAL CONSTANTS AND VARIABLES
 ###################################
-VERSION_MANAGER='0.9.80'
+VERSION_MANAGER='0.9.81'
 VERSION_XRAY='v25.6.8'
 
 DIR_XCORE="/opt/xcore"
@@ -2513,17 +2513,46 @@ delete_user() {
 sync_client_configs() {
   SUB_DIR="/var/www/${SUB_JSON_PATH}/vless_raw/"
 
+  # Проверка, является ли шаблон валидным JSON
+  TEMPLATE_FILE="${DIR_XCORE}/repo/conf_template/client-vless-raw.json"
+  jq . "$TEMPLATE_FILE" >/dev/null 2>&1
+  if [ $? -ne 0 ]; then
+    echo "Ошибка: Файл шаблона $TEMPLATE_FILE содержит невалидный JSON"
+    sleep 3
+    return 1
+  fi
+
   for FILE_PATH in ${SUB_DIR}*.json; do
     FILENAME=$(basename "$FILE_PATH")
 
-    OUT_VL_NUM=$(jq '[.outbounds[].tag] | index("vless-out")' $FILE_PATH)
-    CLIENT=$(jq ".outbounds[${OUT_VL_NUM}].settings.vnext[].users[]" $FILE_PATH)
+    # Получаем индекс исходящего подключения с тегом "vless-out"
+    OUT_VL_NUM=$(jq '[.outbounds[].tag] | index("vless-out")' "$FILE_PATH")
+    if [ -z "$OUT_VL_NUM" ]; then
+      echo "Ошибка: в файле $FILENAME"
+      continue
+    fi
 
+    CLIENT=$(jq ".outbounds[${OUT_VL_NUM}].settings.vnext[].users" "$FILE_PATH")
+
+    # Проверяем, что CLIENT не пустой и является валидным JSON  
+    echo "$CLIENT" | jq . >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
+      echo "Ошибка: Некорректный JSON в CLIENT для файла $FILENAME: $CLIENT"
+      continue
+    fi
+    if [ -z "$CLIENT" ] || [ "$CLIENT" = "[]" ]; then
+      echo "Ошибка: Пустой или отсутствующий массив users для файла $FILENAME"
+      continue
+    fi
+
+    # Удаляем старый файл и копируем шаблон
     rm -rf ${FILE_PATH}
     cp -r ${DIR_XCORE}/repo/conf_template/client-vless-raw.json ${FILE_PATH}
 
-    echo "$(jq ".outbounds[${OUT_VL_NUM}].settings.vnext[].users[] = ${CLIENT}" ${FILE_PATH})" > $FILE_PATH
+    # Обновляем массив users в новом файле
+    echo "$(jq ".outbounds[${OUT_VL_NUM}].settings.vnext[].users = ${CLIENT}" ${FILE_PATH})" > $FILE_PATH
 
+    # Заменяем заполнители DOMAIN_TEMP и IP_TEMP
     sed -i \
       -e "s/DOMAIN_TEMP/${CURR_DOMAIN}/g" \
       -e "s/IP_TEMP/${IP4}/g" \
@@ -2531,6 +2560,7 @@ sync_client_configs() {
 
     echo "Файл $FILENAME успешно обновлен."
   done
+  sleep 3
 }
 
 ###################################
