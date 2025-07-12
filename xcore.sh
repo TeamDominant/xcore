@@ -7,7 +7,7 @@
 ###################################
 ### GLOBAL CONSTANTS AND VARIABLES
 ###################################
-VERSION_MANAGER='1.0.1'
+VERSION_MANAGER='1.0.0'
 VERSION_XRAY='v25.6.8'
 
 DIR_XCORE="/opt/xcore"
@@ -1821,7 +1821,7 @@ frontend haproxy-tls
   tcp-request inspect-delay 5s
   tcp-request content accept if { req_ssl_hello_type 1 }
 
-  use_backend forbidden if !{ ssl_fc_sni -i ${DOMAIN} } !{ ssl_fc_sni -m end .${DOMAIN} }
+  use_backend reject if !{ ssl_fc_sni -i ${DOMAIN} } !{ ssl_fc_sni -m end .${DOMAIN} }
   use_backend %[lua.vless_auth]
   default_backend nginx
 
@@ -1834,10 +1834,10 @@ backend nginx
   option forwardfor
   server web 127.0.0.1:36078
 
-backend forbidden
+backend reject
   mode http
   timeout server 1h
-  http-request deny deny_status 403
+  http-request deny
 
 EOF
 
