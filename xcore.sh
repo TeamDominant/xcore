@@ -1997,7 +1997,7 @@ setup_xray_client() {
 setup_xcore_service() {
   chmod +x "${DIR_XCORE}/repo/cron_jobs/get_v2ray-stat.sh"
   # crontab -l | grep -v -- "get_v2ray-stat.sh" | crontab -
-  schedule_cron_job "0 5 * * 1 ${DIR_XCORE}/repo/cron_jobs/get_v2ray-stat.sh"
+  # schedule_cron_job "0 5 * * 1 ${DIR_XCORE}/repo/cron_jobs/get_v2ray-stat.sh"
 
   bash "${DIR_XCORE}/repo/cron_jobs/get_v2ray-stat.sh"
 }
