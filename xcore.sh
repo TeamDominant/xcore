@@ -2346,7 +2346,7 @@ show_traffic_statistics() {
 ###################################
 display_server_stats() {
   clear
-  curl -X GET "http://127.0.0.1:9952/api/v1/stats?mode=standard&sort_by=last_seen&sort_order=DESC"
+  curl -X GET "http://127.0.0.1:9952/api/v1/stats?&sort_by=last_seen&sort_order=DESC"
   echo -n "$(text 131) "
 }
 
