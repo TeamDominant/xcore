@@ -7,7 +7,7 @@
 ###################################
 ### GLOBAL CONSTANTS AND VARIABLES
 ###################################
-VERSION_MANAGER='1.0.1'
+VERSION_MANAGER='25.7.29'
 VERSION_XRAY='v25.6.8'
 
 DIR_XCORE="/opt/xcore"
@@ -2346,7 +2346,7 @@ show_traffic_statistics() {
 ###################################
 display_server_stats() {
   clear
-  curl -X GET "http://127.0.0.1:9952/api/v1/stats?&sort_by=last_seen&sort_order=DESC"
+  curl -X GET "http://127.0.0.1:9952/api/v1/stats"
   echo -n "$(text 131) "
 }
 
@@ -2881,7 +2881,7 @@ update_user_renewal() {
 ### ADJUST USER SUBSCRIPTION END DATE
 ###################################
 adjust_subscription_date() {
-  update_user_parameter_patch "sub_end" "http://127.0.0.1:9952/api/v1/adjust_date" "Введите значение sub_end (например, +1, -1:3, 0)"
+  update_user_parameter_patch "sub_end" "http://127.0.0.1:9952/api/v1/adjust_date" "Введите значение sub_end (например, +1d, -1d3h, 0)"
 }
 
 ###################################
