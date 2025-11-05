@@ -1,0 +1,277 @@
+:root {
+    --primary-bg: rgba(255, 255, 255, 0.3);
+    --button-bg: rgba(255, 255, 255, 0.15);
+    --button-hover-bg: rgba(255, 255, 255, 0.25);
+    --text-color: #000000;
+    --placeholder-color: rgba(0, 0, 0, 0.6);
+    --shadow-color: rgba(0, 0, 0, 0.2);
+    --blur: blur(10px);
+    --border-radius: 14px;
+    --transition: all 0.3s ease;
+    --spacing-sm: 8px;
+    --spacing-md: 12px;
+    --spacing-lg: 20px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.2) 0%,
+        rgba(0, 0, 0, 0.2) 100%
+    ), url('background.jpg');
+    background-size: cover;
+    image-rendering: pixelated;
+    background-attachment: fixed;
+    color: var(--text-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: var(--spacing-md);
+}
+
+.container {
+    background: var(--primary-bg);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius);
+    box-shadow: 0 8px 32px var(--shadow-color);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    width: 100%;
+    max-width: 500px;
+    margin: auto;
+    animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+h1 {
+    text-align: center;
+    font-size: 2.5rem;
+    margin-bottom: var(--spacing-lg);
+    font-weight: 600;
+}
+
+h2, h3, h4 {
+    margin-bottom: var(--spacing-sm);
+    font-weight: 500;
+}
+
+.section {
+    margin-bottom: var(--spacing-lg);
+}
+
+select {
+    width: 100%;
+    padding: var(--spacing-md);
+    font-size: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--border-radius);
+    background: var(--primary-bg);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    color: var(--text-color);
+    margin-bottom: var(--spacing-md);
+    transition: var(--transition);
+    appearance: none;
+    background-image: url('data:image/svg+xml;utf8,<svg fill="black" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 10px top 50%;
+    cursor: pointer;
+}
+
+select:focus {
+    outline: none;
+    background: var(--button-hover-bg);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+}
+
+select option {
+    background: rgba(255, 255, 255, 0.3);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    color: var(--text-color);
+    font-size: 16px;
+    padding: var(--spacing-sm);
+    transition: var(--transition);
+}
+
+select option:hover,
+select option:focus,
+select option:checked {
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    color: var(--text-color);
+}
+
+.platform-content, .app-section {
+    opacity: 0;
+    animation: fadeIn 0.5s ease-out forwards;
+    animation-delay: 0.2s;
+}
+
+.app-section {
+    margin-bottom: var(--spacing-md);
+}
+
+.button-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+}
+
+.button-grid--single {
+    grid-template-columns: 1fr;
+}
+
+.button {
+    padding: var(--spacing-md);
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--border-radius);
+    font-size: 16px;
+    cursor: pointer;
+    background: var(--button-bg);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    color: var(--text-color);
+    transition: var(--transition);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.button:hover {
+    background: var(--button-hover-bg);
+    box-shadow: 0 4px 12px var(--shadow-color);
+    transform: translateY(-2px) scale(1.02);
+}
+
+.button::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.4s ease, height 0.4s ease;
+}
+
+.button:active::after {
+    width: 200px;
+    height: 200px;
+    opacity: 0;
+}
+
+.button[title]:hover::before {
+    content: attr(title);
+    position: absolute;
+    top: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: #000000;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 10;
+}
+
+input[type="text"] {
+    width: 100%;
+    padding: var(--spacing-md);
+    font-size: 16px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: var(--border-radius);
+    background: var(--primary-bg);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    color: var(--text-color);
+    margin-bottom: var(--spacing-md);
+    transition: var(--transition);
+}
+
+input[type="text"]::placeholder {
+    color: var(--placeholder-color);
+}
+
+input[type="text"]:focus {
+    outline: none;
+    background: var(--button-hover-bg);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+}
+
+.qrcode-container {
+    margin-top: var(--spacing-md);
+    text-align: center;
+    background: transparent !important;
+}
+
+.qrcode-container canvas {
+    border-radius: var(--border-radius);
+    background: var(--primary-bg);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    box-shadow: 0 4px 12px var(--shadow-color);
+    animation: fadeIn 0.5s ease-out;
+}
+
+@media (max-width: 768px) {
+    h1 {
+        font-size: 1.8rem;
+    }
+
+    .container {
+        padding: var(--spacing-md);
+        max-width: 100%;
+        margin: 0;
+    }
+
+    .button-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .button {
+        font-size: 14px;
+        padding: var(--spacing-md);
+    }
+
+    .app-section h3, .app-section h4 {
+        font-size: 16px;
+    }
+
+    select {
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    h1 {
+        font-size: 1.5rem;
+    }
+
+    .button {
+        font-size: 12px;
+        padding: var(--spacing-sm);
+    }
+
+    select {
+        font-size: 12px;
+    }
+}
