@@ -1,5 +1,5 @@
 {
-  "remarks": "HAPROXY",
+  "remarks": "SERVER",
   "log": {
     "dnsLog": false,
     "loglevel": "warning",
@@ -7,7 +7,11 @@
     "error": "./error.log",
     "maskAddress": ""
   },
-  "dns": {},
+  "dns": {
+    "hosts": {
+      "ntc.party": "2a02:e00:ffec:4b8::1"
+    }
+  },
   "routing": {
     "domainStrategy": "IPIfNonMatch",
     "domainMatcher": "hybrid",
@@ -38,6 +42,12 @@
       },
       {
         "domain": [
+          "keyword:remini"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "domain": [
           "geosite:category-ads-all",
           "keyword:analytics",
           "keyword:telemetry",
@@ -54,6 +64,20 @@
           "gemini.google.com"
         ],
         "outboundTag": "warp"
+      },
+      {
+        "domain": [
+          "geosite:meta"
+        ],
+        "outboundTag": "directIPv4"
+      },
+      {
+        "domain": [
+          "geosite:youtube",
+          "geosite:google",
+          "domain:ntc.party"
+        ],
+        "outboundTag": "directIPv6"
       },
       {
         "ip": [
@@ -117,35 +141,48 @@
   ],
   "outbounds": [
     {
-      "tag": "direct",
       "protocol": "freedom",
       "userLevel": 0,
       "settings": {
-        "domainStrategy": "UseIPv4"
+        "domainStrategy": "UseIP"
       },
       "sockopt": {
         "tcpMaxSeg": 1492,
         "tcpFastOpen": true
       }
+      "tag": "direct"
     },
     {
-      "tag": "dns-out",
+      "protocol": "freedom",
+      "settings": {
+        "domainStrategy": "UseIPv4"
+      },
+      "tag": "directIPv4"
+    },
+    {
+      "protocol": "freedom",
+      "settings": {
+        "domainStrategy": "UseIPv6"
+      },
+      "tag": "directIPv6"
+    },
+    {
       "protocol": "dns",
       "settings": {
         "nonIPQuery": "drop"
-      }
+      },
+      "tag": "dns-out"
     },
     {
-      "tag": "block",
       "protocol": "blackhole",
       "settings": {
         "response": {
           "type": "http"
         }
-      }
+      },
+      "tag": "block"
     },
     {
-      "tag": "warp",
       "protocol": "socks",
       "settings": {
         "servers": [
@@ -155,7 +192,8 @@
             "users": []
           }
         ]
-      }
+      },
+      "tag": "warp"
     }
   ],
   "policy": {
