@@ -1,277 +1,477 @@
-:root {
-    --primary-bg: rgba(255, 255, 255, 0.3);
-    --button-bg: rgba(255, 255, 255, 0.15);
-    --button-hover-bg: rgba(255, 255, 255, 0.25);
-    --text-color: #000000;
-    --placeholder-color: rgba(0, 0, 0, 0.6);
-    --shadow-color: rgba(0, 0, 0, 0.2);
-    --blur: blur(10px);
-    --border-radius: 14px;
-    --transition: all 0.3s ease;
-    --spacing-sm: 8px;
-    --spacing-md: 12px;
-    --spacing-lg: 20px;
-}
-
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
-
+:root {
+    color-scheme: light dark;
+}
+@media (prefers-color-scheme: light) {
+    :root {
+        --primary-color: #D7B27D;
+        --primary-dark: #C19A5F;
+        --primary-light: #E5C99A;
+        --background: #f5f5f5;
+        --surface: #ffffff;
+        --surface-variant: #f0f0f0;
+        --on-surface: #1a1a1a;
+        --on-primary: #1a1a1a;
+        --divider: #e0e0e0;
+        --error: #b00020;
+        --shadow: rgba(0, 0, 0, 0.1);
+        --button-hover: #C19A5F;
+    }
+}
+@media (prefers-color-scheme: dark) {
+    :root {
+        --primary-color: #D7B27D;
+        --primary-dark: #C19A5F;
+        --primary-light: #E5C99A;
+        --background: #2a2a2a;
+        --surface: #3a3a3a;
+        --surface-variant: #4a4a4a;
+        --on-surface: #e0e0e0;
+        --on-primary: #1a1a1a;
+        --divider: #555555;
+        --error: #cf6679;
+        --shadow: rgba(0, 0, 0, 0.5);
+        --button-hover: #E5C99A;
+    }
+}
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.2) 0%,
-        rgba(0, 0, 0, 0.2) 100%
-    ), url('background.jpg');
-    background-size: cover;
-    image-rendering: pixelated;
-    background-attachment: fixed;
-    color: var(--text-color);
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--background);
+    color: var(--on-surface);
     min-height: 100vh;
-    padding: var(--spacing-md);
+    padding: 15px;
+    line-height: 1.5;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
-
 .container {
-    background: var(--primary-bg);
-    backdrop-filter: var(--blur);
-    -webkit-backdrop-filter: var(--blur);
-    padding: var(--spacing-lg);
-    border-radius: var(--border-radius);
-    box-shadow: 0 8px 32px var(--shadow-color);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    max-width: 900px;
     width: 100%;
-    max-width: 500px;
-    margin: auto;
-    animation: fadeIn 0.5s ease-out;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-h1 {
-    text-align: center;
-    font-size: 2.5rem;
-    margin-bottom: var(--spacing-lg);
-    font-weight: 600;
-}
-
-h2, h3, h4 {
-    margin-bottom: var(--spacing-sm);
-    font-weight: 500;
-}
-
-.section {
-    margin-bottom: var(--spacing-lg);
-}
-
-select {
-    width: 100%;
-    padding: var(--spacing-md);
-    font-size: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: var(--border-radius);
-    background: var(--primary-bg);
-    backdrop-filter: var(--blur);
-    -webkit-backdrop-filter: var(--blur);
-    color: var(--text-color);
-    margin-bottom: var(--spacing-md);
-    transition: var(--transition);
-    appearance: none;
-    background-image: url('data:image/svg+xml;utf8,<svg fill="black" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
-    background-repeat: no-repeat;
-    background-position: right 10px top 50%;
-    cursor: pointer;
-}
-
-select:focus {
-    outline: none;
-    background: var(--button-hover-bg);
-    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
-}
-
-select option {
-    background: rgba(255, 255, 255, 0.3);
-    backdrop-filter: var(--blur);
-    -webkit-backdrop-filter: var(--blur);
-    color: var(--text-color);
-    font-size: 16px;
-    padding: var(--spacing-sm);
-    transition: var(--transition);
-}
-
-select option:hover,
-select option:focus,
-select option:checked {
-    background: rgba(255, 255, 255, 0.4);
-    backdrop-filter: var(--blur);
-    -webkit-backdrop-filter: var(--blur);
-    color: var(--text-color);
-}
-
-.platform-content, .app-section {
-    opacity: 0;
-    animation: fadeIn 0.5s ease-out forwards;
-    animation-delay: 0.2s;
-}
-
-.app-section {
-    margin-bottom: var(--spacing-md);
-}
-
-.button-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-sm);
-}
-
-.button-grid--single {
-    grid-template-columns: 1fr;
-}
-
-.button {
-    padding: var(--spacing-md);
-    border: 3px solid rgba(255, 255, 255, 0.3);
-    border-radius: var(--border-radius);
-    font-size: 16px;
-    cursor: pointer;
-    background: var(--button-bg);
-    backdrop-filter: var(--blur);
-    -webkit-backdrop-filter: var(--blur);
-    color: var(--text-color);
-    transition: var(--transition);
-    text-align: center;
-    position: relative;
+    background: var(--surface);
+    border-radius: 24px;
+    box-shadow: 0 8px 24px var(--shadow);
     overflow: hidden;
 }
-
-.button:hover {
-    background: var(--button-hover-bg);
-    box-shadow: 0 4px 12px var(--shadow-color);
-    transform: translateY(-2px) scale(1.02);
+h1 {
+    background: var(--primary-color);
+    color: var(--on-primary);
+    padding: 18px 24px;
+    font-size: 24px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-align: center;
+    box-shadow: 0 2px 8px var(--shadow);
+    cursor: pointer;
+    border-radius: 20px;
+    margin: 0;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
 }
-
-.button::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    transition: width 0.4s ease, height 0.4s ease;
+.header-wrapper.modal-open h1 {
+    border-radius: 20px 20px 0 0;
+    box-shadow: none;
 }
-
-.button:active::after {
-    width: 200px;
-    height: 200px;
-    opacity: 0;
+h1:hover {
+    background: var(--button-hover);
+    box-shadow: 0 4px 12px var(--shadow);
 }
-
-.button[title]:hover::before {
-    content: attr(title);
-    position: absolute;
-    top: -40px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.8);
-    color: #000000;
-    padding: 5px 10px;
-    border-radius: 5px;
-    font-size: 12px;
-    white-space: nowrap;
-    z-index: 10;
+.header-wrapper.modal-open h1:hover {
+    box-shadow: none;
 }
-
+h1:active {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+h2 {
+    color: var(--on-surface);
+    font-size: 18px;
+    font-weight: 500;
+    margin-bottom: 12px;
+    letter-spacing: 0.3px;
+}
+h3 {
+    color: var(--on-surface);
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 10px;
+}
+h4 {
+    color: var(--primary-color);
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.section {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--divider);
+}
+.section:last-child {
+    border-bottom: none;
+}
+select {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 15px;
+    border: 2px solid var(--divider);
+    border-radius: 16px;
+    background: var(--surface-variant);
+    color: var(--on-surface);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 16px;
+    font-family: inherit;
+}
+select:hover {
+    border-color: var(--primary-light);
+    background: #5a5a5a;
+}
+select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(97, 97, 97, 0.2);
+}
 input[type="text"] {
     width: 100%;
-    padding: var(--spacing-md);
-    font-size: 16px;
-    border: 3px solid rgba(255, 255, 255, 0.3);
-    border-radius: var(--border-radius);
-    background: var(--primary-bg);
-    backdrop-filter: var(--blur);
-    -webkit-backdrop-filter: var(--blur);
-    color: var(--text-color);
-    margin-bottom: var(--spacing-md);
-    transition: var(--transition);
+    padding: 12px 14px;
+    font-size: 15px;
+    border: 2px solid var(--divider);
+    border-radius: 16px;
+    background: var(--surface-variant);
+    color: var(--on-surface);
+    transition: all 0.3s ease;
+    margin-bottom: 16px;
+    font-family: inherit;
 }
-
-input[type="text"]::placeholder {
-    color: var(--placeholder-color);
-}
-
 input[type="text"]:focus {
     outline: none;
-    background: var(--button-hover-bg);
-    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(97, 97, 97, 0.2);
 }
-
+.platform-content {
+    margin-top: 16px;
+}
+.app-section {
+    margin-bottom: 18px;
+}
+.button-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+.button {
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    border: none;
+    border-radius: 20px;
+    background: var(--primary-color);
+    color: var(--on-primary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+.button:hover {
+    background: var(--button-hover);
+    box-shadow: 0 4px 12px var(--shadow);
+    transform: translateY(-2px);
+}
+.button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+.download-button {
+    background: var(--primary-dark);
+}
+.download-button:hover {
+    background: var(--primary-color);
+}
+.mode-button {
+    background: var(--surface-variant);
+    color: var(--on-surface);
+    border: 2px solid var(--divider);
+    flex-direction: column;
+    gap: 4px;
+    padding: 16px;
+}
+.mode-button:hover {
+    background: #5a5a5a;
+    border-color: var(--primary-color);
+}
+.mode-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    color: var(--primary-light);
+}
+.button-icon {
+    font-size: 18px;
+}
+.copy-button {
+    padding: 10px 20px;
+    font-size: 14px;
+}
 .qrcode-container {
-    margin-top: var(--spacing-md);
+    margin-top: 18px;
+    padding: 16px;
+    background: var(--surface-variant);
+    border-radius: 16px;
+    justify-content: center;
+    align-items: center;
+    min-height: 0;
+    display: none;
+}
+.qrcode-container.active {
+    display: flex;
+}
+.manual-import {
     text-align: center;
-    background: transparent !important;
 }
-
-.qrcode-container canvas {
-    border-radius: var(--border-radius);
-    background: var(--primary-bg);
-    backdrop-filter: var(--blur);
-    -webkit-backdrop-filter: var(--blur);
-    box-shadow: 0 4px 12px var(--shadow-color);
-    animation: fadeIn 0.5s ease-out;
+.manual-import h3 {
+    margin-bottom: 12px;
+    color: var(--primary-color);
 }
-
+.instruction {
+    margin-bottom: 12px;
+    color: var(--on-surface);
+    opacity: 0.9;
+    font-size: 14px;
+}
+.url-box {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+.url-box input {
+    flex: 1;
+    margin-bottom: 0;
+    min-width: 200px;
+}
+#qrCanvas {
+    margin: 0 auto;
+    display: block;
+    border-radius: 16px;
+    background: white;
+    padding: 10px;
+}
+.notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--primary-dark);
+    color: var(--on-primary);
+    padding: 16px 24px;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+    z-index: 1000;
+    max-width: 400px;
+    font-size: 14px;
+    font-weight: 500;
+}
+.notification.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+.notification-success {
+    background: #4caf50;
+    color: white;
+}
+.notification-error {
+    background: #f44336;
+    color: white;
+}
+.notification-warning {
+    background: #ff9800;
+    color: white;
+}
+.notification-info {
+    background: var(--primary-dark);
+    color: var(--on-primary);
+}
+.button-secondary {
+    background: var(--surface-variant);
+    color: var(--on-surface);
+    border: 2px solid var(--divider);
+}
+.button-secondary:hover {
+    background: var(--divider);
+    border-color: var(--primary-color);
+}
+.container {
+    position: relative;
+    z-index: 1;
+}
+.header-wrapper {
+    position: relative;
+    margin: 10px 10px 0 10px;
+    z-index: 1001;
+}
 @media (max-width: 768px) {
-    h1 {
-        font-size: 1.8rem;
+    body {
+        padding: 10px;
+        align-items: flex-start;
     }
-
     .container {
-        padding: var(--spacing-md);
-        max-width: 100%;
-        margin: 0;
+        border-radius: 16px;
     }
-
+    .header-wrapper {
+        margin: 8px 8px 0 8px;
+    }
+    h1 {
+        font-size: 20px;
+        padding: 14px 16px;
+        margin: 0;
+        border-radius: 16px;
+    }
+    .header-wrapper.modal-open h1 {
+        border-radius: 16px 16px 0 0;
+    }
+    .section {
+        padding: 14px 16px;
+    }
     .button-grid {
         grid-template-columns: 1fr;
     }
-
-    .button {
-        font-size: 14px;
-        padding: var(--spacing-md);
+    .notification {
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
     }
-
-    .app-section h3, .app-section h4 {
-        font-size: 16px;
+    .url-box {
+        flex-direction: column;
     }
-
-    select {
-        font-size: 14px;
+    .url-box input {
+        width: 100%;
     }
 }
-
 @media (max-width: 480px) {
+    .header-wrapper {
+        margin: 6px 6px 0 6px;
+    }
     h1 {
-        font-size: 1.5rem;
+        font-size: 18px;
+        padding: 12px 14px;
+        margin: 0;
+        border-radius: 12px;
     }
-
+    .header-wrapper.modal-open h1 {
+        border-radius: 12px 12px 0 0;
+    }
+    #userInfoModal {
+        border-radius: 0 0 16px 16px;
+    }
+    h2 {
+        font-size: 16px;
+    }
     .button {
-        font-size: 12px;
-        padding: var(--spacing-sm);
+        padding: 10px 14px;
+        font-size: 13px;
     }
+    .section {
+        padding: 12px 14px;
+    }
+}
+#userInfoContent p {
+    margin: 8px 0;
+    font-size: 15px;
+}
+#userInfoContent strong {
+    color: var(--primary-color);
+}
+.progress-bar {
+    width: 100%;
+    height: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 5px;
+    overflow: hidden;
+    margin: 8px 0;
+}
+.progress-fill {
+    height: 100%;
+    background: var(--on-primary);
+    width: 0%;
+    transition: width 0.6s ease;
+}
+#trafficPercent {
+    color: rgba(255, 255, 255, 0.85);
+    font-weight: 500;
+    font-size: 13px;
+}
 
-    select {
-        font-size: 12px;
-    }
+/* === Модальное окно под шапкой === */
+#userInfoModal {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--primary-color);
+    color: var(--on-primary);
+    border-radius: 0 0 20px 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    z-index: 1;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    max-height: 0;
+    overflow-y: auto;
+}
+
+#userInfoModal.show {
+    opacity: 1;
+    visibility: visible;
+    max-height: 500px;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+#userInfoContent p {
+    margin: 10px 0;
+    font-size: 15px;
+    opacity: 0.95;
+}
+
+#userInfoContent strong {
+    color: var(--on-primary) !important;
+    opacity: 1;
+}
+
+/* Улучшение шапки — визуально как кнопка */
+#headerTitle {
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 2;
+}
+
+#headerTitle:hover {
+    background: var(--button-hover) !important;
+}
+
+#headerTitle:active {
+    background: var(--primary-dark) !important;
 }
