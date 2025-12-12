@@ -6,7 +6,7 @@
   when: ansible_os_family == 'Debian'
 
 - name: Install shellinabox (RHEL)
-  ansible.builtin.yum: 
+  ansible.builtin.dnf: 
     name: shellinabox 
     state: present
   when: ansible_os_family == 'RedHat'

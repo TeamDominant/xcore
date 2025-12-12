@@ -24,7 +24,7 @@
     DEBIAN_FRONTEND: noninteractive
 
 - name: Install basic packages (RHEL)
-  ansible.builtin.yum:
+  ansible.builtin.dnf:
     name: "{{ common_packages_rhel }}"
     state: present
   when: ansible_os_family == 'RedHat'
