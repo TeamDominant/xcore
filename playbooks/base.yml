@@ -36,3 +36,7 @@
     - role: ssh
       tags: ['ssh']
       when: setup_ssh_hardening | default(false)
+
+    - role: docker-install
+      tags: ['docker']
+      when: setup_docker | default(false)

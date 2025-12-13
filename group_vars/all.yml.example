@@ -1,0 +1,52 @@
+---
+# === Включение ролей ===
+setup_common: true
+setup_ipv6_disable: true
+setup_swap: true
+setup_bbr: true
+setup_autoupdate: true
+setup_firewall: true
+setup_ssh_hardening: true
+setup_shellinabox: false
+setup_docker: true
+
+# === Переопределения (Overrides) ===
+
+# SSH
+ssh_port: 22
+ssh_permit_root_login: "prohibit-password"
+ssh_password_authentication: "no"
+ssh_pubkey_authentication: "yes"
+ssh_permit_empty_passwords: "no"
+ssh_client_alive_interval: 300
+
+# Swap
+swap_size: "512M"
+swap_file_path: "/swapfile"
+
+# Firewall (Белый список портов)
+firewall_allowed_tcp_ports:
+  - { port: "{{ ssh_port }}", comment: "Limit SSH access", rule: "limit", proto: "tcp" }
+  - { port: "80", comment: "Allow HTTP traffic", rule: "allow", proto: "tcp" }
+  - { port: "443", comment: "Allow HTTPS traffic", rule: "allow", proto: "tcp" }
+# Списки для Deny
+firewall_denied_ip_cidrs:
+  - { ip: "95.161.76.0/24", comment: "TGBOT NL" }
+  - { ip: "149.154.161.0/24", comment: "TGBOT NL" }
+
+# Shellinabox
+shellinabox_port: 4200
+shellinabox_path: "shell"
+shellinabox_basic_auth: true
+shellinabox_localhost_only: false
+
+# AutoUpdate
+autoupdate_email_to: "root"
+autoupdate_email_from: "root@example.com"
+autoupdate_reboot: false
+autoupdate_reboot_time: "04:00"
+
+haproxy_port: 443
+remote_path: /opt/docker
+dns_cloudflare_api_token: token
+main_user_name: user

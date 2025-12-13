@@ -1,0 +1,16 @@
+---
+# Версии и пакеты Docker
+docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+  - docker-compose
+
+# Группа, в которую добавляются пользователи для работы с Docker без sudo
+docker_group_name: docker
+
+# Список пользователей, которых нужно добавить в группу docker (по умолчанию только ansible_user)
+docker_users_to_add:
+  - "{{ ansible_user }}"
