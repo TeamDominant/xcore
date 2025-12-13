@@ -2,4 +2,4 @@
 shellinabox_port: 4200
 shellinabox_path: "shell"
 shellinabox_basic_auth: false
-shellinabox_localhost_only: true
+shellinabox_localhost_only: false

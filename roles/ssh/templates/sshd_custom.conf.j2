@@ -1,0 +1,36 @@
+# -------------------------------------------------------------------
+# Ansible managed: Custom SSH Daemon Configuration
+# This file is loaded via 'Include /etc/ssh/sshd_config.d/*.conf'
+# -------------------------------------------------------------------
+
+# Basic Connection Settings
+Port {{ ssh_port }}
+
+# Authentication Settings
+# Разрешить вход root (Допустимо: yes, no, prohibit-password, forced-commands-only)
+PermitRootLogin {{ ssh_permit_root_login }}
+
+# Вход по паролю (Допустимо: yes, no)
+PasswordAuthentication {{ ssh_password_authentication }}
+
+# Вход по публичному ключу (Допустимо: yes, no)
+PubkeyAuthentication {{ ssh_pubkey_authentication }}
+
+# Разрешить пустые пароли (Допустимо: yes, no)
+PermitEmptyPasswords {{ ssh_permit_empty_passwords }}
+
+# Отключить пересылку среды X11 (Допустимо: yes, no)
+X11Forwarding {{ ssh_x11_forwarding }}
+
+# Максимальное количество попыток аутентификации (Допустимо: целое число > 0)
+MaxAuthTries {{ ssh_max_auth_tries }}
+
+# Максимальное количество одновременных незарегистрированных подключений (Допустимо: rate:percent:time)
+MaxStartups {{ ssh_max_startups }}
+
+# Отключение устаревших протоколов (Допустимо: 2)
+Protocol {{ ssh_protocol }}
+
+# Время бездействия, после которого SSH отключает сессию (Допустимо: целое число в секундах)
+ClientAliveInterval {{ ssh_client_alive_interval }}
+ClientAliveCountMax {{ ssh_client_alive_count_max }}

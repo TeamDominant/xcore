@@ -1,28 +1,16 @@
 ---
+
 - name: Отключение IPv6 через sysctl
-  ansible.posix.sysctl:
-    name: "{{ item }}"
-    value: '1'
-    state: present
-    reload: yes
-    sysctl_set: yes
-  loop:
-    - net.ipv6.conf.all.disable_ipv6
-    - net.ipv6.conf.default.disable_ipv6
-    - net.ipv6.conf.lo.disable_ipv6
+  ansible.builtin.template:
+    src: disable_ipv6.conf.j2
+    dest: /etc/sysctl.d/90-disable-ipv6.conf
+    owner: root
+    group: root
+    mode: '0644'
+  register: sysctl_file
   tags: [ipv6, sysctl]
 
-- name: Определение основного сетевого интерфейса
-  ansible.builtin.set_fact:
-    main_interface: "{{ ansible_default_ipv4.interface }}"
-  tags: [ipv6, network]
-
-- name: Отключение IPv6 для основного интерфейса
-  ansible.posix.sysctl:
-    name: "net.ipv6.conf.{{ main_interface.stdout }}.disable_ipv6"
-    value: '1'
-    state: present
-    reload: yes
-    sysctl_set: yes
-  when: main_interface.stdout != ""
-  tags: [ipv6, interface]
+- name: Применение новых настроек sysctl
+  ansible.builtin.command: sysctl -p /etc/sysctl.d/90-disable-ipv6.conf
+  when: sysctl_file.changed
+  tags: [ipv6, sysctl]

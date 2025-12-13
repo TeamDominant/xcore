@@ -1,3 +1,12 @@
 ---
-firewall_allowed_tcp_ports: [22, 80, 443]
-firewall_allowed_udp_ports: []
+# Универсальный список разрешенных/лимитированных TCP портов
+# rule: 'allow' (по умолчанию) или 'limit'
+firewall_allowed_tcp_ports:
+  - { port: "{{ ssh_port }}", comment: "Limit SSH access", rule: "limit", proto: "tcp" }
+  - { port: "80", comment: "Allow HTTP traffic", rule: "allow", proto: "tcp" }
+  - { port: "443", comment: "Allow HTTPS traffic", rule: "allow", proto: "tcp" }
+
+# Списки для Deny
+firewall_denied_ip_cidrs:
+  - { ip: "95.161.76.0/24", comment: "TGBOT NL" }
+  - { ip: "149.154.161.0/24", comment: "TGBOT NL" }

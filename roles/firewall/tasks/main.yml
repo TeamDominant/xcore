@@ -1,58 +1,142 @@
 ---
 - name: Detect local subnet
   ansible.builtin.set_fact:
-    local_subnet: "{{ ansible_default_ipv4.address | ansible.utils.ipaddr('network/22') }}"
+    local_subnet: >
+      {{ (ansible_default_ipv4.address + '/' + ansible_default_ipv4.prefix) | 
+         ansible.utils.ipaddr('network_of_prefix', '22') }}
+  when: ansible_default_ipv4 is defined and ansible_default_ipv4.address is defined
   tags: [always]
 
+# ==============================================================================
 # --- Debian (UFW) ---
+# ==============================================================================
 - block:
   - name: Install UFW
     ansible.builtin.apt:
       name: ufw
       state: present
+      
+  # 1. СБОР ИНФОРМАЦИИ ОБ ИЗМЕНЕНИЯХ (Execution Block)
+  - name: Initialize UFW change flag
+    ansible.builtin.set_fact:
+      ufw_config_changed: false
 
-  - name: Set default deny incoming
-    community.general.ufw: 
-      policy: deny 
-      direction: incoming
-
-  - name: Allow outgoing traffic
+  # Применяем правила. Если что-то изменится, register.changed будет true.
+  # Мы НЕ используем insert здесь, чтобы избежать ошибок при первом запуске!
+  - name: Check allowed/limited TCP/UDP ports for changes
     community.general.ufw:
-      policy: allow
-      direction: outgoing
-
-  - name: Allow TCP ports
-    community.general.ufw:
-      rule: allow
-      port: "{{ item | string }}"
-      proto: tcp
+      rule: "{{ item.rule | default('allow') }}"
+      port: "{{ item.port | string }}"
+      proto: "{{ item.proto | default('tcp') }}"
+      comment: "{{ item.comment }}"
     loop: "{{ firewall_allowed_tcp_ports }}"
+    register: r_allowed_ports
+    check_mode: true # Используем check_mode для чистой проверки изменений
 
-  - name: Enable UFW
-    community.general.ufw: 
-      state: enabled
-    notify: Reload UFW
-  when: ansible_os_family == 'Debian
+  - name: Check specific IPs and subnets for changes
+    community.general.ufw:
+      rule: deny
+      from_ip: "{{ item.ip }}"
+      comment: "{{ item.comment }}"
+    loop: "{{ firewall_denied_ip_cidrs }}"
+    when: firewall_denied_ip_cidrs | length > 0
+    register: r_denied_ips
+    check_mode: true # Используем check_mode для чистой проверки изменений
 
+  # Установка флага, если в check_mode были обнаружены изменения
+  - name: Set UFW change flag if any rule check resulted in 'changed'
+    ansible.builtin.set_fact:
+      ufw_config_changed: true
+    when: >
+      r_allowed_ports.changed or 
+      (r_denied_ips is defined and r_denied_ips.changed)
+      
+  # 2. УСЛОВНЫЙ СБРОС И ПОВТОРНАЯ НАСТРОЙКА (Configuration Block)
+  - name: UFW Configuration Block
+    block:
+      # 2a. Полный сброс UFW
+      - name: RESET UFW to default state
+        community.general.ufw: 
+          state: reset
+          
+      # 2b. Настройка политик (должны идти первыми после сброса)
+      - name: Set default deny incoming
+        community.general.ufw: 
+          policy: deny 
+          direction: incoming
+          
+      - name: Allow outgoing traffic
+        community.general.ufw:
+          policy: allow
+          direction: outgoing
+          
+      # 2c. Применение правил блокировки (с insert для приоритета)
+      - name: Reapply Deny specific IPs and subnets (High Priority)
+        community.general.ufw:
+          rule: deny
+          from_ip: "{{ item.ip }}"
+          comment: "{{ item.comment }}"
+        loop: "{{ firewall_denied_ip_cidrs | reverse }}" # Revers для сохранения порядка
+        when: firewall_denied_ip_cidrs | length > 0
+
+      # 2d. Применение правил Allow/Limit
+      - name: Reapply allowed/limited TCP/UDP ports
+        community.general.ufw:
+          rule: "{{ item.rule | default('allow') }}"
+          port: "{{ item.port | string }}"
+          proto: "{{ item.proto | default('tcp') }}"
+          comment: "{{ item.comment }}"
+        loop: "{{ firewall_allowed_tcp_ports }}"
+
+      # 2e. Активация UFW (запустит обработчик)
+      - name: Enable UFW
+        community.general.ufw: 
+          state: enabled
+        notify: Reload UFW
+        
+    when: ufw_config_changed # Запускаем этот блок ТОЛЬКО, если ufw_config_changed = true
+
+  when: ansible_os_family == 'Debian'
+
+# ==============================================================================
 # --- RHEL/CentOS (Firewalld) ---
+# ==============================================================================
 - block:
-    - name: Install Firewalld
-      ansible.builtin.dnf:
-        name: firewalld
-        state: present
+  - name: Install Firewalld
+    ansible.builtin.dnf:
+      name: firewalld
+      state: present
 
-    - name: Start Firewalld
-      ansible.builtin.service:
-        name: firewalld
-        state: started
-        enabled: yes
+  - name: Start Firewalld
+    ansible.builtin.service:
+      name: firewalld
+      state: started
+      enabled: yes
 
-    - name: Permit TCP ports
-      ansible.posix.firewalld:
-        port: "{{ item }}/tcp"
-        permanent: yes
-        state: enabled
-        immediate: yes
-      loop: "{{ firewall_allowed_tcp_ports }}"
-      notify: Reload firewalld
+  # Firewalld: Deny rules (требует rich rule)
+  - name: Deny specific IPs and subnets (Firewalld Rich Rules)
+    ansible.posix.firewalld:
+      rich_rule: "rule family='ipv4' source address='{{ item.ip }}' reject"
+      state: present
+      permanent: yes
+      immediate: yes
+    loop: "{{ firewall_denied_ip_cidrs }}"
+    when: firewall_denied_ip_cidrs | length > 0
+    loop_control:
+      label: "Deny {{ item.ip }}"
+
+  # Firewalld: Allow/Permit ports
+  - name: Permit TCP/UDP ports (Firewalld)
+    ansible.posix.firewalld:
+      port: "{{ (item.port | string) + '/' + item.proto | default('tcp') }}"
+      permanent: yes
+      state: enabled
+      immediate: yes
+    # Фильтруем список, чтобы включать только правила 'allow' (Firewalld не имеет 'limit' как UFW)
+    loop: "{{ firewall_allowed_tcp_ports | selectattr('rule', 'equalto', 'allow') | list }}"
+    when: firewall_allowed_tcp_ports | selectattr('rule', 'equalto', 'allow') | list | length > 0
+    loop_control:
+      label: "Allow {{ item.port }}"
+    notify: Reload firewalld
+
   when: ansible_os_family == 'RedHat'

@@ -1,5 +1,21 @@
 ---
-ssh_port: 22
-ssh_permit_root_login: "prohibit-password"
-ssh_password_auth: "no"
-ssh_service_name: "{{ (ansible_os_family == 'Debian') | ternary('ssh', 'sshd') }}"
+# ==============================================================================
+# Переменные конфигурации OpenSSH Daemon (sshd)
+# ==============================================================================
+
+# 1. Basic Connection Settings
+ssh_port: 22                               # Допустимые значения: любое неиспользуемое число (например, 22, 2222)
+
+# 2. Authentication Settings
+ssh_permit_root_login: "prohibit-password" # Допустимые значения: "yes", "no", "prohibit-password", "forced-commands-only"
+ssh_password_authentication: "no"          # Допустимые значения: "yes", "no"
+ssh_pubkey_authentication: "yes"           # Допустимые значения: "yes", "no"
+ssh_permit_empty_passwords: "no"           # Допустимые значения: "yes", "no"
+
+# 3. Security & Session Control
+ssh_x11_forwarding: "no"                   # Допустимые значения: "yes", "no"
+ssh_max_auth_tries: 3                      # Допустимые значения: целое число > 0 (рекомендовано 3-6)
+ssh_max_startups: "10:30:60"               # Допустимые значения: "rate:percent:time" (например, "10:30:60")
+ssh_protocol: 2                            # Допустимые значения: 2 (рекомендовано), 1
+ssh_client_alive_interval: 300             # Допустимые значения: целое число в секундах (300 сек = 5 мин)
+ssh_client_alive_count_max: 2              # Допустимые значения: целое число (число пропущенных интервалов)

@@ -1,11 +1,4 @@
 ---
-- name: Bootstrap — install python3 and python3-apt (Debian/Ubuntu only)
-  ansible.builtin.raw: >
-    apt update -qq &&
-    apt install -y -qq python3-minimal python3-apt
-  when: ansible_os_family == "Debian"
-  changed_when: false
-  tags: always
 
 - name: Update apt cache (Debian)
   ansible.builtin.apt:

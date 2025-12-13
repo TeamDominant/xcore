@@ -1,4 +1,10 @@
 ---
-autoupdate_email_from: "root@localhost"
-autoupdate_email_to: "root@localhost"
-autoupdate_reboot: "false"
+# Кому слать отчеты (root или реальный email)
+autoupdate_email_to: "root"
+# От кого (важно для спам-фильтров, если шлете наружу)
+autoupdate_email_from: "root@example.com"
+
+# Перезагружаться ли автоматически, если обновления требуют этого?
+autoupdate_reboot: false
+# Время перезагрузки (если включено)
+autoupdate_reboot_time: "04:00"
