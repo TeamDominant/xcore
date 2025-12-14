@@ -1,5 +1,11 @@
-inventory.yml
+*inventory.yml
 
 group_vars/all.yml
 
 *.log
+
+**/compose.yaml
+
+# Игнорировать Git-папки и временные файлы
+.git
+.gitignore

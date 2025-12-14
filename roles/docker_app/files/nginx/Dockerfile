@@ -1,0 +1,140 @@
+#######################################
+# 1) BUILD NGINX
+#######################################
+FROM debian:bookworm-slim AS build
+
+ENV NGINX_VERSION=1.27.5
+
+RUN apt-get update && apt-get install -y \
+    gcc make build-essential wget git ca-certificates \
+    libgd-dev zlib1g-dev libssl-dev libpcre2-dev libxslt1-dev \
+    libmaxminddb0 libmaxminddb-dev mmdb-bin \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+
+RUN wget https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz && \
+    tar -xvf nginx-${NGINX_VERSION}.tar.gz
+
+RUN git clone https://github.com/leev/ngx_http_geoip2_module.git /tmp/geoip2
+
+WORKDIR /build/nginx-${NGINX_VERSION}
+
+RUN ./configure \
+    --prefix=/usr \
+    --sbin-path=/usr/sbin/nginx \
+    --modules-path=/usr/lib/nginx/modules \
+    --conf-path=/etc/nginx/nginx.conf \
+    --error-log-path=/var/log/nginx/error.log \
+    --http-log-path=/var/log/nginx/access.log \
+    --pid-path=/run/nginx.pid \
+    --lock-path=/run/nginx.lock \
+    --http-client-body-temp-path=/var/cache/nginx/client_temp \
+    --http-proxy-temp-path=/var/cache/nginx/proxy_temp \
+    --http-fastcgi-temp-path=/var/cache/nginx/fastcgi_temp \
+    --http-uwsgi-temp-path=/var/cache/nginx/uwsgi_temp \
+    --http-scgi-temp-path=/var/cache/nginx/scgi_temp \
+    --user=www-data \
+    --group=www-data \
+    --with-compat \
+    --with-file-aio \
+    --with-threads \
+    --with-http_addition_module \
+    --with-http_auth_request_module \
+    --with-http_dav_module \
+    --with-http_flv_module \
+    --with-http_gunzip_module \
+    --with-http_gzip_static_module \
+    --with-http_mp4_module \
+    --with-http_random_index_module \
+    --with-http_realip_module \
+    --with-http_secure_link_module \
+    --with-http_slice_module \
+    --with-http_ssl_module \
+    --with-http_stub_status_module \
+    --with-http_sub_module \
+    --with-http_v2_module \
+    --with-http_v3_module \
+    --with-stream \
+    --with-stream_realip_module \
+    --with-stream_ssl_module \
+    --with-stream_ssl_preread_module \
+    --add-dynamic-module=/tmp/geoip2 \
+    --with-cc-opt="-g -O2 -fstack-protector-strong -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -fPIC" \
+    --with-ld-opt="-Wl,-z,relro -Wl,-z,now -Wl,--as-needed -pie"
+
+RUN make -j$(nproc) && make install
+
+# Удаляем весь мусор из стадии сборки (освобождаем ~300 МБ)
+RUN apt-get purge -y --auto-remove gcc make build-essential wget git *-dev \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /build
+
+#######################################
+# 2) FINAL stage
+#######################################
+FROM debian:bookworm-slim
+
+RUN set -x \
+    && groupadd --system --gid 101 nginx \
+    && useradd --system --gid nginx --no-create-home --home /nonexistent --comment "nginx user" --shell /bin/false --uid 101 nginx
+
+# только runtime зависимости
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libmaxminddb0 \
+    libgd3 \
+    libpcre2-8-0 \
+    libxslt1.1 \
+    zlib1g \
+    openssl \
+    ca-certificates \
+    tzdata \
+    cron \
+    curl \
+    gettext-base \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean autoclean \
+    && apt-get autoremove -y \
+    && rm -rf /var/cache/apt/* /tmp/*
+
+# Копируем собранный NGINX
+COPY --from=build /usr/sbin/nginx /usr/sbin/nginx
+COPY --from=build /usr/lib/nginx /usr/lib/nginx
+COPY --from=build /etc/nginx /etc/nginx
+
+# Подготовка директорий
+RUN mkdir -p \
+    /etc/nginx/conf.d \
+    /etc/nginx/locations \
+    /etc/nginx/geolite2 \
+    /var/www/html \
+    /var/cache/nginx \
+    /var/log/nginx \
+    /docker-entrypoint.d \
+ && touch /var/log/geolite2.log \
+ && chown -R nginx:nginx /var/cache/nginx
+
+# Перенаправление логов в stdout/stderr
+RUN ln -sf /dev/stdout /var/log/nginx/access.log \
+    && ln -sf /dev/stderr /var/log/nginx/error.log
+
+# Скрипты
+COPY mime.types /etc/nginx/mime.types
+COPY script/nginx-entrypoint.sh /usr/local/bin/nginx-entrypoint.sh
+COPY script/update_geolite.sh     /usr/local/bin/update_geolite.sh
+
+RUN chmod +x /usr/local/bin/nginx-entrypoint.sh \
+             /usr/local/bin/update_geolite.sh
+
+# ВАЖНО: скачиваем геобазы прямо при сборке образа
+RUN /usr/local/bin/update_geolite.sh
+
+# Cron будет использовать обычный update_geolite.sh
+RUN echo "0 */12 * * * root /usr/local/bin/update_geolite.sh >> /var/log/cron.log 2>&1" \
+    > /etc/cron.d/geolite-cron && chmod 0644 /etc/cron.d/geolite-cron
+
+# Устанавливаем плавную остановку
+STOPSIGNAL SIGQUIT
+
+# Используем ENTRYPOINT для запуска скрипта, который запускает cron и nginx
+ENTRYPOINT ["/usr/local/bin/nginx-entrypoint.sh"]
+CMD ["nginx", "-g", "daemon off;"]

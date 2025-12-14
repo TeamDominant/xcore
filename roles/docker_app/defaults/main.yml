@@ -1,0 +1,6 @@
+---
+haproxy_port: 443
+remote_path: /opt/docker
+dns_cloudflare_api_token: token
+main_user_name: user
+email: email@example.com

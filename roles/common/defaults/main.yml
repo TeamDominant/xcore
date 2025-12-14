@@ -2,6 +2,7 @@
 common_packages_debian:
   - curl
   - wget
+  - rsync
   - htop
   - tar
   - unzip
@@ -11,6 +12,7 @@ common_packages_debian:
 common_packages_rhel:
   - curl
   - wget
+  - rsync
   - htop
   - tar
   - unzip

@@ -1,0 +1,17 @@
+---
+- name: Установить права на скрипты Nginx (на хосте)
+  file:
+    path: "{{ remote_path }}/nginx/script/{{ item }}"
+    mode: '0755'
+  loop:
+    - update_geolite.sh
+    - nginx-entrypoint.sh
+
+- name: Deploy full stack (HAProxy, Nginx, Xray)
+  community.docker.docker_compose_v2:
+    project_src: "{{ remote_path }}"
+    profiles: full
+    state: present
+    recreate: auto
+    wait: yes
+    remove_orphans: yes

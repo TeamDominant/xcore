@@ -1,0 +1,31 @@
+---
+- name: Ensure remote application directory exists
+  file:
+    path: "{{ remote_path }}"
+    state: directory
+    mode: '0755'
+
+- name: Sync application files using rsync
+  synchronize:
+    src: "{{ role_path }}/files/"
+    dest: "{{ remote_path }}/"
+    delete: yes
+    recursive: yes
+    compress: yes
+    rsync_opts:
+      - "--checksum"
+      - "--exclude=temp"
+
+#- name: Ensure remote application directory exists
+#  file:
+#    path: "{{ remote_path }}"
+#    state: directory
+#    mode: '0755'
+#
+#- name: Copy application files to remote host
+#  copy:
+#    src: "{{ role_path }}/files/"
+#    dest: "{{ remote_path }}/"
+#    owner: root
+#    group: root
+#    mode: '0644'

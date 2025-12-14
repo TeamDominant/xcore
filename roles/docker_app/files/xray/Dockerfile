@@ -1,0 +1,51 @@
+#######################################
+# 1) STAGING: Download and Prepare Assets
+#######################################
+FROM debian:bookworm-slim AS assets
+
+ARG XRAY_VERSION="25.10.15"
+ENV XRAY_DIR=/tmp/xray-download
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends wget unzip ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /tmp
+
+# Скачиваем и распаковываем
+RUN wget -q "https://github.com/XTLS/Xray-core/releases/download/v${XRAY_VERSION}/Xray-linux-64.zip" && \
+    unzip -q Xray-linux-64.zip && \
+    mkdir -p ${XRAY_DIR} && \
+    mv xray ${XRAY_DIR}/ && \
+    mv geoip.dat geosite.dat ${XRAY_DIR}/ 2>/dev/null || true && \
+    rm -rf Xray-linux-64.zip LICENSE README.md
+
+#######################################
+# 2) FINAL: Minimal Runtime Image (Alpine)
+#######################################
+FROM alpine:latest
+
+# Путь к бинарнику выносим отдельно
+ENV XRAY_BIN=/usr/local/bin/xray
+ENV XRAY_ETC_DIR=/usr/local/etc/xray
+
+# Зависимости
+RUN apk add --no-cache tzdata ca-certificates
+
+# Директории
+RUN mkdir -p ${XRAY_ETC_DIR} ${XRAY_BIN}
+
+# Копируем только бинарник в /usr/local/bin, остальное — в etc
+COPY --from=assets /tmp/xray-download/xray ${XRAY_BIN}
+COPY --from=assets /tmp/xray-download/geo* ${XRAY_BIN}
+
+# Права
+RUN chmod 755 ${XRAY_BIN}/xray
+    
+# Важно! Рабочая директория = etc, тогда ./access.log будет здесь же
+WORKDIR ${XRAY_ETC_DIR}
+# Cоздать корневую директорию
+VOLUME ${XRAY_ETC_DIR}
+
+ENTRYPOINT ["/usr/local/bin/xray/xray"]
+CMD ["-c", "/usr/local/etc/xray/config.json"]
