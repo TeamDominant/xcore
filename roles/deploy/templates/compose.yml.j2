@@ -14,7 +14,7 @@ services:
     environment:
       - DOMAIN_NAME=${DOMAIN_NAME}
       - EMAIL=${EMAIL}
-    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    entrypoint: ["/bin/sh", "/certbot/entrypoint.sh"]
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "sh", "-c", "[ -s /etc/haproxy/certs/${DOMAIN_NAME}.pem ] && [ -s /etc/haproxy/certs/dhparam.pem ]"]
@@ -70,12 +70,12 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - ./nginx/locations:/etc/nginx/locations:ro
-      - /var/www:/var/www:ro
-    {%- if setup_shellinabox | default(false) %}
+      - ./nginx/var/www/{{ subscription_path }}:/var/www/{{ subscription_path }}:ro
+{% if setup_shellinabox | default(false) %}
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    {%- endif %}
-    restart: always
+{% endif %}
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:36078/check_health"]
       interval: 10s
@@ -99,7 +99,7 @@ services:
       - proxy_net
     volumes:
       - ./xray/config/:/usr/local/etc/xray/
-    restart: always
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "pidof", "xray"]
       interval: 10s
@@ -126,7 +126,7 @@ services:
     environment:
       - "FAMILIES_MODE=off"
       - "WARP_LICENSE={{ warp_license }}"
-    restart: always
+    restart: unless-stopped
     deploy:
       resources:
         limits:

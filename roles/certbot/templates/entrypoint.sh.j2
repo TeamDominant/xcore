@@ -49,7 +49,7 @@ else
 fi
 
 # 3. Перезапускаем HAProxy, если сертификат был (пере)создан
-if docker ps --format "table {{.Names}}" | grep -q "^haproxy$"; then
+if docker ps --format "table {{ '{{.Names}}' }}" | grep -q "^haproxy$"; then
     echo "Certificate (re)created — restarting HAProxy"
     docker restart haproxy || true
 fi

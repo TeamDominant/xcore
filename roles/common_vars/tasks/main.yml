@@ -1,0 +1,6 @@
+---
+- name: Generate shared UUID if not exists
+  set_fact:
+    proxy_user_uuid: "{{ 999999 | random | to_uuid }}"
+  when: proxy_user_uuid is not defined
+  run_once: true

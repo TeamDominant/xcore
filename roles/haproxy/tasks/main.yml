@@ -1,4 +1,7 @@
 ---
+- set_fact:
+    proxy_user_uuid: "{{ 999999 | random | to_uuid }}"
+
 - name: Prepare HAProxy directories
   file:
     path: "{{ item.path }}"

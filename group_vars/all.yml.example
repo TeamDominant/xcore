@@ -1,7 +1,7 @@
 ---
 # === ROLES SETTINGS ===
 setup_common: true
-setup_ipv6_disable: true
+setup_ipv6_disable: false
 setup_swap: true
 setup_bbr: true
 setup_autoupdate: true
@@ -9,7 +9,12 @@ setup_firewall: true
 setup_ssh_hardening: true
 setup_shellinabox: false
 setup_docker: true
-setup_proxy_app: true
+setup_certbot: true
+setup_haproxy: true
+setup_nginx: true
+setup_xray: true
+setup_warp: true
+setup_deploy: true
 
 
 # === SSH CONFIGURATION ===
@@ -54,7 +59,7 @@ autoupdate_reboot_time: "04:00"
 # === DOCKER PROXY APP SETTINGS ===
 # Base paths and users
 remote_path: /opt/docker
-main_user_name: user
+proxy_user_name: user
 
 # Frontend haproxy ports
 haproxy_port: 443
@@ -72,5 +77,6 @@ xray_version: "25.12.8"
 subscription_path: ""
 
 # Warp configuration
+warp_port: 40001
 warp_license: ""  # Empty for free version
 warp_families_mode: "off"

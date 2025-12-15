@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="description" content="Subscription service with support for multiple platforms and clients">
+    <meta name="theme-color" content="#D7B27D">
+    <title>Subscription Page</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header-wrapper">
+            <h1 id="headerTitle" onclick="toggleUserInfo()">Subscription Page</h1>
+
+            <!-- Модальное окно — продолжение шапки -->
+            <div id="userInfoModal" class="user-info-modal">
+                <div class="modal-body">
+                    <div id="userInfoContent">
+                        <p><strong>Использовано:</strong> <span id="trafficUsed">-</span></p>
+                        <p id="trafficRemainingContainer" style="display: none;">
+                            <strong>Осталось:</strong> <span id="trafficRemaining">-</span>
+                        </p>
+                        <p><strong>Действует до:</strong> <span id="expireDate">-</span></p>
+                        <div id="trafficProgressContainer" style="margin-top: 12px; display: none;">
+                            <div class="progress-bar">
+                                <div id="trafficProgress" class="progress-fill"></div>
+                            </div>
+                            <small id="trafficPercent">0%</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <section class="section">
+            <h2>Введите имя пользователя</h2>
+            <input type="text" placeholder="Введите имя пользователя..." id="nameInput" required autocomplete="off" pattern="[a-zA-Z0-9_-]+" maxlength="50">
+        </section>
+        <section class="section">
+            <h2>Выберите платформу</h2>
+            <select id="platformSelect" onchange="updatePlatformContent()">
+                <option value="windows">Windows</option>
+                <option value="android">Android</option>
+                <option value="ios">iOS</option>
+                <option value="manual">Ручная настройка</option>
+            </select>
+            <div id="platformContent" class="platform-content"></div>
+        </section>
+        <section class="section">
+            <h2>Импорт подписки</h2>
+            <div id="appButtons" class="app-section"></div>
+            <div id="qrcode" class="qrcode-container"></div>
+        </section>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="qrcode.min.js"></script>
+    <script src="user-info.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

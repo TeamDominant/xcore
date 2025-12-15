@@ -4,7 +4,6 @@
     path: "{{ remote_path }}/certbot"
     state: directory
     mode: '0755'
-  tags: certbot
 
 - name: Copy templates
   template:
@@ -12,5 +11,5 @@
     dest: "{{ remote_path }}/{{ item.dest }}"
     mode: "{{ item.mode }}"
   loop:
-    - { src: 'entrypoint.sh.j2', dest: 'certbot/entrypoint.sh', mode: '0755' }
-    - { src: 'cloudflare.ini.j2', dest: 'certbot/cloudflare.ini', mode: '0600' }
+    - { src: entrypoint.sh.j2, dest: "certbot/entrypoint.sh", mode: '0755' }
+    - { src: cloudflare.ini.j2, dest: "certbot/cloudflare.ini", mode: '0600' }
