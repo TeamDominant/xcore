@@ -73,4 +73,4 @@
 - name: Display generated subscription
   debug:
     msg: |
-      Use in browser: https://{{ domain_name }}/{{ subscription_path }}/sub.html?user={{ proxy_user_name }}
+      Use in browser: https://{{ domain_name }}:{{ haproxy_port }}/{{ subscription_path }}/sub.html?user={{ proxy_user_name }}
