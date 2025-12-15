@@ -27,7 +27,7 @@ if [ ! -d "$LIVE_DIR" ] || [ ! -f "$LIVE_DIR/fullchain.pem" ]; then
     echo "No certificate found — requesting new one..."
     certbot certonly --quiet --non-interactive --agree-tos --expand \
         --dns-cloudflare \
-        --dns-cloudflare-credentials /secrets/cloudflare.ini \
+        --dns-cloudflare-credentials /certbot/cloudflare.ini \
         --dns-cloudflare-propagation-seconds 60 \
         --rsa-key-size 4096 \
         -d "$CERT_NAME" \

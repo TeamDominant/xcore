@@ -3,7 +3,7 @@
 #######################################
 FROM debian:bookworm-slim AS assets
 
-ARG XRAY_VERSION="25.10.15"
+ARG XRAY_VERSION="{{ xray_version }}"
 ENV XRAY_DIR=/tmp/xray-download
 
 RUN apt-get update && \

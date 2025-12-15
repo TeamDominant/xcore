@@ -6,8 +6,8 @@ services:
     networks:
       - proxy_net
     volumes:
-      - ./certbot/cloudflare.ini:/secrets/cloudflare.ini:ro
-      - ./certbot/entrypoint.sh:/entrypoint.sh:ro
+      - ./certbot/cloudflare.ini:/certbot/cloudflare.ini:ro
+      - ./certbot/entrypoint.sh:/certbot/entrypoint.sh:ro
       - certificate:/etc/haproxy/certs
       - certificate:/etc/letsencrypt
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -123,10 +123,10 @@ restart: always
     networks:
       - proxy_net
     volumes:
-      - ./warp/lib:/var/lib/cloudflare-warp
+      - ./warp/logs:/var/lib/cloudflare-warp
     environment:
       - "FAMILIES_MODE=off"
-      # - "WARP_LICENSE="
+      - "WARP_LICENSE={{ warp_license }}"
     restart: always
     deploy:
       resources:

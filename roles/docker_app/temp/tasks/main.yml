@@ -2,9 +2,6 @@
 - name: Load existing users from remote
   import_tasks: load_users.yml
 
-- name: Transfer application files
-  import_tasks: transfer_files.yml
-
 - name: Generate configurations
   import_tasks: generate_configs.yml
 

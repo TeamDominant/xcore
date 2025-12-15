@@ -1,0 +1,4 @@
+---
+# Warp service variables
+warp_license: ""  # Оставить пустым для free версии
+warp_families_mode: "off"

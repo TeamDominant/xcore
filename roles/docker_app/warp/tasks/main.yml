@@ -1,0 +1,36 @@
+---
+- name: Create Warp directory structure
+  file:
+    path: "{{ item.path }}"
+    state: directory
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ remote_path }}/warp", mode: '0755' }
+    - { path: "{{ remote_path }}/warp/configs", mode: '0755' }
+    - { path: "{{ remote_path }}/warp/scripts", mode: '0755' }
+    - { path: "{{ remote_path }}/warp/logs", mode: '0755' }
+
+- name: Deploy Warp configuration files
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { src: 'logrotate.conf.j2', dest: '{{ remote_path }}/warp/configs/logrotate.conf', mode: '0644' }
+    - { src: 'supervisord.conf.j2', dest: '{{ remote_path }}/warp/configs/supervisord.conf', mode: '0644' }
+
+- name: Deploy Warp script files
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { src: 'healthcheck.sh.j2', dest: '{{ remote_path }}/warp/scripts/healthcheck.sh', mode: '0755' }
+    - { src: 'warp.sh.j2', dest: '{{ remote_path }}/warp/scripts/warp.sh', mode: '0755' }
+    - { src: 'logrotate.sh.j2', dest: '{{ remote_path }}/warp/scripts/logrotate.sh', mode: '0755' }
+
+- name: Deploy Warp Dockerfile
+  template:
+    src: 'Dockerfile.j2'
+    dest: '{{ remote_path }}/warp/Dockerfile'
+    mode: '0644'

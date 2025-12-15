@@ -1,7 +1,7 @@
 FROM debian:bookworm-slim
-ENV WARP_LICENSE=
-ENV FAMILIES_MODE=off
-EXPOSE 40001/tcp
+ENV WARP_LICENSE={{ warp_license | default('') }}
+ENV FAMILIES_MODE={{ warp_families_mode | default('off') }}
+EXPOSE {{ warp_port | default(40001) }}/tcp
 RUN apt-get update && \
   apt-get install curl gpg socat lsb-release supervisor logrotate -y && \
   curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg && \
