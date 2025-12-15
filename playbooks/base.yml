@@ -37,10 +37,10 @@
       tags: ['ssh']
       when: setup_ssh_hardening | default(false)
 
-    - role: docker_install
+    - role: docker
       tags: ['docker']
       when: setup_docker | default(false)
 
-    - role: docker_app
-      tags: ['docker_app']
-      when: setup_docker_app | default(false)
+    - role: proxy_app
+      tags: ['proxy_app']
+      when: setup_proxy_app | default(false)

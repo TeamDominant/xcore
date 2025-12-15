@@ -1,0 +1,54 @@
+---
+- name: Generate subscription path
+  set_fact:
+    subscription_path: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=15') }}"
+  when: subscription_path | length == 0
+
+- name: Create nginx directories
+  file:
+    path: "{{ remote_path }}/nginx/{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - ''
+    - 'conf.d'
+    - 'locations'
+    - 'scripts'
+
+- name: Deploy nginx configuration templates
+  template:
+    src: "nginx/{{ item.src }}"
+    dest: "{{ remote_path }}/nginx/{{ item.dest }}"
+    mode: "{{ item.mode }}"
+  loop:
+    # Основные конфигурации
+    - { src: 'nginx.conf.j2', dest: 'nginx.conf', mode: '0644' }
+    - { src: 'mime.types.j2', dest: 'mime.types', mode: '0644' }
+    
+    # Конфиги в conf.d
+    - { src: 'conf.d/local.conf.j2', dest: 'conf.d/local.conf', mode: '0644' }
+    
+    # Конфиги в locations
+    - { src: 'locations/hidden_files.conf.j2', dest: 'locations/hidden_files.conf', mode: '0644' }
+    - { src: 'locations/root.conf.j2', dest: 'locations/root.conf', mode: '0644' }
+    - { src: 'locations/shellinabox.conf.j2', dest: 'locations/shellinabox.conf', mode: '0644' }
+    - { src: 'locations/sub_page.conf.j2', dest: 'locations/sub_page.conf', mode: '0644' }
+    - { src: 'locations/v2ray_stat.conf.j2', dest: 'locations/v2ray_stat.conf', mode: '0644' }
+    - { src: 'locations/v2ray_sub.conf.j2', dest: 'locations/v2ray_sub.conf', mode: '0644' }
+    
+    # Скрипты (без исполняемых прав, Dockerfile сам даст)
+    - { src: 'script/nginx_entrypoint.sh.j2', dest: 'script/nginx_entrypoint.sh', mode: '0644' }
+    - { src: 'script/update_geolite.sh.j2', dest: 'script/update_geolite.sh', mode: '0644' }
+
+
+- name: Deploy nginx Dockerfile
+  template:
+    src: 'nginx/Dockerfile.j2'
+    dest: '{{ remote_path }}/nginx/Dockerfile'
+    mode: '0644'
+
+- name: Display generated subscription
+  debug:
+    msg: |
+      Use in browser: https://{{ domain_name }}/{{ subscription_path }}
+  when: subscription_path

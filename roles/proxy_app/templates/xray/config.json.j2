@@ -2,8 +2,8 @@
   "remarks": "HAPROXY",
   "log": {
     "access": "./access.log",
-    "dnsLog": false,
     "error": "./error.log",
+    "dnsLog": false,
     "loglevel": "warning",
     "maskAddress": ""
   },
@@ -51,7 +51,6 @@
       {
         "domain": [
           "geosite:intel",
-          "gemini.google.com",
           "habr.com"
         ],
         "outboundTag": "warp"
@@ -67,8 +66,12 @@
   "inbounds": [
     {
       "tag": "vless-in",
-      "settings": {
-        "clients": {{ final_clients | to_nice_json }},
+        "clients": [
+          {
+            "email": "{{ proxy_user_name }}",
+            "id": "{{ proxy_user_uuid }}"
+          }
+        ],
         "decryption": "none"
       },
       "port": 10550,

@@ -1,0 +1,25 @@
+location /v2rs-subscription/ {
+  # access_log off;
+  proxy_pass http://127.0.0.1:9264/api/v1/;
+
+  # ЖЁСТКО ОТКЛЮЧАЕМ ЛЮБОЕ КЭШИРОВАНИЕ
+  add_header Cache-Control "no-store, no-cache, must-revalidate, private, max-age=0" always;
+  add_header Pragma "no-cache" always;
+  add_header Expires "0" always;
+  
+  # Отключаем буферизацию — важно для динамических ответов
+  proxy_buffering off;
+  proxy_cache off;
+  proxy_no_cache $cookie_nocache $arg_nocache $arg_comment;
+  proxy_no_cache $http_pragma $http_authorization;
+  
+  # Если используешь proxy_pass — добавь эти заголовки
+  proxy_hide_header Cache-Control;
+  proxy_hide_header Expires;
+  proxy_hide_header Pragma;
+
+  # Добавляем заголовок с IP клиента
+  proxy_set_header X-Real-IP $remote_addr;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header Host $host;
+}

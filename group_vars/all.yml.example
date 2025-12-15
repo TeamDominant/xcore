@@ -9,6 +9,7 @@ setup_firewall: true
 setup_ssh_hardening: true
 setup_shellinabox: false
 setup_docker: true
+setup_proxy_app: true
 
 # === Переопределения (Overrides) ===
 

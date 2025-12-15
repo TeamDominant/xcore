@@ -1,5 +1,5 @@
 services:
-  # Сервис для первичного выпуска (initial) сертификата Let's Encrypt
+  # Certbot service for Let's Encrypt certificates
   certbot:
     image: certbot/dns-cloudflare:latest
     container_name: certbot
@@ -28,7 +28,7 @@ services:
           memory: 100M
     profiles: [certbot, full]
 
-  # Сервис HAProxy - балансировщик и прокси, обрабатывающий HTTPS
+  # HAProxy - load balancer and HTTPS proxy
   haproxy:
     image: haproxy:3.2-alpine
     container_name: haproxy
@@ -58,7 +58,7 @@ services:
           memory: 120M
     profiles: [haproxy, full]
 
-  # Сервис Nginx nginx статического контента или проксирования
+  # Nginx for static content and proxying
   nginx:
     build:
       context: ./nginx
@@ -70,13 +70,12 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - ./nginx/locations:/etc/nginx/locations:ro
-      - ./nginx/script:/usr/local/etc:rw
       - /var/www:/var/www:ro
-    {% if setup_shellinabox | default(false) %}
+    {%- if setup_shellinabox | default(false) %}
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    {% endif %}
-restart: always
+    {%- endif %}
+    restart: always
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:36078/check_health"]
       interval: 10s
@@ -90,7 +89,7 @@ restart: always
           memory: 120M
     profiles: [nginx, full]
 
-  # Сервис Xray - прокси
+  # Xray proxy service
   xray:
     build:
       context: ./xray
@@ -114,7 +113,7 @@ restart: always
           memory: 150M
     profiles: [xray, full]
 
-  # Сервис Warp - зашифрованный туннель к cloudflare
+  # Warp encrypted tunnel to Cloudflare
   warp:
     build:
       context: ./warp
@@ -135,7 +134,7 @@ restart: always
           memory: 150M
     profiles: [warp, full]
 
-# Том для хранения данных Certbot (чтобы не терять лимиты Let's Encrypt)
+# Volume for storing Certbot data
 volumes:
   certificate:
 

@@ -1,9 +1,0 @@
----
-- name: Load existing users from remote
-  import_tasks: load_users.yml
-
-- name: Generate configurations
-  import_tasks: generate_configs.yml
-
-- name: Manage Docker Compose stack
-  import_tasks: docker_compose.yml

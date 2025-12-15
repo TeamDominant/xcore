@@ -1,6 +1,0 @@
----
-haproxy_port: 443
-remote_path: /opt/docker
-main_user_name: user
-email: email@example.com
-warp_port: 40001

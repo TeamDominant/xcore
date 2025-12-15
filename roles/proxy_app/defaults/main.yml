@@ -1,0 +1,4 @@
+---
+haproxy_port: 443
+proxy_user_name: user
+warp_port: 40001
