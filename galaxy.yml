@@ -1,0 +1,17 @@
+---
+namespace: "---"
+name: "xcore"
+version: "1.0.0"
+readme: "README.md"
+authors:
+  - "Adam Sizzler <your.email@example.com>"
+description: "Ansible collection for comprehensive server configuration and hardening"
+license:
+  - "MIT"
+tags:
+  - ""
+dependencies: {}
+repository: "https://github.com/Adam-Sizzler/xcore"
+documentation: "https://github.com/Adam-Sizzler/xcore"
+homepage: "https://github.com/Adam-Sizzler/xcore"
+issues: "https://github.com/Adam-Sizzler/xcore/issues"
