@@ -24,6 +24,8 @@ services:
   # Certbot service for Let's Encrypt certificates
   certbot:
     <<: *container
+    logging:
+      <<: *logging
     image: certbot/dns-cloudflare:${CERTBOT_VERSION:-latest}
     container_name: certbot
     volumes:
@@ -47,12 +49,12 @@ services:
           cpus: '0.5'
           memory: 100M
     profiles: [certbot, full]
-    logging:
-      <<: *logging
 
   # HAProxy - load balancer and HTTPS proxy
   haproxy:
     <<: *container
+    logging:
+      <<: *logging
     image: haproxy:${HAPROXY_VERSION:-3.2-alpine}
     container_name: haproxy
     volumes:
@@ -77,12 +79,12 @@ services:
           cpus: '0.5'
           memory: 120M
     profiles: [haproxy, full]
-    logging:
-      <<: *logging
 
   # Nginx for static content and proxying
   nginx:
     <<: *container
+    logging:
+      <<: *logging
     build:
       context: ./nginx
       dockerfile: Dockerfile
@@ -104,12 +106,12 @@ services:
           cpus: '0.5'
           memory: 120M
     profiles: [nginx, full]
-    logging:
-      <<: *logging
 
   # Xray proxy service
   xray:
     <<: *container
+    logging:
+      <<: *logging
     build:
       context: ./xray
       dockerfile: Dockerfile
@@ -128,12 +130,12 @@ services:
           cpus: '0.5'
           memory: 150M
     profiles: [xray, full]
-    logging:
-      <<: *logging
 
   # Warp encrypted tunnel to Cloudflare
   warp:
     <<: *container
+    logging:
+      <<: *logging
     build:
       context: ./warp
       dockerfile: Dockerfile
@@ -149,14 +151,16 @@ services:
           cpus: '0.5'
           memory: 150M
     profiles: [warp, full]
-    logging:
-      <<: *logging
 
   # V2RAY BACKEND - main management service for v2ray-stat
   backend:
     <<: *container
-    image: ghcr.io/adam-sizzler/v2ray-stat-backend:${V2RS_VERSION:-latest}
+    logging:
+      <<: *logging
+    image: ghcr.io/adam-sizzler/v2ray-stat-backend:${VERSION:-latest}
     container_name: v2ray-stat-backend
+    ports:
+      - "${BACKEND_PORT:-9243}:9243"
     volumes:
       - ${CONFIG_PATH:-./v2rs/config.yaml}:/app/config.yaml:ro
       - ${CERTS_PATH:-./v2rs/certs}:/app/certs
@@ -164,17 +168,19 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.4'
+          cpus: '0.5'
           memory: 50M
     profiles: [backend]
-    logging:
-      <<: *logging
 
   # V2RAY NODE - node for processing user traffic
   node:
     <<: *container
-    image: ghcr.io/adam-sizzler/v2ray-stat-node:${V2RS_VERSION:-latest}
+    logging:
+      <<: *logging
+    image: ghcr.io/adam-sizzler/v2ray-stat-node:${VERSION:-latest}
     container_name: v2ray-stat-node
+    ports:
+      - "${NODE_PORT:-9253}:9253"
     volumes:
       - ${CONFIG_PATH:-./v2rs/config.yaml}:/app/config.yaml:ro
       - ${CERTS_PATH:-./v2rs/certs}:/app/certs
@@ -182,16 +188,16 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.3'
+          cpus: '0.4'
           memory: 50M
     profiles: [node]
-    logging:
-      <<: *logging
 
   # V2RAY SUBSCRIPTION - subscription service for users
   subscription:
     <<: *container
-    image: ghcr.io/adam-sizzler/v2ray-stat-subscription:${V2RS_VERSION:-latest}
+    logging:
+      <<: *logging
+    image: ghcr.io/adam-sizzler/v2ray-stat-subscription:${VERSION:-latest}
     container_name: v2ray-stat-subscription
     volumes:
       - ${CONFIG_PATH:-./v2rs/config.yaml}:/app/config.yaml:ro
@@ -200,11 +206,9 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.2'
+          cpus: '0.3'
           memory: 50M
-    profiles: [sub]
-    logging:
-      <<: *logging
+    profiles: [subscription]
 
 # Volume for storing Certbot data
 volumes:
