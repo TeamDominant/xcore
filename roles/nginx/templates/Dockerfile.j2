@@ -59,8 +59,8 @@ RUN ./configure \
     --with-stream_ssl_module \
     --with-stream_ssl_preread_module \
     --add-dynamic-module=/tmp/geoip2 \
-    --with-cc-opt="-g -O2 -fstack-protector-strong -D_FORTIFY_SOURCE=2 -fPIC" \
-    --with-ld-opt="-Wl,-z,relro -Wl,-z,now -Wl,--as-needed"
+    --with-cc-opt="-Os -fstack-protector-strong" \
+    --with-ld-opt="-Wl,-z,relro -Wl,-z,now"
 
 RUN make -j$(nproc) && make install
 
@@ -70,7 +70,7 @@ RUN rm -rf /tmp/* /var/cache/apk/* /build/nginx-${NGINX_VERSION}.tar.gz
 #######################################
 # 2) FINAL stage
 #######################################
-FROM debian:bookworm-slim
+FROM alpine:latest
 
 # Создаем пользователя и группу nginx
 RUN addgroup -S -g 101 nginx && \
@@ -94,7 +94,6 @@ RUN apk add --no-cache \
 COPY --from=build /usr/sbin/nginx /usr/sbin/nginx
 COPY --from=build /usr/lib/nginx /usr/lib/nginx
 COPY --from=build /usr/share/nginx /usr/share/nginx
-COPY --from=build /etc/nginx /etc/nginx
 
 # Создаем необходимые директории
 RUN mkdir -p \
@@ -108,33 +107,24 @@ RUN mkdir -p \
     /run \
     /docker-entrypoint.d
 
-# Настраиваем права
+# Права доступа
 RUN chown -R nginx:nginx /var/cache/nginx /var/log/nginx && \
     chmod 755 /var/cache/nginx /var/log/nginx
 
-# Перенаправление логов в stdout/stderr
+# Ссылки для логов
 RUN ln -sf /dev/stdout /var/log/nginx/access.log \
     && ln -sf /dev/stderr /var/log/nginx/error.log
 
-# Копируем файлы конфигурации
+# Копируем локальные файлы проекта
 COPY mime.types /etc/nginx/
 COPY scripts/update_geolite.sh /usr/local/bin/
-
-# Делаем скрипт исполняемым
 RUN chmod +x /usr/local/bin/update_geolite.sh
 
-# Копируем конфигурацию supervisor
+# Настройка Supervisor
 COPY supervisord.conf /etc/supervisor/supervisord.conf
 
-# Копируем конфигурационные файлы для supervisor
-COPY supervisor/ /etc/supervisor/conf.d/
-
-# ВАЖНО: скачиваем геобазы прямо при сборке образа
+# Выполняем первичную загрузку баз
 RUN /usr/local/bin/update_geolite.sh
-
-# Cron будет использовать обычный update_geolite.sh
-RUN echo "0 */12 * * * root /usr/local/bin/update_geolite.sh >> /var/log/cron.log 2>&1" \
-    > /etc/cron.d/geolite-cron && chmod 0644 /etc/cron.d/geolite-cron
 
 # Устанавливаем плавную остановку
 STOPSIGNAL SIGQUIT
