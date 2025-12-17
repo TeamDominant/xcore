@@ -1,14 +1,13 @@
 #######################################
 # 1) STAGING: Download and Prepare Assets
 #######################################
-FROM debian:bookworm-slim AS assets
+FROM alpine:latest AS assets
 
 ARG XRAY_VERSION="{{ xray_version }}"
 ENV XRAY_DIR=/tmp/xray-download
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends wget unzip ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
+# Устанавливаем только необходимые инструменты для загрузки
+RUN apk add --no-cache wget unzip
 
 WORKDIR /tmp
 
@@ -21,7 +20,7 @@ RUN wget -q "https://github.com/XTLS/Xray-core/releases/download/v${XRAY_VERSION
     rm -rf Xray-linux-64.zip LICENSE README.md
 
 #######################################
-# 2) FINAL: Minimal Runtime Image (Alpine)
+# 2) FINAL: Minimal Alpine Runtime
 #######################################
 FROM alpine:latest
 
@@ -29,7 +28,7 @@ FROM alpine:latest
 ENV XRAY_BIN=/usr/local/bin/xray
 ENV XRAY_ETC_DIR=/usr/local/etc/xray
 
-# Зависимости
+# Устанавливаем минимальные зависимости (без установки glibc)
 RUN apk add --no-cache tzdata ca-certificates
 
 # Директории
