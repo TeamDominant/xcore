@@ -17,7 +17,9 @@ RUN wget -q "https://github.com/XTLS/Xray-core/releases/download/v${XRAY_VERSION
     mkdir -p ${XRAY_DIR} && \
     mv xray ${XRAY_DIR}/ && \
     mv geoip.dat geosite.dat ${XRAY_DIR}/ 2>/dev/null || true && \
-    rm -rf Xray-linux-64.zip LICENSE README.md
+    rm -rf Xray-linux-64.zip LICENSE README.md && \
+    apk del wget unzip && \
+    rm -rf /var/cache/apk/*
 
 #######################################
 # 2) FINAL: Minimal Alpine Runtime
