@@ -65,6 +65,18 @@
       tags: ['warp']
       when: setup_warp | default(false)
 
+    - role: backend
+      tags: ['backend']
+      when: setup_backend | default(false)
+
+    - role: node
+      tags: ['node']
+      when: setup_node | default(false)
+
+    - role: subscription
+      tags: ['subscription']
+      when: setup_subscription | default(false)
+
     - role: deploy
       tags: ['deploy']
       when: setup_deploy | default(false)
