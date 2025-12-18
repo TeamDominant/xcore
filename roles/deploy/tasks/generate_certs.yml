@@ -5,7 +5,7 @@
 - name: Проверяем наличие сертификатов в роли
   local_action: stat
   args:
-    path: "{{ playbook_dir }}/roles/v2rs_deploy/files/certs/node.crt"
+    path: "{{ role_path }}/roles/v2rs_deploy/files/certs/node.crt"
   register: local_cert_stat
   delegate_to: localhost
   run_once: true
@@ -14,7 +14,7 @@
 - name: Проверяем наличие ключа в роли
   local_action: stat
   args:
-    path: "{{ playbook_dir }}/roles/v2rs_deploy/files/certs/node.key"
+    path: "{{ role_path }}/roles/v2rs_deploy/files/certs/node.key"
   register: local_key_stat
   delegate_to: localhost
   run_once: true
@@ -76,7 +76,7 @@
 
     - name: Создаём директорию files/certs в роли (если нет)
       file:
-        path: "{{ playbook_dir }}/roles/v2rs_deploy/files/certs"
+        path: "{{ role_path }}/roles/v2rs_deploy/files/certs"
         state: directory
         mode: '0755'
       delegate_to: localhost
@@ -86,7 +86,7 @@
     - name: Копируем сгенерированные файлы в роль (для дальнейшего использования)
       copy:
         src: "{{ temp_dir.path }}/{{ item }}"
-        dest: "{{ playbook_dir }}/roles/v2rs_deploy/files/certs/{{ item }}"
+        dest: "{{ role_path }}/roles/v2rs_deploy/files/certs/{{ item }}"
         mode: "{{ '0600' if item == 'node.key' else '0644' }}"
       loop:
         - node.crt
