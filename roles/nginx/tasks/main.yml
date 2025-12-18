@@ -61,7 +61,7 @@
     - { src: 'v2ray_sub.conf.j2', dest: 'locations/v2ray_sub.conf', mode: '0644' }
     
     # Скрипты (без исполняемых прав, Dockerfile сам даст)
-    - { src: 'nginx_entrypoint.sh.j2', dest: 'scripts/nginx_entrypoint.sh', mode: '0644' }
+    - { src: 'supervisord.conf.j2', dest: 'supervisord.conf', mode: '0644' }
     - { src: 'update_geolite.sh.j2', dest: 'scripts/update_geolite.sh', mode: '0644' }
 
 - name: Deploy nginx Dockerfile

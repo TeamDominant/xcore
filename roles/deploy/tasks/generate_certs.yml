@@ -1,0 +1,111 @@
+---
+# Генерация self-signed сертификата локально (на ansible-control node)
+# Выполняется только один раз, если файлов ещё нет в роли
+
+- name: Проверяем наличие сертификатов в роли
+  local_action: stat
+  args:
+    path: "{{ playbook_dir }}/roles/v2rs_deploy/files/certs/node.crt"
+  register: local_cert_stat
+  delegate_to: localhost
+  run_once: true
+  become: false
+
+- name: Проверяем наличие ключа в роли
+  local_action: stat
+  args:
+    path: "{{ playbook_dir }}/roles/v2rs_deploy/files/certs/node.key"
+  register: local_key_stat
+  delegate_to: localhost
+  run_once: true
+  become: false
+
+- name: Генерируем self-signed сертификат локально, если его нет
+  when: not local_cert_stat.stat.exists or not local_key_stat.stat.exists
+  block:
+    - name: Создаём временную директорию для генерации
+      tempfile:
+        state: directory
+      register: temp_dir
+      delegate_to: localhost
+      run_once: true
+      become: false
+
+    - name: Генерируем приватный ключ RSA 4096
+      openssl_privatekey:
+        path: "{{ temp_dir.path }}/node.key"
+        size: 4096
+        type: RSA
+      delegate_to: localhost
+      run_once: true
+      become: false
+
+    # ШАГ 1: Создаем CSR (описание сертификата) в памяти
+    - name: Генерируем CSR для сертификата
+      community.crypto.openssl_csr_pipe:
+        privatekey_path: "{{ temp_dir.path }}/node.key"
+        common_name: "xAI Node Cert"
+        organization_name: "xAI Node Cert"
+        basic_constraints:
+          - "CA:TRUE"
+        basic_constraints_critical: true
+        key_usage:
+          - keyEncipherment
+          - digitalSignature
+          - keyCertSign
+        key_usage_critical: true
+        extended_key_usage:
+          - serverAuth
+          - clientAuth
+      register: csr_data
+      delegate_to: localhost
+      run_once: true
+      become: false
+
+    # ШАГ 2: Подписываем этот CSR (создаем сам файл .crt)
+    - name: Генерируем self-signed сертификат из CSR
+      community.crypto.x509_certificate:
+        path: "{{ temp_dir.path }}/node.crt"
+        privatekey_path: "{{ temp_dir.path }}/node.key"
+        csr_content: "{{ csr_data.csr }}"  # Берем данные из предыдущего шага
+        provider: selfsigned
+        selfsigned_not_after: "+365d"      # Обрати внимание: параметр изменился
+      delegate_to: localhost
+      run_once: true
+      become: false
+
+    - name: Создаём директорию files/certs в роли (если нет)
+      file:
+        path: "{{ playbook_dir }}/roles/v2rs_deploy/files/certs"
+        state: directory
+        mode: '0755'
+      delegate_to: localhost
+      run_once: true
+      become: false
+
+    - name: Копируем сгенерированные файлы в роль (для дальнейшего использования)
+      copy:
+        src: "{{ temp_dir.path }}/{{ item }}"
+        dest: "{{ playbook_dir }}/roles/v2rs_deploy/files/certs/{{ item }}"
+        mode: "{{ '0600' if item == 'node.key' else '0644' }}"
+      loop:
+        - node.crt
+        - node.key
+      delegate_to: localhost
+      run_once: true
+      become: false
+
+    - name: Удаляем временную директорию
+      file:
+        path: "{{ temp_dir.path }}"
+        state: absent
+      delegate_to: localhost
+      run_once: true
+      become: false
+
+  always:
+    - name: Сообщаем, что сертификаты готовы
+      debug:
+        msg: "Self-signed сертификаты node.crt и node.key готовы в roles/v2rs_deploy/files/certs/"
+      when: not local_cert_stat.stat.exists or not local_key_stat.stat.exists
+      run_once: true

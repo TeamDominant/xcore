@@ -1,0 +1,14 @@
+---
+# Вычисляем профили на основе настроек.
+# Этот список формируется динамически при запуске роли.
+compose_profiles: >-
+  {{
+    (['certbot'] if setup_certbot else []) +
+    (['haproxy'] if setup_haproxy else []) +
+    (['nginx'] if setup_nginx else []) +
+    (['xray'] if setup_xray else []) +
+    (['warp'] if setup_warp else []) +
+    (['backend'] if setup_backend else []) +
+    (['node'] if setup_node else []) +
+    (['subscription'] if setup_subscription else [])
+  }}

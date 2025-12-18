@@ -1,3 +1,55 @@
+===== /home/docker/xcore/roles/deploy/templates/env.j2 =====
+############################
+# Общие настройки домена
+############################
+DOMAIN_NAME={{ domain_name }}
+EMAIL={{ email }}
+HAPROXY_EXTERNAL_PORT={{ haproxy_port }}
+
+############################
+# Docker / container common
+############################
+# RESTART_POLICY=unless-stopped
+
+############################
+# Logging
+############################
+# LOGGING_MAX_SIZE=5M
+# LOGGING_COUNT_FILES=10
+
+############################
+# Versions
+############################
+# CERTBOT_VERSION=latest
+# HAPROXY_VERSION=3.2-alpine
+# VERSION=latest
+
+############################
+# Ports
+############################
+# BACKEND_PORT=9243
+
+############################
+# Paths
+############################
+# CONFIG_PATH=./v2rs/config.yaml
+# CERTS_PATH=./v2rs/certs
+# XRAY_CONFIG_PATH=./xray/config
+# DATA_PATH=./v2rs/backend/data
+
+############################
+# Warp / Cloudflare
+############################
+# FAMILIES_MODE=off
+# WARP_LICENSE=
+
+############################
+# Network
+############################
+# NETWORK_DRIVER=bridge
+# DOCKER_SUBNET=172.32.0.0/28
+
+===== /home/docker/xcore/roles/deploy/templates/compose.yml.j2 =====
 x-container: &container
   restart: ${RESTART_POLICY:-unless-stopped} # Перезапускаться всегда кроме команды завершения или поломки healthcheck
   # user: ${USER_ID}:${GROUP_ID}               # UID/GID пользователя в контейнере https://dev.to/acro5piano/specifying-user-and-group-in-docker-i2e
@@ -24,7 +76,7 @@ x-logging: &logging
 services:
   # Certbot service for Let's Encrypt certificates
   certbot:
-    <<: [*container, *logging]
+    <<: [*common, *logging]
     image: certbot/dns-cloudflare:${CERTBOT_VERSION:-latest}
     container_name: certbot
     volumes:
@@ -51,7 +103,7 @@ services:
 
   # HAProxy - load balancer and HTTPS proxy
   haproxy:
-    <<: [*container, *logging]
+    <<: [*common, *logging]
     image: haproxy:${HAPROXY_VERSION:-3.2-alpine}
     container_name: haproxy
     volumes:
@@ -79,7 +131,7 @@ services:
 
   # Nginx for static content and proxying
   nginx:
-    <<: [*container, *logging]
+    <<: [*common, *logging]
     build:
       context: ./nginx
       dockerfile: Dockerfile
@@ -108,7 +160,7 @@ services:
 
   # Xray proxy service
   xray:
-    <<: [*container, *logging]
+    <<: [*common, *logging]
     build:
       context: ./xray
       dockerfile: Dockerfile
@@ -131,7 +183,7 @@ services:
 {% if setup_warp %}
   # Warp encrypted tunnel to Cloudflare
   warp:
-    <<: [*container, *logging]
+    <<: [*common, *logging]
     build:
       context: ./warp
       dockerfile: Dockerfile
@@ -152,11 +204,13 @@ services:
 {% if setup_backend %}
   # V2RAY BACKEND - main management service for v2ray-stat
   backend:
-    <<: [*container, *logging]
+    <<: [*common, *logging]
     image: ghcr.io/adam-sizzler/v2ray-stat-backend:${VERSION:-latest}
     container_name: v2ray-stat-backend
+    ports:
+      - "${BACKEND_PORT:-9243}:9243"
     volumes:
-      - ${CONFIG_PATH:-./v2rs/backend/config.yaml}:/app/config.yaml:ro
+      - ${CONFIG_PATH:-./v2rs/config.yaml}:/app/config.yaml:ro
       - ${CERTS_PATH:-./v2rs/certs}:/app/certs
       - backend-data:/app/data
     deploy:
@@ -170,11 +224,11 @@ services:
 {% if setup_node %}
   # V2RAY NODE - node for processing user traffic
   node:
-    <<: [*container, *logging]
+    <<: [*common, *logging]
     image: ghcr.io/adam-sizzler/v2ray-stat-node:${VERSION:-latest}
     container_name: v2ray-stat-node
     volumes:
-      - ${CONFIG_PATH:-./v2rs/node/config.yaml}:/app/config.yaml:ro
+      - ${CONFIG_PATH:-./v2rs/config.yaml}:/app/config.yaml:ro
       - ${CERTS_PATH:-./v2rs/certs}:/app/certs
       - ${XRAY_CONFIG_PATH:-./xray/config}:/usr/local/etc/xray
     deploy:
@@ -188,11 +242,11 @@ services:
 {% if setup_subscription %}
   # V2RAY SUBSCRIPTION - subscription service for users
   subscription:
-    <<: [*container, *logging]
+    <<: [*common, *logging]
     image: ghcr.io/adam-sizzler/v2ray-stat-subscription:${VERSION:-latest}
     container_name: v2ray-stat-subscription
     volumes:
-      - ${CONFIG_PATH:-./v2rs/subscription/config.yaml}:/app/config.yaml:ro
+      - ${CONFIG_PATH:-./v2rs/config.yaml}:/app/config.yaml:ro
       - ${CERTS_PATH:-./v2rs/certs}:/app/certs
       - ./v2rs/subscription/templates:/app/templates:ro
     deploy:
@@ -221,3 +275,30 @@ networks:
     ipam:
       config:
         - subnet: ${DOCKER_SUBNET:-172.32.0.0/28}
+
+===== /home/docker/xcore/roles/deploy/defaults/main.yml =====
+---
+haproxy_port: 443
+proxy_user_name: user
+warp_port: 40001
+
+===== /home/docker/xcore/roles/deploy/tasks/main.yml =====
+---
+- name: Создание .env и compose.yml для всех сервисов
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { src: 'compose.yml.j2', dest: '{{ remote_path }}/compose.yml', mode: '0755' }
+    - { src: 'env.j2', dest: '{{ remote_path }}/.env', mode: '0600' }
+
+- name: Deploy with dynamic profiles
+  community.docker.docker_compose_v2:
+    project_src: "{{ remote_path }}"
+    profiles: "{{ compose_profiles }}"
+    state: present
+    recreate: auto
+    wait: yes
+    remove_orphans: yes
+
