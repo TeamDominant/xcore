@@ -1,5 +1,5 @@
 {
-  "remarks": "IM",
+  "remarks": "🇨🇭",
   "log": {
     "dnsLog": false,
     "loglevel": "warning"
@@ -7,10 +7,61 @@
   "dns": {
     "hosts": {
       "{domain}": "83.228.212.190",
-      "dns.cloudflare.com": "1.1.1.1",
+      "one.one.one.one": [
+        "1.1.1.1",
+        "1.0.0.1",
+        "2606:4700:4700::1111",
+        "2606:4700:4700::1001"
+      ],
+      "1dot1dot1dot1.cloudflare-dns.com": [
+        "1.1.1.1",
+        "1.0.0.1",
+        "2606:4700:4700::1111",
+        "2606:4700:4700::1001"
+      ],
+      "cloudflare-dns.com": [
+        "104.16.249.249",
+        "104.16.248.249",
+        "2606:4700::6810:f8f9",
+        "2606:4700::6810:f9f9"
+      ],
+      "dns.cloudflare.com": [
+        "104.16.132.229",
+        "104.16.133.229",
+        "2606:4700::6810:84e5",
+        "2606:4700::6810:85e5"
+      ],
       "dns.google": [
         "8.8.8.8",
-        "8.8.4.4"
+        "8.8.4.4",
+        "2001:4860:4860::8888",
+        "2001:4860:4860::8844"
+      ],
+      "doh.pub": [
+        "1.12.12.12",
+        "120.53.53.53"
+      ],
+      "dns.quad9.net": [
+        "9.9.9.9",
+        "149.112.112.112",
+        "2620:fe::fe",
+        "2620:fe::9"
+      ],
+      "dns.umbrella.com": [
+        "208.67.220.220",
+        "208.67.222.222",
+        "2620:119:35::35",
+        "2620:119:53::53"
+      ],
+      "dns.sse.cisco.com": [
+        "208.67.220.220",
+        "208.67.222.222",
+        "2620:119:35::35",
+        "2620:119:53::53"
+      ],
+      "engage.cloudflareclient.com": [
+        "162.159.192.1",
+        "2606:4700:d0::a29f:c001"
       ]
     },
     "servers": [
@@ -98,7 +149,7 @@
           "flcksbr.top",
           "ru.com",
           "ru.net",
-          "keyword:ipleak"
+          "keyword:browserleaks"
         ],
         "skipFallback": true,
         "disableFallback": true,
@@ -253,7 +304,7 @@
           "flcksbr.top",
           "ru.com",
           "ru.net",
-          "keyword:ipleak"
+          "keyword:browserleaks"
         ],
         "outboundTag": "direct"
       }
@@ -263,10 +314,12 @@
     {
       "tag": "socks",
       "port": 10808,
-      "protocol": "socks",
+      "listen": "127.0.0.1",
+      "protocol": "mixed",
       "settings": {
+        "auth": "noauth",
         "udp": true,
-        "auth": "noauth"
+        "allowTransparent": false
       },
       "sniffing": {
         "enabled": true,
@@ -275,26 +328,24 @@
           "tls",
           "quic",
           "fakedns"
-        ]
-      },
-      "routeOnly": false,
-      "metadataOnly": false
+        ],
+	    "routeOnly": false
+      }
     },
     {
+      "tag": "api",
+      "port": 10812,
       "listen": "127.0.0.1",
-      "port": 9991,
       "protocol": "dokodemo-door",
       "settings": {
         "address": "127.0.0.1"
-      },
-      "tag": "api"
+      }
     }
   ],
   "outbounds": [
     {
       "tag": "proxy",
       "protocol": "vless",
-      "userLevel": 1,
       "streamSettings": {
         "network": "tcp",
         "security": "tls",
@@ -306,8 +357,7 @@
         "tlsSettings": {
           "utls": {
             "alpn": [
-              "h2",
-              "http/1.1"
+              "h2"
             ],
             "fingerprint": "chrome"
           }
@@ -328,7 +378,7 @@
         "vnext": [
           {
             "address": "{domain}",
-            "port": 443,
+            "port": {{ haproxy_port }},
             "users": [
               {
                 "encryption": "none",
@@ -342,7 +392,6 @@
     {
       "tag": "direct",
       "protocol": "freedom",
-      "userLevel": 0,
       "settings": {
         "domainStrategy": "UseIPv4"
       },
@@ -372,26 +421,6 @@
     }
   ],
   "policy": {
-    "levels": {
-      "0": {
-        "connIdle": 300,
-        "downlinkOnly": 5,
-        "handshake": 4,
-        "statsUserDownlink": true,
-        "statsUserOnline": true,
-        "statsUserUplink": true,
-        "uplinkOnly": 2
-      },
-      "1": {
-        "connIdle": 300,
-        "downlinkOnly": 5,
-        "handshake": 8,
-        "statsUserDownlink": true,
-        "statsUserOnline": true,
-        "statsUserUplink": true,
-        "uplinkOnly": 2
-      }
-    },
     "system": {
       "statsInboundDownlink": true,
       "statsInboundUplink": true,
@@ -418,8 +447,7 @@
     }
   ],
   "stats": {},
-  "reverse": null,
-  "transport": null,
-  "observatory": null,
-  "burstObservatory": null
+  "metrics": {
+    "tag": "api"
+  }
 }

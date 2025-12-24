@@ -68,10 +68,12 @@
       "tag": "vless-in",
       "settings": {
         "clients": [
+          {% for client in final_clients_list %}
           {
-            "email": "{{ proxy_user_name }}",
-            "id": "{{ proxy_user_uuid }}"
-          }
+            "email": "{{ client.email }}",
+            "id": "{{ client.id }}"
+          }{{ "," if not loop.last }}
+          {% endfor %}
         ],
         "decryption": "none"
       },
@@ -106,13 +108,12 @@
     },
     {
       "tag": "api",
-      "settings": {
-        "clients": null,
-        "address": "127.0.0.1"
-      },
       "port": 9953,
+      "listen": "0.0.0.0",
       "protocol": "dokodemo-door",
-      "listen": "127.0.0.1"
+      "settings": {
+        "address": "0.0.0.0"
+      }
     }
   ],
   "outbounds": [

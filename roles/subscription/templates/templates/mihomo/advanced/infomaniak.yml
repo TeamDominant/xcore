@@ -1,7 +1,7 @@
 name: "IM"
 type: vless
 server: {domain}
-port: 443
+port: {{ haproxy_port }}
 network: tcp
 udp: true
 tls: true

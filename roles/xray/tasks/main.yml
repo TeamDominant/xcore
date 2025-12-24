@@ -1,4 +1,7 @@
 ---
+- name: Подготовка списка пользователей (сохранение старых)
+  include_tasks: preserve_users.yml
+
 - name: Create Xray directories structure
   file:
     path: "{{ item.path }}"
@@ -8,14 +11,21 @@
     - { path: "{{ remote_path }}/xray", mode: '0755' }
     - { path: "{{ remote_path }}/xray/config", mode: '0755' }
 
-- name: Create Xray log files with proper permissions
-  file:
+- name: Check if Xray log files exist
+  ansible.builtin.stat:
     path: "{{ remote_path }}/xray/config/{{ item }}"
-    state: touch
-    mode: '0644'
   loop:
     - access.log
     - error.log
+  register: log_files_status
+
+- name: Create Xray log files only if they do not exist
+  ansible.builtin.file:
+    path: "{{ remote_path }}/xray/config/{{ item.item }}"
+    state: touch
+    mode: '0644'
+  loop: "{{ log_files_status.results }}"
+  when: not item.stat.exists
 
 - name: Deploy Xray configuration files
   template:

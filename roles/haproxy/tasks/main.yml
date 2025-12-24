@@ -1,9 +1,10 @@
 ---
-- set_fact:
+- name: Generate proxy user UUID
+  ansible.builtin.set_fact:
     proxy_user_uuid: "{{ 999999 | random | to_uuid }}"
 
 - name: Prepare HAProxy directories
-  file:
+  ansible.builtin.file:
     path: "{{ item.path }}"
     state: directory
     mode: "{{ item.mode }}"
@@ -13,7 +14,7 @@
     - { path: "{{ remote_path }}/haproxy/data", mode: '0755' }
 
 - name: Deploy Lua authentication modules
-  template:
+  ansible.builtin.template:
     src: "{{ item.src }}"
     dest: "{{ item.dest }}"
     mode: "{{ item.mode }}"
@@ -21,11 +22,15 @@
     - { src: 'auth.lua.j2', dest: '{{ remote_path }}/haproxy/lua/auth.lua', mode: '0644' }
     - { src: 'users_loader.lua.j2', dest: '{{ remote_path }}/haproxy/lua/users_loader.lua', mode: '0644' }
 
-- name: Deploy HAProxy configuration and user data
-  template:
-    src: "{{ item.src }}"
-    dest: "{{ item.dest }}"
-    mode: "{{ item.mode }}"
-  loop:
-    - { src: 'haproxy.cfg.j2', dest: '{{ remote_path }}/haproxy/haproxy.cfg', mode: '0644' }
-    - { src: 'users.csv.j2', dest: '{{ remote_path }}/haproxy/data/users.csv', mode: '0644' }
+- name: Deploy users.csv
+  ansible.builtin.template:
+    src: 'users.csv.j2'
+    dest: '{{ remote_path }}/haproxy/data/users.csv'
+    mode: '0644'
+    force: no
+
+- name: Deploy HAProxy configuration
+  ansible.builtin.template:
+    src: 'haproxy.cfg.j2'
+    dest: '{{ remote_path }}/haproxy/haproxy.cfg'
+    mode: '0644'

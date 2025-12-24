@@ -1,15 +1,23 @@
 ---
 - name: Создание .env и compose.yml для всех сервисов
-  template:
+  ansible.builtin.template:
     src: "{{ item.src }}"
     dest: "{{ item.dest }}"
     mode: "{{ item.mode }}"
   loop:
-    - { src: 'compose.yml.j2', dest: '{{ remote_path }}/compose.yml', mode: '0755' }
+    - { src: 'compose.yml.j2', dest: '{{ remote_path }}/compose.yml', mode: '0644' }
     - { src: 'env.j2', dest: '{{ remote_path }}/.env', mode: '0600' }
 
 - name: Генерируем сертификаты локально
   include_tasks: generate_certs.yml
+
+- name: Применение прав для v2ray-stat
+  ansible.builtin.file:
+    path: "{{ remote_path }}/v2rs/"
+    state: directory
+    owner: 10001
+    group: 10001
+    recurse: yes
 
 - name: Deploy with dynamic profiles
   community.docker.docker_compose_v2:
@@ -17,5 +25,15 @@
     profiles: full
     state: present
     recreate: auto
+    pull: always
+    build: policy
     wait: yes
     remove_orphans: yes
+
+- name: Set subscription URL
+  ansible.builtin.set_fact:
+    subscription_url: "https://{{ domain_name }}{% if haproxy_port != '443' %}:{{ haproxy_port }}{% endif %}/{{ subscription_path }}/sub.html?name={{ proxy_user_name }}"
+
+- name: Display generated subscription
+  ansible.builtin.debug:
+    msg: "Use in browser: {{ subscription_url }}"

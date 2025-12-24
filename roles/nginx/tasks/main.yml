@@ -69,8 +69,3 @@
     src: 'Dockerfile.j2'
     dest: '{{ remote_path }}/nginx/Dockerfile'
     mode: '0644'
-
-- name: Display generated subscription
-  debug:
-    msg: |
-      Use in browser: https://{{ domain_name }}:{{ haproxy_port }}/{{ subscription_path }}/sub.html?user={{ proxy_user_name }}

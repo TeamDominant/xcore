@@ -1,6 +1,6 @@
 location /v2rs-subscription/ {
   # access_log off;
-  proxy_pass http://127.0.0.1:9264/api/v1/;
+  proxy_pass http://subscription:9264/api/v1/;
 
   # ЖЁСТКО ОТКЛЮЧАЕМ ЛЮБОЕ КЭШИРОВАНИЕ
   add_header Cache-Control "no-store, no-cache, must-revalidate, private, max-age=0" always;

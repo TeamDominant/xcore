@@ -1,6 +1,8 @@
+x-common: &common
+  user: ${CONTAINER_USER:-}                    # UID/GID пользователя в контейнере https://dev.to/acro5piano/specifying-user-and-group-in-docker-i2e
+
 x-container: &container
-  restart: ${RESTART_POLICY:-unless-stopped} # Перезапускаться всегда кроме команды завершения или поломки healthcheck
-  # user: ${USER_ID}:${GROUP_ID}               # UID/GID пользователя в контейнере https://dev.to/acro5piano/specifying-user-and-group-in-docker-i2e
+  restart: ${RESTART_POLICY:-unless-stopped}   # Перезапускаться всегда кроме команды завершения или поломки healthcheck
   # cpuset: ${CPUSET:-}                        # Номера ядер ЦП, в которых разрешено выполнение (0-3, 0,1)
   # cpu_shares: ${CPU_SHARES:-512}             # Доля ЦП (относительный вес, макс. 1024) при распределении между контейнерами
   # cpus: ${CPUS:-0.5}                         # Сколько ресурсов ЦП может использовать контейнер
@@ -89,10 +91,6 @@ services:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - ./nginx/locations:/etc/nginx/locations:ro
       - ./nginx/var/www:/var/www:ro
-{% if setup_shellinabox | default(false) %}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-{% endif %}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:36078/check_health"]
       interval: 10s
@@ -128,7 +126,6 @@ services:
           memory: 150M
     profiles: [xray, full, base]
 
-{% if setup_warp %}
   # Warp encrypted tunnel to Cloudflare
   warp:
     <<: [*container, *logging]
@@ -147,73 +144,82 @@ services:
           cpus: '0.5'
           memory: 150M
     profiles: [warp, full]
-{% endif %}
 
-{% if setup_backend %}
   # V2RAY BACKEND - main management service for v2ray-stat
   backend:
-    <<: [*container, *logging]
+    <<: [*container, *logging, *common]
     image: ghcr.io/adam-sizzler/v2ray-stat-backend:${VERSION:-latest}
     container_name: v2ray-stat-backend
     volumes:
       - ${CONFIG_PATH:-./v2rs/backend/config.yaml}:/app/config.yaml:ro
       - ${CERTS_PATH:-./v2rs/certs}:/app/certs
       - backend-data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f v2ray-stat-backend || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     deploy:
       resources:
         limits:
           cpus: '0.5'
           memory: 50M
     profiles: [backend, full]
-{% endif %}
 
-{% if setup_node %}
   # V2RAY NODE - node for processing user traffic
   node:
-    <<: [*container, *logging]
+    <<: [*container, *logging, *common]
     image: ghcr.io/adam-sizzler/v2ray-stat-node:${VERSION:-latest}
     container_name: v2ray-stat-node
     volumes:
       - ${CONFIG_PATH:-./v2rs/node/config.yaml}:/app/config.yaml:ro
       - ${CERTS_PATH:-./v2rs/certs}:/app/certs
       - ${XRAY_CONFIG_PATH:-./xray/config}:/usr/local/etc/xray
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f v2ray-stat-node || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     deploy:
       resources:
         limits:
           cpus: '0.4'
           memory: 50M
     profiles: [node, full]
-{% endif %}
 
-{% if setup_subscription %}
   # V2RAY SUBSCRIPTION - subscription service for users
   subscription:
-    <<: [*container, *logging]
+    <<: [*container, *logging, *common]
     image: ghcr.io/adam-sizzler/v2ray-stat-subscription:${VERSION:-latest}
     container_name: v2ray-stat-subscription
     volumes:
       - ${CONFIG_PATH:-./v2rs/subscription/config.yaml}:/app/config.yaml:ro
       - ${CERTS_PATH:-./v2rs/certs}:/app/certs
       - ./v2rs/subscription/templates:/app/templates:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f v2ray-stat-subscription || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     deploy:
       resources:
         limits:
           cpus: '0.3'
           memory: 50M
     profiles: [subscription, full]
-{% endif %}
 
 # Volume for storing Certbot data
 volumes:
   certificate:
-{% if setup_backend %}
   backend-data:
     driver: local
     driver_opts:
       type: none
       o: bind
       device: ${DATA_PATH:-./v2rs/backend/data}
-{% endif %}
 
 networks:
   default:

@@ -37,7 +37,7 @@ defaults
 frontend haproxy-tls
   mode tcp
   timeout client 1h
-  bind :::{{ haproxy_port }} v4v6 ssl crt /etc/haproxy/certs/{{ domain_name }}.pem alpn h2,http/1.1
+  bind 0.0.0.0:443 ssl crt /etc/haproxy/certs/{{ domain_name }}.pem alpn h2,http/1.1
   tcp-request inspect-delay 5s
   tcp-request content accept if { req_ssl_hello_type 1 }
 
@@ -55,7 +55,7 @@ backend nginx
   timeout server 10s
   option forwardfor
   http-reuse never
-  server web nginx:36078 init-addr last,libc,none
+  server web nginx:36078 init-addr last,libc,none check inter 5s fall 2 rise 2
 
 backend reject
   mode http

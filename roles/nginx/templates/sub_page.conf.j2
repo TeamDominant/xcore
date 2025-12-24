@@ -1,6 +1,6 @@
 # Subsciption
 location ~ ^/{{ subscription_path }} {
-  # ЖЁСТКО ОТКЛЮЧАЕМ ЛЮБОЕ КЭШИРОВАНИЕ
+  # Отключение любого кэширования
   add_header Cache-Control "no-store, no-cache, must-revalidate, private, max-age=0" always;
   add_header Pragma "no-cache" always;
   add_header Expires "0" always;

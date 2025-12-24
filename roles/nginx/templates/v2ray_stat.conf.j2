@@ -1,6 +1,6 @@
 location /v2rs-statistics/ {
-  access_log off;
-  proxy_pass http://127.0.0.1:9243/api/v1/;
+  # access_log off;
+  proxy_pass http://backend:9243/api/v1/;
 
   # Добавляем заголовок с IP клиента
   proxy_set_header X-Real-IP $remote_addr;

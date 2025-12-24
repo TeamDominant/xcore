@@ -5,7 +5,7 @@
 - name: Проверяем наличие сертификатов в роли
   local_action: stat
   args:
-    path: "{{ role_path }}/roles/v2rs_deploy/files/certs/node.crt"
+    path: "{{ role_path }}/files/certs/node.crt"
   register: local_cert_stat
   delegate_to: localhost
   run_once: true
@@ -14,7 +14,7 @@
 - name: Проверяем наличие ключа в роли
   local_action: stat
   args:
-    path: "{{ role_path }}/roles/v2rs_deploy/files/certs/node.key"
+    path: "{{ role_path }}/files/certs/node.key"
   register: local_key_stat
   delegate_to: localhost
   run_once: true
@@ -40,7 +40,6 @@
       run_once: true
       become: false
 
-    # ШАГ 1: Создаем CSR (описание сертификата) в памяти
     - name: Генерируем CSR для сертификата
       community.crypto.openssl_csr_pipe:
         privatekey_path: "{{ temp_dir.path }}/node.key"
@@ -62,21 +61,20 @@
       run_once: true
       become: false
 
-    # ШАГ 2: Подписываем этот CSR (создаем сам файл .crt)
     - name: Генерируем self-signed сертификат из CSR
       community.crypto.x509_certificate:
         path: "{{ temp_dir.path }}/node.crt"
         privatekey_path: "{{ temp_dir.path }}/node.key"
-        csr_content: "{{ csr_data.csr }}"  # Берем данные из предыдущего шага
+        csr_content: "{{ csr_data.csr }}"
         provider: selfsigned
-        selfsigned_not_after: "+365d"      # Обрати внимание: параметр изменился
+        selfsigned_not_after: "+365d"
       delegate_to: localhost
       run_once: true
       become: false
 
     - name: Создаём директорию files/certs в роли (если нет)
       file:
-        path: "{{ role_path }}/roles/v2rs_deploy/files/certs"
+        path: "{{ role_path }}/files/certs"
         state: directory
         mode: '0755'
       delegate_to: localhost
@@ -86,7 +84,7 @@
     - name: Копируем сгенерированные файлы в роль (для дальнейшего использования)
       copy:
         src: "{{ temp_dir.path }}/{{ item }}"
-        dest: "{{ role_path }}/roles/v2rs_deploy/files/certs/{{ item }}"
+        dest: "{{ role_path }}/files/certs/{{ item }}"
         mode: "{{ '0600' if item == 'node.key' else '0644' }}"
       loop:
         - node.crt
@@ -106,6 +104,6 @@
   always:
     - name: Сообщаем, что сертификаты готовы
       debug:
-        msg: "Self-signed сертификаты node.crt и node.key готовы в roles/v2rs_deploy/files/certs/"
+        msg: "Self-signed сертификаты node.crt и node.key готовы в files/certs/"
       when: not local_cert_stat.stat.exists or not local_key_stat.stat.exists
       run_once: true

@@ -1,27 +1,31 @@
 - name: Создаём директорию для subscription
-  file:
-    path: "{{ remote_path }}/v2rs/subscription"
+  ansible.builtin.file:
+    path: "{{ remote_path }}/v2rs/subscription/templates"
     state: directory
     mode: '0755'
-    owner: root
-    group: root
 
-- name: Создаём директории для шаблонов подписки
-  file:
-    path: "{{ remote_path }}/v2rs/subscription/templates/{{ item }}"
+- name: Создаем структуру директорий для шаблонов подписки
+  ansible.builtin.file:
+    path: "{{ remote_path }}/v2rs/subscription/templates/{{ item.path }}"
     state: directory
     mode: '0755'
-    recurse: yes
-  loop:
-    - xray/base
-    - xray/advanced
-    - singbox/base
-    - singbox/advanced
-    - mihomo/base
-    - mihomo/advanced
+  with_filetree: "templates/templates"
+  when: item.state == 'directory'
+  loop_control:
+    label: "{{ item.path }}"
+
+- name: Рекурсивно копируем и обрабатываем файлы шаблонов
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ remote_path }}/v2rs/subscription/templates/{{ item.path }}"
+    mode: '0644'
+  with_filetree: "templates/templates"
+  when: item.state == 'file'
+  loop_control:
+    label: "{{ item.path }}"
 
 - name: Генерируем секцию subscription для config.yaml
   template:
-    src: config.yml.j2
-    dest: "{{ remote_path }}/v2rs/subscription/config.yml"
+    src: config.yaml.j2
+    dest: "{{ remote_path }}/v2rs/subscription/config.yaml"
     mode: '0644'

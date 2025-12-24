@@ -1,0 +1,48 @@
+---
+- name: Проверка наличия старого config.json
+  stat:
+    path: "{{ remote_path }}/xray/config/config.json"
+  register: xray_config_stat
+
+- name: Чтение текущего конфига Xray (если есть)
+  slurp:
+    src: "{{ remote_path }}/xray/config/config.json"
+  register: xray_current_raw
+  ignore_errors: true
+  when: xray_config_stat.stat.exists
+
+- name: Парсинг существующих клиентов
+  set_fact:
+    existing_clients: >-
+      {{
+        ((xray_current_raw['content'] | b64decode | from_json).inbounds[0].settings.clients)
+        if (xray_config_stat.stat.exists and xray_current_raw.content is defined)
+        else []
+      }}
+  ignore_errors: true
+
+- name: Определяем UUID для главного пользователя (proxy_user_name)
+  # Пытаемся найти UUID главного юзера в старом файле. Если нет — генерируем новый.
+  set_fact:
+    current_proxy_uuid: >-
+      {{
+        (existing_clients 
+         | default([])
+         | selectattr('email', 'equalto', proxy_user_name) 
+         | map(attribute='id') 
+         | first) 
+        | default(999999999 | random | to_uuid) 
+      }}
+
+- name: Формирование итогового списка пользователей для шаблона
+  # Берем главного юзера + всех остальных из старого конфига (исключая дубль главного)
+  set_fact:
+    final_clients_list: >-
+      {{
+        [{ 'email': proxy_user_name, 'id': current_proxy_uuid }] +
+        (existing_clients | default([]) | rejectattr('email', 'equalto', proxy_user_name) | list)
+      }}
+
+- name: Вывод списка пользователей (для отладки)
+  debug:
+    msg: "Будут записаны следующие пользователи: {{ final_clients_list | map(attribute='email') | join(', ') }}"
