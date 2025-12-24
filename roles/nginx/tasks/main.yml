@@ -1,0 +1,71 @@
+---
+- name: Generate random subscription path only if not defined or empty
+  set_fact:
+    subscription_path: "{{ lookup('password', '/dev/null chars=ascii_letters,digits length=15') }}"
+  when: subscription_path is not defined or subscription_path == ""
+
+- name: Create nginx directories
+  file:
+    path: "{{ remote_path }}/nginx/{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - ''
+    - 'conf.d'
+    - 'locations'
+    - 'scripts'
+
+- name: Create subscription static directory
+  file:
+    path: "{{ remote_path }}/nginx/var/www/{{ subscription_path }}"
+    state: directory
+    mode: '0755'
+
+- name: Deploy subscription static files
+  copy:
+    src: "{{ item }}"
+    dest: "{{ remote_path }}/nginx/var/www/{{ subscription_path }}/"
+    mode: '0644'
+  loop:
+    - styles.css
+    - script.js
+    - qrcode.min.js
+    - user-info.js
+    - sub.html
+    - favicon.svg
+
+- name: Deploy subscription config.js
+  template:
+    src: config.json.j2
+    dest: "{{ remote_path }}/nginx/var/www/{{ subscription_path }}/config.js"
+    mode: '0644'
+
+- name: Deploy nginx configuration templates
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ remote_path }}/nginx/{{ item.dest }}"
+    mode: "{{ item.mode }}"
+  loop:
+    # Основные конфигурации
+    - { src: 'nginx.conf.j2', dest: 'nginx.conf', mode: '0644' }
+    - { src: 'mime.types.j2', dest: 'mime.types', mode: '0644' }
+    
+    # Конфиги в conf.d
+    - { src: 'local.conf.j2', dest: 'conf.d/local.conf', mode: '0644' }
+    
+    # Конфиги в locations
+    - { src: 'hidden_files.conf.j2', dest: 'locations/hidden_files.conf', mode: '0644' }
+    - { src: 'root.conf.j2', dest: 'locations/root.conf', mode: '0644' }
+    - { src: 'sub_page.conf.j2', dest: 'locations/sub_page.conf', mode: '0644' }
+    - { src: 'v2ray_stat.conf.j2', dest: 'locations/v2ray_stat.conf', mode: '0644' }
+    - { src: 'v2ray_sub.conf.j2', dest: 'locations/v2ray_sub.conf', mode: '0644' }
+    
+    # Скрипты (без исполняемых прав, Dockerfile сам даст)
+    - { src: 'supervisord.conf.j2', dest: 'supervisord.conf', mode: '0644' }
+    - { src: 'update_geolite.sh.j2', dest: 'scripts/update_geolite.sh', mode: '0644' }
+
+- name: Deploy nginx Dockerfile
+  template:
+    src: 'Dockerfile.j2'
+    dest: '{{ remote_path }}/nginx/Dockerfile'
+    mode: '0644'

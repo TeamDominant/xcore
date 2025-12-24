@@ -1,0 +1,36 @@
+# Log Settings
+log:
+  loglevel: info                                          # Logging level: none, error, warn, info, debug, trace. NONE disables logging; each level includes messages from lower levels.
+  logmode: inclusive                                      # Log mode: inclusive = this and lower levels; exclusive = only this level
+
+# API Settings
+api:
+  api_token: ""                                           # Token required to access the API endpoints. If empty, access is allowed without authorization. Format: Bearer <token>.
+
+# Timezone Settings
+timezone: Asia/Bangkok                                    # IANA timezone name (e.g., Europe/Amsterdam, Asia/Singapore). If empty, uses TZ environment variable or UTC.
+
+# V2RS-Sub Settings
+v2rs-sub:
+  address: 0.0.0.0                                        # Listening address for the subscription server. '127.0.0.1' restricts access to localhost.
+  port: 9264                                              # Listening port for the subscription server. Must be between 1 and 65535.
+  grpc_port: 9263                                         # Listening port for the gRPC server.
+
+# Subscription Settings
+subscription:
+  domains:
+    top: {{ domain_name }}
+  defaults:
+    headers:
+      Profile-Title: "base64:0JLRgdC1INGA0LDQsdC+0YLQsNC10YIg0LIg0YjRgtCw0YLQvdC+0Lwg0YDQtdC20LjQvNC1LCDQoNCa0J0g0KPQldCR0Ksh"
+      Profile-Update-Interval: "12"
+      Support-Url: "https://natribu.org/"
+      Profile-Web-Page-Url: "https://{{ domain_name }}"
+      Announce: "base64:0JLRgdC1INGA0LDQsdC+0YLQsNC10YIg0LIg0YjRgtCw0YLQvdC+0Lwg0YDQtdC20LjQvNC1LCDQoNCa0J0g0KPQldCR0Ksh"
+    clients: ["xray", "mihomo"]
+    nodes: ["top"]
+    templates:
+      base:
+        top: infomaniak
+      advanced:
+        top: infomaniak

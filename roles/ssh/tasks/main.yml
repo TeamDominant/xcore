@@ -1,0 +1,24 @@
+---
+- name: Ensure SSH Daemon is installed
+  ansible.builtin.package:
+    name: openssh-server
+    state: present
+
+- name: Create custom SSH configuration file via template
+  ansible.builtin.template:
+    src: sshd_custom.conf.j2
+    dest: /etc/ssh/sshd_config.d/ssh_custom.conf
+    owner: root
+    group: root
+    mode: '0644'
+    validate: 'sshd -t -f %s'
+  notify: Restart ssh
+
+- name: Ensure Include directive is present in main sshd_config
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    line: "Include /etc/ssh/sshd_config.d/*.conf"
+    state: present
+    insertbefore: BOF
+    regexp: '^Include'
+  notify: Restart ssh

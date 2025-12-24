@@ -1,0 +1,82 @@
+---
+# === ROLES SETTINGS ===
+setup_common: true
+setup_ipv6_disable: false
+setup_swap: true
+setup_bbr: true
+setup_autoupdate: true
+setup_firewall: true
+setup_ssh_hardening: true
+setup_shellinabox: false
+setup_docker: true
+setup_certbot: true
+setup_haproxy: true
+setup_nginx: true
+setup_xray: true
+setup_warp: true
+setup_deploy: true
+
+
+# === SSH CONFIGURATION ===
+ssh_port: 22
+ssh_permit_root_login: "prohibit-password"
+ssh_password_authentication: "no"
+ssh_pubkey_authentication: "yes"
+ssh_permit_empty_passwords: "no"
+ssh_client_alive_interval: 300
+
+
+# === SWAP SETTINGS ===
+swap_size: "512M"
+swap_file_path: "/swapfile"
+
+
+# === FIREWALL CONFIGURATION ===
+firewall_allowed_tcp_ports:
+  - { port: "{{ ssh_port }}", comment: "Limit SSH access", rule: "limit", proto: "tcp" }
+  - { port: "80", comment: "Allow HTTP traffic", rule: "allow", proto: "tcp" }
+  - { port: "443", comment: "Allow HTTPS traffic", rule: "allow", proto: "tcp" }
+
+firewall_denied_ip_cidrs:
+  - { ip: "95.161.76.0/24", comment: "TGBOT NL" }
+  - { ip: "149.154.161.0/24", comment: "TGBOT NL" }
+
+
+# === SHELLINABOX SETTINGS ===
+shellinabox_port: 4200
+shellinabox_path: "shell"
+shellinabox_basic_auth: true
+shellinabox_localhost_only: false
+
+
+# === AUTOUPDATE SETTINGS ===
+autoupdate_email_to: "root"
+autoupdate_email_from: "root@example.com"
+autoupdate_reboot: false
+autoupdate_reboot_time: "04:00"
+
+
+# === DOCKER PROXY APP SETTINGS ===
+# Base paths and users
+remote_path: /opt/docker
+proxy_user_name: user
+
+# Frontend haproxy ports
+haproxy_port: 443
+
+# Domain and certificates
+domain_name: example.com
+email: email@example.com
+dns_cloudflare_api_token: token
+
+# Service-specific versions
+nginx_version: 1.27.5
+xray_version: "25.12.8"
+
+# Subscription and paths
+subscription_path: ""
+
+# Warp configuration
+warp_port: 40001
+warp_license: ""  # Empty for free version
+warp_families_mode: "off"

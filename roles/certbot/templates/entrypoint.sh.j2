@@ -1,0 +1,66 @@
+#!/bin/sh
+set -e
+
+# Установка зависимостей один раз
+apk add --no-cache docker-cli openssl
+
+CERT_NAME="$DOMAIN_NAME"
+HAPROXY_DIR="/etc/haproxy/certs"
+COMBINED_PEM="$HAPROXY_DIR/$CERT_NAME.pem"
+DHPARAM="$HAPROXY_DIR/dhparam.pem"
+LIVE_DIR="/etc/letsencrypt/live/$CERT_NAME"
+
+echo "=== Certbot Universal Manager started for $CERT_NAME ==="
+
+# 1. Генерация dhparam — только если ещё нет (даже при recreate)
+if [ ! -f "$DHPARAM" ] || [ ! -s "$DHPARAM" ]; then
+    echo "Generating dhparam.pem (2048 bit)..."
+    openssl dhparam -out "$DHPARAM" 2048
+    chmod 644 "$DHPARAM"
+    echo "dhparam.pem ready"
+else
+    echo "dhparam.pem already exists — skipped"
+fi
+
+# 2. Первый выпуск сертификата — только если его вообще нет
+if [ ! -d "$LIVE_DIR" ] || [ ! -f "$LIVE_DIR/fullchain.pem" ]; then
+    echo "No certificate found — requesting new one..."
+    certbot certonly --quiet --non-interactive --agree-tos --expand \
+        --dns-cloudflare \
+        --dns-cloudflare-credentials /certbot/cloudflare.ini \
+        --dns-cloudflare-propagation-seconds 60 \
+        --rsa-key-size 4096 \
+        -d "$CERT_NAME" \
+        -d "*.$CERT_NAME" \
+        --cert-name "$CERT_NAME"
+
+    # Сразу создаём combined.pem
+    cat "$LIVE_DIR/fullchain.pem" "$LIVE_DIR/privkey.pem" > "$COMBINED_PEM"
+    chmod 644 "$COMBINED_PEM"
+    echo "Initial certificate issued and deployed"
+else
+    echo "Certificate already exists — skipping initial issuance"
+    # Но combined.pem может быть битым — пересобираем на всякий случай
+    if [ ! -f "$COMBINED_PEM" ] || [ ! -s "$COMBINED_PEM" ]; then
+        echo "combined.pem missing or empty — recreating..."
+        cat "$LIVE_DIR/fullchain.pem" "$LIVE_DIR/privkey.pem" > "$COMBINED_PEM"
+        chmod 644 "$COMBINED_PEM"
+    fi
+fi
+
+# 3. Перезапускаем HAProxy, если сертификат был (пере)создан
+if docker ps --format "table {{ '{{.Names}}' }}" | grep -q "^haproxy$"; then
+    echo "Certificate (re)created — restarting HAProxy"
+    docker restart haproxy || true
+fi
+
+# 4. Бесконечный цикл обновления (обновляет только если <30 дней до истечения)
+echo "Starting renew loop (every 12 hours)..."
+while true; do
+    echo "[$(date)] Running certbot renew..."
+    certbot renew --quiet \
+        --deploy-hook "cat $LIVE_DIR/fullchain.pem $LIVE_DIR/privkey.pem > $COMBINED_PEM && chmod 644 $COMBINED_PEM && docker restart haproxy"
+
+    echo "[$(date)] Sleeping 12 hours..."
+    sleep 12h
+done

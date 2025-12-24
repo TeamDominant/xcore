@@ -1,0 +1,33 @@
+---
+- name: Install shellinabox (Debian)
+  ansible.builtin.apt:
+    name: shellinabox
+    state: present
+  when: ansible_os_family == 'Debian'
+
+- name: Install shellinabox (RHEL)
+  ansible.builtin.dnf: 
+    name: shellinabox 
+    state: present
+  when: ansible_os_family == 'RedHat'
+
+- name: Configure defaults
+  ansible.builtin.template:
+    src: shellinabox.j2
+    dest: /etc/default/shellinabox
+  notify: restart shellinabox
+
+- name: Ensure /etc/nginx/locations directory exists
+  ansible.builtin.file:
+    path: /etc/nginx/locations
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  when: setup_shellinabox | default(false)
+
+- name: Generate Nginx location
+  ansible.builtin.template:
+    src: shellinabox.conf.j2
+    dest: /etc/nginx/locations/shellinabox.conf
+  when: setup_shellinabox | default(false)

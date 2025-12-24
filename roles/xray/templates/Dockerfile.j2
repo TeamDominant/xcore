@@ -1,0 +1,52 @@
+#######################################
+# 1) STAGING: Download and Prepare Assets
+#######################################
+FROM alpine:latest AS assets
+
+ARG XRAY_VERSION="{{ xray_version }}"
+ENV XRAY_DIR=/tmp/xray-download
+
+# Устанавливаем только необходимые инструменты для загрузки
+RUN apk add --no-cache wget unzip
+
+WORKDIR /tmp
+
+# Скачиваем и распаковываем
+RUN wget -q "https://github.com/XTLS/Xray-core/releases/download/v${XRAY_VERSION}/Xray-linux-64.zip" && \
+    unzip -q Xray-linux-64.zip && \
+    mkdir -p ${XRAY_DIR} && \
+    mv xray ${XRAY_DIR}/ && \
+    mv geoip.dat geosite.dat ${XRAY_DIR}/ 2>/dev/null || true && \
+    rm -rf Xray-linux-64.zip LICENSE README.md && \
+    apk del wget unzip && \
+    rm -rf /var/cache/apk/*
+
+#######################################
+# 2) FINAL: Minimal Alpine Runtime
+#######################################
+FROM alpine:latest
+
+# Путь к бинарнику выносим отдельно
+ENV XRAY_BIN=/usr/local/bin/xray
+ENV XRAY_ETC_DIR=/usr/local/etc/xray
+
+# Устанавливаем минимальные зависимости (без установки glibc)
+RUN apk add --no-cache tzdata ca-certificates
+
+# Директории
+RUN mkdir -p ${XRAY_ETC_DIR} ${XRAY_BIN}
+
+# Копируем только бинарник в /usr/local/bin, остальное — в etc
+COPY --from=assets /tmp/xray-download/xray ${XRAY_BIN}
+COPY --from=assets /tmp/xray-download/geo* ${XRAY_BIN}
+
+# Права
+RUN chmod 755 ${XRAY_BIN}/xray
+    
+# Важно! Рабочая директория = etc, тогда ./access.log будет здесь же
+WORKDIR ${XRAY_ETC_DIR}
+# Cоздать корневую директорию
+VOLUME ${XRAY_ETC_DIR}
+
+ENTRYPOINT ["/usr/local/bin/xray/xray"]
+CMD ["-c", "/usr/local/etc/xray/config.json"]

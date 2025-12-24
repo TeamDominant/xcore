@@ -1,0 +1,8 @@
+---
+- name: Restart HAProxy
+  community.docker.docker_compose_v2:
+    project_src: "{{ remote_path }}"
+    state: present
+    services: haproxy
+    recreate: always
+  listen: Restart HAProxy

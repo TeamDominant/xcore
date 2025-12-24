@@ -1,0 +1,24 @@
+---
+all:
+  vars:
+    ansible_user: root
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+  children:
+    servers:
+      hosts:
+        hosting1:
+          ansible_host: 1.2.3.4
+          ssh_port: 2222
+          firewall_allowed_tcp_ports:
+            - { port: "{{ ssh_port }}", comment: "Limit SSH access", rule: "limit", proto: "tcp" }
+            - { port: "80", comment: "Allow HTTP traffic", rule: "allow", proto: "tcp" }
+            - { port: "443", comment: "Allow HTTPS traffic", rule: "allow", proto: "tcp" }
+            - { port: "8443", comment: "Allow bla bla traffic", rule: "allow", proto: "tcp" }
+        hosting2:
+          ansible_host: 1.2.3.4
+        hosting3:
+          ansible_host: 1.2.3.4
+          ansible_port: 46231
+          ssh_port: 46231
+        hosting4:
+          ansible_host: 1.2.3.4

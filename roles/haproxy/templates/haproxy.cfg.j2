@@ -1,0 +1,63 @@
+global
+  tune.lua.bool-sample-conversion normal
+  # Uncomment to enable system logging
+  # log /dev/log local0
+  # log /dev/log local1 notice
+  log stdout format raw daemon info
+  # log /dev/log local2 info
+  lua-load /etc/haproxy/lua/auth.lua
+  stats socket /tmp/admin.sock mode 660 level admin
+  stats timeout 30s
+  daemon
+
+  # Mozilla Modern
+  ssl-default-bind-ciphersuites TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256
+  ssl-default-bind-options prefer-client-ciphers no-sslv3 no-tlsv10 no-tlsv11 no-tls-tickets
+  ssl-default-server-ciphersuites TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256
+  ssl-default-server-options no-sslv3 no-tlsv10 no-tlsv11 no-tls-tickets
+
+  # You must first generate DH parameters - [ openssl dhparam -out /etc/haproxy/dhparam.pem 2048 ]
+  ssl-dh-param-file /etc/haproxy/certs/dhparam.pem
+
+defaults
+  mode http
+  log global
+  option tcplog
+  option tcpka
+  option dontlognull
+  timeout connect 5000
+  timeout client  50000
+  timeout server  50000
+  
+  # Keepalive настройки
+  timeout connect 10s
+  timeout http-keep-alive 10s
+  timeout http-request 15s
+
+frontend haproxy-tls
+  mode tcp
+  timeout client 1h
+  bind 0.0.0.0:443 ssl crt /etc/haproxy/certs/{{ domain_name }}.pem alpn h2,http/1.1
+  tcp-request inspect-delay 5s
+  tcp-request content accept if { req_ssl_hello_type 1 }
+
+  use_backend reject if !{ ssl_fc_sni -i {{ domain_name }} } !{ ssl_fc_sni -m end .{{ domain_name }} }
+  use_backend %[lua.vless_auth]
+  default_backend nginx
+
+backend xray
+  mode tcp
+  option tcp-check
+  server vless xray:10550 init-addr last,libc,none send-proxy-v2 check inter 10s
+
+backend nginx
+  mode http
+  timeout server 10s
+  option forwardfor
+  http-reuse never
+  server web nginx:36078 init-addr last,libc,none check inter 5s fall 2 rise 2
+
+backend reject
+  mode http
+  timeout server 10s
+  http-request deny

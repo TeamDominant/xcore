@@ -1,0 +1,16 @@
+[commands]
+upgrade_type = security
+random_sleep = 0
+download_updates = yes
+apply_updates = yes
+
+[emitters]
+emit_via = email
+
+[email]
+email_from = {{ autoupdate_email_from }}
+email_to = {{ autoupdate_email_to }}
+email_host = localhost
+
+[base]
+debuglevel = 1

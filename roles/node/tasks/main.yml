@@ -1,0 +1,11 @@
+- name: Создаём директорию для node
+  file:
+    path: "{{ remote_path }}/v2rs/node"
+    state: directory
+    mode: '0755'
+
+- name: Генерируем секцию node для config.yaml
+  template:
+    src: config.yaml.j2
+    dest: "{{ remote_path }}/v2rs/node/config.yaml"
+    mode: '0644'

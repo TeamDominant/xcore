@@ -1,0 +1,3 @@
+---
+swap_size: "512M"
+swap_file_path: "/swapfile"

@@ -1,0 +1,27 @@
+server {
+  listen                               36078;
+  server_name                          _;
+
+  # Access log
+  # access_log /var/log/nginx/access.log json_analytics;
+  access_log /dev/stdout json_analytics if=$loggable;
+
+  # Блокировка по стране
+  if ($allow_country = 0) {
+    return 403;
+  }
+
+  # Блокировка по ASN
+  if ($allow_organization = 0) {
+    return 403;
+  }
+
+  location /check_health {
+    access_log off;
+    add_header Content-Type text/plain;
+    return 200 "OK";
+  }
+
+  # Enable locations
+  include /etc/nginx/locations/*.conf;
+}

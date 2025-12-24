@@ -1,0 +1,74 @@
+---
+# =======================================================
+# Блок для Debian / Ubuntu
+# =======================================================
+- name: Check if unattended-upgrades config file exists
+  ansible.builtin.stat:
+    path: /etc/apt/apt.conf.d/50unattended-upgrades
+  register: unattended_config_file_exists
+  changed_when: false
+  when: ansible_os_family == 'Debian'
+
+- name: Configure Auto-Updates (Debian/Ubuntu)
+  when: ansible_os_family == 'Debian' and not unattended_config_file_exists.stat.exists
+  block:
+    - name: Install unattended-upgrades package
+      ansible.builtin.apt:
+        name: unattended-upgrades
+        state: present
+        update_cache: yes
+
+    - name: Configure 50unattended-upgrades
+      ansible.builtin.template:
+        src: 50unattended-upgrades.j2
+        dest: /etc/apt/apt.conf.d/50unattended-upgrades
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Configure 20auto-upgrades (Schedule)
+      ansible.builtin.template:
+        src: 20auto-upgrades.j2
+        dest: /etc/apt/apt.conf.d/20auto-upgrades
+        owner: root
+        group: root
+        mode: '0644'
+      
+    - name: Ensure apt-daily-upgrade timer is enabled
+      ansible.builtin.systemd:
+        name: apt-daily-upgrade.timer
+        enabled: yes
+        state: started
+
+# =======================================================
+# Блок для CentOS / RHEL / Fedora
+# =======================================================
+- name: Check if dnf-automatic config file exists
+  ansible.builtin.stat:
+    path: /etc/dnf/automatic.conf
+  register: dnf_config_file_exists
+  changed_when: false
+  when: ansible_os_family == 'RedHat'
+
+- name: Configure Auto-Updates (RHEL/CentOS)
+  when: ansible_os_family == 'RedHat' and not dnf_config_file_exists.stat.exists
+  block:
+    - name: Install dnf-automatic
+      ansible.builtin.dnf:
+        name: dnf-automatic
+        state: present
+
+    - name: Configure dnf-automatic.conf
+      ansible.builtin.template:
+        src: automatic.conf.j2
+        dest: /etc/dnf/automatic.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: restart dnf-automatic
+
+    - name: Enable dnf-automatic timer
+      ansible.builtin.systemd:
+        name: dnf-automatic.timer
+        state: started
+        enabled: yes

@@ -1,0 +1,15 @@
+---
+- name: Deploy BBR settings file
+  ansible.builtin.template:
+    src: 20-bbr.conf.j2
+    dest: /etc/sysctl.d/20-bbr.conf
+    owner: root
+    group: root
+    mode: '0644'
+  register: sysctl_file
+  tags: [bbr, sysctl]
+
+- name: Apply new sysctl settings immediately
+  ansible.builtin.command: sysctl -p /etc/sysctl.d/20-bbr.conf
+  when: sysctl_file.changed
+  tags: [bbr, sysctl]

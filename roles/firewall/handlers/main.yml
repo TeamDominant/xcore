@@ -1,0 +1,11 @@
+---
+- name: Reload UFW
+  community.general.ufw:
+    state: reloaded
+  listen: "Reload UFW"
+
+- name: Reload firewalld
+  ansible.builtin.service:
+    name: firewalld
+    state: reloaded
+  listen: "Reload firewalld"

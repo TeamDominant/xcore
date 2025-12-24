@@ -1,0 +1,6 @@
+---
+- name: restart shellinabox
+  service:
+    name: shellinabox
+    state: restarted
+    enabled: yes

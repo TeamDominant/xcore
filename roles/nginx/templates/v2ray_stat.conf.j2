@@ -1,0 +1,12 @@
+location /v2rs-statistics/ {
+  # access_log off;
+  proxy_pass http://backend:9243/api/v1/;
+
+  # Добавляем заголовок с IP клиента
+  proxy_set_header X-Real-IP $remote_addr;
+  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  proxy_set_header Host $host;
+
+  # Автообновление страницы каждые 10 секунд
+  add_header Refresh "10; URL=$scheme://$http_host$request_uri";
+}

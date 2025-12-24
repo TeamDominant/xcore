@@ -1,0 +1,14 @@
+---
+- name: Install dnf-plugins-core
+  ansible.builtin.dnf:
+    name: dnf-plugins-core
+    state: present
+
+- name: Add Docker repository
+  ansible.builtin.command:
+    cmd: "dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo"
+
+- name: Install Docker CE packages and plugins
+  ansible.builtin.dnf:
+    name: "{{ docker_packages }}"
+    state: present

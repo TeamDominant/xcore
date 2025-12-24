@@ -1,0 +1,3 @@
+# /etc/default/shellinabox
+SHELLINABOX_DAEMON_START=1
+SHELLINABOX_ARGS="--no-beep --disable-ssl{% if shellinabox_localhost_only %} --localhost-only{% endif %}"

@@ -1,0 +1,453 @@
+{
+  "remarks": "🇨🇭",
+  "log": {
+    "dnsLog": false,
+    "loglevel": "warning"
+  },
+  "dns": {
+    "hosts": {
+      "{domain}": "83.228.212.190",
+      "one.one.one.one": [
+        "1.1.1.1",
+        "1.0.0.1",
+        "2606:4700:4700::1111",
+        "2606:4700:4700::1001"
+      ],
+      "1dot1dot1dot1.cloudflare-dns.com": [
+        "1.1.1.1",
+        "1.0.0.1",
+        "2606:4700:4700::1111",
+        "2606:4700:4700::1001"
+      ],
+      "cloudflare-dns.com": [
+        "104.16.249.249",
+        "104.16.248.249",
+        "2606:4700::6810:f8f9",
+        "2606:4700::6810:f9f9"
+      ],
+      "dns.cloudflare.com": [
+        "104.16.132.229",
+        "104.16.133.229",
+        "2606:4700::6810:84e5",
+        "2606:4700::6810:85e5"
+      ],
+      "dns.google": [
+        "8.8.8.8",
+        "8.8.4.4",
+        "2001:4860:4860::8888",
+        "2001:4860:4860::8844"
+      ],
+      "doh.pub": [
+        "1.12.12.12",
+        "120.53.53.53"
+      ],
+      "dns.quad9.net": [
+        "9.9.9.9",
+        "149.112.112.112",
+        "2620:fe::fe",
+        "2620:fe::9"
+      ],
+      "dns.umbrella.com": [
+        "208.67.220.220",
+        "208.67.222.222",
+        "2620:119:35::35",
+        "2620:119:53::53"
+      ],
+      "dns.sse.cisco.com": [
+        "208.67.220.220",
+        "208.67.222.222",
+        "2620:119:35::35",
+        "2620:119:53::53"
+      ],
+      "engage.cloudflareclient.com": [
+        "162.159.192.1",
+        "2606:4700:d0::a29f:c001"
+      ]
+    },
+    "servers": [
+      {
+        "address": "https+local://1.1.1.1/dns-query",
+        "domains": [
+          "{domain}",
+          "geosite:category-android-app-download",
+          "geosite:sciencedirect",
+          "geosite:category-ru",
+          "geosite:deviantart",
+          "geosite:duckduckgo",
+          "geosite:aljazeera",
+          "geosite:pinterest",
+          "geosite:canonical",
+          "geosite:microsoft",
+          "geosite:clarivate",
+          "geosite:duolingo",
+          "geosite:elsevier",
+          "geosite:sci-hub",
+          "geosite:mozilla",
+          "geosite:blender",
+          "geosite:aptoide",
+          "geosite:samsung",
+          "geosite:yandex",
+          "geosite:huawei",
+          "geosite:lenovo",
+          "geosite:oracle",
+          "geosite:nvidia",
+          "geosite:xiaomi",
+          "geosite:gitlab",
+          "geosite:python",
+          "geosite:debian",
+          "geosite:mailru",
+          "geosite:reddit",
+          "geosite:twitch",
+          "geosite:tumblr",
+          "geosite:4chan",
+          "geosite:yahoo",
+          "geosite:apple",
+          "geosite:adobe",
+          "geosite:drweb",
+          "geosite:zoom",
+          "geosite:asus",
+          "geosite:doi",
+          "geosite:vk",
+          "geosite:hp",
+          "geosite:lg",
+          "keyword:researchgate",
+          "keyword:wildberries",
+          "keyword:aliexpress",
+          "keyword:nextcloud",
+          "keyword:kaspersky",
+          "keyword:springer",
+          "keyword:snapchat",
+          "keyword:taxitax",
+          "keyword:yandex",
+          "keyword:yango",
+          "keyword:stepik",
+          "keyword:pikabu",
+          "keyword:roblox",
+          "keyword:likee",
+          "keyword:viber",
+          "keyword:skype",
+          "keyword:yappy",
+          "keyword:porno",
+          "keyword:wiki",
+          "keyword:okko",
+          "keyword:wink",
+          "keyword:kion",
+          "keyword:ozon",
+          "keyword:xn--",
+          "keyword:2gis",
+          "connectivitycheck.gstatic.com",
+          "networkcheck.kde.org",
+          "msftconnecttest.com",
+          "cp.cloudflare.com",
+          "wikipedia.org",
+          "msftncsi.com",
+          "firefox.com",
+          "aeza.net",
+          "vk.com",
+          "vkuseraudio.net",
+          "vkuser.net",
+          "flcksbr.top",
+          "ru.com",
+          "ru.net",
+          "keyword:browserleaks"
+        ],
+        "skipFallback": true,
+        "disableFallback": true,
+        "queryStrategy": "UseIP",
+        "allowUnexpectedIPs": true,
+        "timeoutMs": 1000
+      },
+      "8.8.8.8"
+    ],
+    "skipFallback": true,
+    "queryStrategy": "UseIP"
+  },
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "domainMatcher": "hybrid",
+    "network": "tcp,udp",
+    "rules": [
+      {
+        "inboundTag": [
+          "socks"
+        ],
+        "port": 53,
+        "outboundTag": "dns-out"
+      },
+      {
+        "inboundTag": [
+          "api"
+        ],
+        "outboundTag": "api"
+      },
+      {
+        "protocol": [
+          "bittorrent"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "ip": [
+          "geoip:private"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "outboundTag": "proxy",
+        "ip": ["91.108.56.0/22", "91.108.4.0/22", "149.154.160.0/20"],
+        "port": "16384-32767",
+        "network": "udp"
+      },
+      {
+        "outboundTag": "proxy",
+        "port": "3478,4244,5222,5223,5228,50318,59234",
+        "network": "udp"
+      },
+      {
+        "outboundTag": "proxy",
+        "port": "50000-65535",
+        "domain": ["keyword:discord"],
+        "network": "udp"
+      },
+      {
+        "domain": [
+          "geosite:category-ads-all",
+          "keyword:analytics",
+          "keyword:telemetry",
+          "keyword:bongacams",
+          "keyword:firebase",
+          "keyword:tracking",
+          "keyword:reklama"
+        ],
+        "outboundTag": "block"
+      },
+      {
+        "domain": [
+          "{domain}",
+          "geosite:category-android-app-download",
+          "geosite:sciencedirect",
+          "geosite:category-ru",
+          "geosite:deviantart",
+          "geosite:duckduckgo",
+          "geosite:aljazeera",
+          "geosite:pinterest",
+          "geosite:canonical",
+          "geosite:microsoft",
+          "geosite:clarivate",
+          "geosite:duolingo",
+          "geosite:elsevier",
+          "geosite:sci-hub",
+          "geosite:mozilla",
+          "geosite:blender",
+          "geosite:aptoide",
+          "geosite:samsung",
+          "geosite:yandex",
+          "geosite:huawei",
+          "geosite:lenovo",
+          "geosite:oracle",
+          "geosite:nvidia",
+          "geosite:xiaomi",
+          "geosite:gitlab",
+          "geosite:python",
+          "geosite:debian",
+          "geosite:mailru",
+          "geosite:reddit",
+          "geosite:twitch",
+          "geosite:tumblr",
+          "geosite:4chan",
+          "geosite:yahoo",
+          "geosite:apple",
+          "geosite:adobe",
+          "geosite:drweb",
+          "geosite:zoom",
+          "geosite:asus",
+          "geosite:doi",
+          "geosite:vk",
+          "geosite:hp",
+          "geosite:lg",
+          "keyword:researchgate",
+          "keyword:wildberries",
+          "keyword:aliexpress",
+          "keyword:nextcloud",
+          "keyword:kaspersky",
+          "keyword:springer",
+          "keyword:snapchat",
+          "keyword:taxitax",
+          "keyword:yandex",
+          "keyword:yango",
+          "keyword:stepik",
+          "keyword:pikabu",
+          "keyword:roblox",
+          "keyword:likee",
+          "keyword:viber",
+          "keyword:skype",
+          "keyword:yappy",
+          "keyword:porno",
+          "keyword:wiki",
+          "keyword:okko",
+          "keyword:wink",
+          "keyword:kion",
+          "keyword:ozon",
+          "keyword:xn--",
+          "keyword:2gis",
+          "connectivitycheck.gstatic.com",
+          "networkcheck.kde.org",
+          "msftconnecttest.com",
+          "cp.cloudflare.com",
+          "wikipedia.org",
+          "msftncsi.com",
+          "firefox.com",
+          "aeza.net",
+          "vk.com",
+          "vkuseraudio.net",
+          "vkuser.net",
+          "flcksbr.top",
+          "ru.com",
+          "ru.net",
+          "keyword:browserleaks"
+        ],
+        "outboundTag": "direct"
+      }
+    ]
+  },
+  "inbounds": [
+    {
+      "tag": "socks",
+      "port": 10808,
+      "listen": "127.0.0.1",
+      "protocol": "mixed",
+      "settings": {
+        "auth": "noauth",
+        "udp": true,
+        "allowTransparent": false
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "http",
+          "tls",
+          "quic",
+          "fakedns"
+        ],
+	    "routeOnly": false
+      }
+    },
+    {
+      "tag": "api",
+      "port": 10812,
+      "listen": "127.0.0.1",
+      "protocol": "dokodemo-door",
+      "settings": {
+        "address": "127.0.0.1"
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "tag": "proxy",
+      "protocol": "vless",
+      "streamSettings": {
+        "network": "tcp",
+        "security": "tls",
+        "tcpSettings": {
+          "header": {
+            "type": "none"
+          }
+        },
+        "tlsSettings": {
+          "utls": {
+            "alpn": [
+              "h2"
+            ],
+            "fingerprint": "chrome"
+          }
+        }
+      },
+      "mux": {
+        "enabled": true,
+        "concurrency": 4,
+        "xudpConcurrency": 8,
+        "xudpProxyUDP443": "allow"
+      },
+      "sockopt": {
+        "tcpFastOpen": true,
+        "tcpNoDelay": true
+      },
+      "settings": {
+        "domainStrategy": "UseIP",
+        "vnext": [
+          {
+            "address": "{domain}",
+            "port": {{ haproxy_port }},
+            "users": [
+              {
+                "encryption": "none",
+                "id": "{user_id}"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "tag": "direct",
+      "protocol": "freedom",
+      "settings": {
+        "domainStrategy": "UseIPv4"
+      },
+      "sockopt": {
+        "tcpFastOpen": true,
+        "tcpNoDelay": true
+      }
+    },
+    {
+      "tag": "block",
+      "protocol": "blackhole",
+      "settings": {
+        "response": {
+          "type": "http"
+        }
+      }
+    },
+    {
+      "tag": "dns-out",
+      "protocol": "dns",
+      "settings": {
+        "nonIPQuery": "skip",
+        "network": "udp",
+        "address": "8.8.8.8",
+        "port": 53
+      }
+    }
+  ],
+  "policy": {
+    "system": {
+      "statsInboundDownlink": true,
+      "statsInboundUplink": true,
+      "statsOutboundDownlink": true,
+      "statsOutboundUplink": true
+    }
+  },
+  "api": {
+    "tag": "api",
+    "services": [
+      "HandlerService",
+      "StatsService",
+      "ReflectionService"
+    ]
+  },
+  "fakedns": [
+    {
+      "ipPool": "198.18.0.0/16",
+      "poolSize": 512
+    },
+    {
+      "ipPool" : "fc00::/64",
+      "poolSize" : 512
+    }
+  ],
+  "stats": {},
+  "metrics": {
+    "tag": "api"
+  }
+}

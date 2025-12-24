@@ -1,0 +1,26 @@
+---
+- name: Include tasks for Debian/Ubuntu
+  ansible.builtin.include_tasks: debian.yml
+  when: ansible_os_family == 'Debian'
+
+- name: Include tasks for RedHat/CentOS/Fedora
+  ansible.builtin.include_tasks: redhat.yml
+  when: ansible_os_family == 'RedHat'
+
+- name: Ensure Docker service is running and enabled
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: true
+
+- name: Ensure 'docker' group exists
+  ansible.builtin.group:
+    name: "{{ docker_group_name }}"
+    state: present
+
+- name: Add users to the docker group
+  ansible.builtin.user:
+    name: "{{ item }}"
+    groups: "{{ docker_group_name }}"
+    append: true
+  loop: "{{ docker_users_to_add }}"

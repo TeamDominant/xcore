@@ -1,0 +1,209 @@
+{
+  "remarks": "HAPROXY",
+  "log": {
+    "access": "./access.log",
+    "error": "./error.log",
+    "dnsLog": false,
+    "loglevel": "warning",
+    "maskAddress": ""
+  },
+  "dns": {},
+  "routing": {
+    "domainMatcher": "hybrid",
+    "domainStrategy": "IPIfNonMatch",
+    "network": "tcp,udp",
+    "rules": [
+      {
+        "network": "tcp,udp",
+        "outboundTag": "dns-out",
+        "port": 53
+      },
+      {
+        "inboundTag": [
+          "api"
+        ],
+        "outboundTag": "api"
+      },
+      {
+        "outboundTag": "direct",
+        "protocol": [
+          "bittorrent"
+        ]
+      },
+      {
+        "ip": [
+          "geoip:private"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "domain": [
+          "geosite:category-ads-all",
+          "keyword:analytics",
+          "keyword:telemetry",
+          "keyword:bongacams",
+          "keyword:firebase",
+          "keyword:tracking",
+          "keyword:reklama"
+        ],
+        "outboundTag": "block"
+      },
+      {
+        "domain": [
+          "geosite:intel",
+          "habr.com"
+        ],
+        "outboundTag": "warp"
+      },
+      {
+        "ip": [
+          "geoip:ru"
+        ],
+        "outboundTag": "warp"
+      }
+    ]
+  },
+  "inbounds": [
+    {
+      "tag": "vless-in",
+      "settings": {
+        "clients": [
+          {% for client in final_clients_list %}
+          {
+            "email": "{{ client.email }}",
+            "id": "{{ client.id }}"
+          }{{ "," if not loop.last }}
+          {% endfor %}
+        ],
+        "decryption": "none"
+      },
+      "port": 10550,
+      "protocol": "vless",
+      "listen": "0.0.0.0",
+      "streamSettings": {
+        "network": "tcp",
+        "security": "none",
+        "sockopt": {
+          "tcpFastOpen": true,
+          "tcpNoDelay": true
+        },
+        "tcpSettings": {
+          "acceptProxyProtocol": true,
+          "header": {
+            "type": "none"
+          }
+        }
+      },
+      "sniffing": {
+        "destOverride": [
+          "http",
+          "tls",
+          "quic",
+          "fakedns"
+        ],
+        "enabled": true,
+        "metadataOnly": false,
+        "routeOnly": false
+      }
+    },
+    {
+      "tag": "api",
+      "port": 9953,
+      "listen": "0.0.0.0",
+      "protocol": "dokodemo-door",
+      "settings": {
+        "address": "0.0.0.0"
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "protocol": "freedom",
+      "settings": {
+        "domainStrategy": "UseIPv4"
+      },
+      "sockopt": {
+        "tcpFastOpen": true,
+        "tcpNoDelay": true
+      },
+      "tag": "direct",
+      "userLevel": 0
+    },
+    {
+      "protocol": "dns",
+      "settings": {
+        "nonIPQuery": "drop"
+      },
+      "tag": "dns-out"
+    },
+    {
+      "protocol": "blackhole",
+      "settings": {
+        "response": {
+          "type": "http"
+        }
+      },
+      "tag": "block"
+    },
+    {
+      "protocol": "socks",
+      "settings": {
+        "servers": [
+          {
+            "address": "warp",
+            "port": {{ warp_port }},
+            "users": []
+          }
+        ]
+      },
+      "tag": "warp"
+    }
+  ],
+  "policy": {
+    "levels": {
+      "0": {
+        "bufferSize": 512,
+        "connIdle": 300,
+        "downlinkOnly": 5,
+        "handshake": 8,
+        "statsUserDownlink": true,
+        "statsUserOnline": true,
+        "statsUserUplink": true,
+        "uplinkOnly": 2
+      },
+      "1": {
+        "bufferSize": 512,
+        "connIdle": 300,
+        "statsUserDownlink": true,
+        "statsUserOnline": true,
+        "statsUserUplink": true
+      }
+    },
+    "system": {
+      "statsInboundDownlink": true,
+      "statsInboundUplink": true,
+      "statsOutboundDownlink": true,
+      "statsOutboundUplink": true
+    }
+  },
+  "api": {
+    "services": [
+      "HandlerService",
+      "StatsService",
+      "ReflectionService"
+    ],
+    "tag": "api"
+  },
+  "stats": {},
+  "fakedns": [
+    {
+      "ipPool": "198.18.0.0/16",
+      "poolSize": 512
+    },
+    {
+      "ipPool": "fc00::/64",
+      "poolSize": 512
+    }
+  ],
+  "reverse": null
+}

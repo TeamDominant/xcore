@@ -1,0 +1,15 @@
+---
+# === ROLES SETTINGS ===
+setup_certbot: true
+setup_haproxy: true
+setup_nginx: true
+setup_xray: true
+
+setup_warp: false
+setup_backend: false
+setup_node: false
+setup_subscription: false
+
+haproxy_port: 443
+proxy_user_name: user
+warp_port: 40001

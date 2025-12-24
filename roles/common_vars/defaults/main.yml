@@ -1,0 +1,5 @@
+---
+remote_path: /opt/docker
+ssh_port: 22
+proxy_user_name: user
+warp_port: 40001
