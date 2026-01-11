@@ -1,8 +1,12 @@
+---
+
 - name: Создаём директорию для данных backend
   file:
     path: "{{ remote_path }}/v2rs/backend/data"
     state: directory
-    mode: '0777'
+    owner: "10001"
+    group: "10001"
+    mode: '0775'
 
 - name: Генерируем секцию backend для config.yaml
   template:

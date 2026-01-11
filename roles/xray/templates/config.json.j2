@@ -50,8 +50,88 @@
       },
       {
         "domain": [
-          "geosite:intel",
-          "habr.com"
+          "geosite:google-deepmind",
+          "habr.com",
+          "geosite:category-android-app-download",
+          "geosite:sciencedirect",
+          "geosite:category-ru",
+          "geosite:deviantart",
+          "geosite:duckduckgo",
+          "geosite:aljazeera",
+          "geosite:pinterest",
+          "geosite:canonical",
+          "geosite:microsoft",
+          "geosite:clarivate",
+          "geosite:duolingo",
+          "geosite:elsevier",
+          "geosite:sci-hub",
+          "geosite:mozilla",
+          "geosite:blender",
+          "geosite:aptoide",
+          "geosite:samsung",
+          "geosite:yandex",
+          "geosite:huawei",
+          "geosite:lenovo",
+          "geosite:oracle",
+          "geosite:nvidia",
+          "geosite:xiaomi",
+          "geosite:gitlab",
+          "geosite:python",
+          "geosite:debian",
+          "geosite:mailru",
+          "geosite:reddit",
+          "geosite:twitch",
+          "geosite:tumblr",
+          "geosite:4chan",
+          "geosite:yahoo",
+          "geosite:apple",
+          "geosite:adobe",
+          "geosite:drweb",
+          "geosite:zoom",
+          "geosite:asus",
+          "geosite:doi",
+          "geosite:vk",
+          "geosite:hp",
+          "geosite:lg",
+          "keyword:researchgate",
+          "keyword:wildberries",
+          "keyword:aliexpress",
+          "keyword:nextcloud",
+          "keyword:kaspersky",
+          "keyword:springer",
+          "keyword:snapchat",
+          "keyword:taxitax",
+          "keyword:yandex",
+          "keyword:yango",
+          "keyword:stepik",
+          "keyword:pikabu",
+          "keyword:roblox",
+          "keyword:likee",
+          "keyword:viber",
+          "keyword:skype",
+          "keyword:yappy",
+          "keyword:porno",
+          "keyword:wiki",
+          "keyword:okko",
+          "keyword:wink",
+          "keyword:kion",
+          "keyword:ozon",
+          "keyword:xn--",
+          "keyword:2gis",
+          "keyword:vkuser",
+          "connectivitycheck.gstatic.com",
+          "networkcheck.kde.org",
+          "msftconnecttest.com",
+          "cp.cloudflare.com",
+          "wikipedia.org",
+          "msftncsi.com",
+          "firefox.com",
+          "aeza.net",
+          "vk.com",
+          "flcksbr.top",
+          "ru.com",
+          "ru.net",
+          "keyword:browserleaks"
         ],
         "outboundTag": "warp"
       },
@@ -105,18 +185,21 @@
         "metadataOnly": false,
         "routeOnly": false
       }
-    },
-    {
-      "tag": "api",
-      "port": 9953,
-      "listen": "0.0.0.0",
-      "protocol": "dokodemo-door",
-      "settings": {
-        "address": "0.0.0.0"
-      }
     }
   ],
   "outbounds": [
+    {
+      "protocol": "freedom",
+      "settings": {
+        "domainStrategy": "UseIP"
+      },
+      "sockopt": {
+        "tcpFastOpen": true,
+        "tcpNoDelay": true
+      },
+      "tag": "direct",
+      "userLevel": 0
+    },
     {
       "protocol": "freedom",
       "settings": {
@@ -126,7 +209,19 @@
         "tcpFastOpen": true,
         "tcpNoDelay": true
       },
-      "tag": "direct",
+      "tag": "directV4",
+      "userLevel": 0
+    },
+    {
+      "protocol": "freedom",
+      "settings": {
+        "domainStrategy": "UseIPv6"
+      },
+      "sockopt": {
+        "tcpFastOpen": true,
+        "tcpNoDelay": true
+      },
+      "tag": "directV6",
       "userLevel": 0
     },
     {
@@ -187,6 +282,7 @@
     }
   },
   "api": {
+    "listen": "0.0.0.0:10812",
     "services": [
       "HandlerService",
       "StatsService",

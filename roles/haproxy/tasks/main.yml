@@ -1,7 +1,4 @@
 ---
-- name: Generate proxy user UUID
-  ansible.builtin.set_fact:
-    proxy_user_uuid: "{{ 999999 | random | to_uuid }}"
 
 - name: Prepare HAProxy directories
   ansible.builtin.file:

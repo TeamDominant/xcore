@@ -135,6 +135,7 @@
           "keyword:ozon",
           "keyword:xn--",
           "keyword:2gis",
+          "keyword:vkuser",
           "connectivitycheck.gstatic.com",
           "networkcheck.kde.org",
           "msftconnecttest.com",
@@ -144,8 +145,6 @@
           "firefox.com",
           "aeza.net",
           "vk.com",
-          "vkuseraudio.net",
-          "vkuser.net",
           "flcksbr.top",
           "ru.com",
           "ru.net",
@@ -191,23 +190,6 @@
           "geoip:private"
         ],
         "outboundTag": "direct"
-      },
-      {
-        "outboundTag": "proxy",
-        "ip": ["91.108.56.0/22", "91.108.4.0/22", "149.154.160.0/20"],
-        "port": "16384-32767",
-        "network": "udp"
-      },
-      {
-        "outboundTag": "proxy",
-        "port": "3478,4244,5222,5223,5228,50318,59234",
-        "network": "udp"
-      },
-      {
-        "outboundTag": "proxy",
-        "port": "50000-65535",
-        "domain": ["keyword:discord"],
-        "network": "udp"
       },
       {
         "domain": [
@@ -290,6 +272,7 @@
           "keyword:ozon",
           "keyword:xn--",
           "keyword:2gis",
+          "keyword:vkuser",
           "connectivitycheck.gstatic.com",
           "networkcheck.kde.org",
           "msftconnecttest.com",
@@ -299,8 +282,6 @@
           "firefox.com",
           "aeza.net",
           "vk.com",
-          "vkuseraudio.net",
-          "vkuser.net",
           "flcksbr.top",
           "ru.com",
           "ru.net",
@@ -365,9 +346,9 @@
       },
       "mux": {
         "enabled": true,
-        "concurrency": 4,
+        "concurrency": 2,
         "xudpConcurrency": 8,
-        "xudpProxyUDP443": "allow"
+        "xudpProxyUDP443": "reject"
       },
       "sockopt": {
         "tcpFastOpen": true,
@@ -408,16 +389,6 @@
           "type": "http"
         }
       }
-    },
-    {
-      "tag": "dns-out",
-      "protocol": "dns",
-      "settings": {
-        "nonIPQuery": "skip",
-        "network": "udp",
-        "address": "8.8.8.8",
-        "port": 53
-      }
     }
   ],
   "policy": {
@@ -436,16 +407,6 @@
       "ReflectionService"
     ]
   },
-  "fakedns": [
-    {
-      "ipPool": "198.18.0.0/16",
-      "poolSize": 512
-    },
-    {
-      "ipPool" : "fc00::/64",
-      "poolSize" : 512
-    }
-  ],
   "stats": {},
   "metrics": {
     "tag": "api"
