@@ -1,1 +1,1 @@
-vless://{user_id}@{domain}:{{ haproxy_port }}?encryption=none&security=tls&type=tcp&headerType=none&fp=chrome&alpn=h2#%F0%9F%87%A9%F0%9F%87%AA%20🇨🇭
+vless://{user_id}@{domain}:{port}?encryption=none&security=tls&type=tcp&headerType=none&fp=chrome&alpn=h2#{remark} Весь трафик в VPN (нерекомендуется)

@@ -116,12 +116,34 @@ http {
   resolver                             127.0.0.11 valid=60s;
   resolver_timeout                     2s;
 
-  # gzip
-  gzip                                 on;
-  gzip_vary                            on;
-  gzip_proxied                         any;
-  gzip_comp_level                      6;
-  gzip_types                           text/plain text/css text/xml application/json application/javascript application/rss+xml application/atom+xml image/svg+xml;
+  # Gzip Compression
+  gzip on;
+  gzip_vary on;
+  gzip_proxied any;
+  gzip_comp_level 6;
+  gzip_buffers 16 8k;
+  gzip_http_version 1.1;
+  gzip_min_length 256;
+  gzip_types
+    application/atom+xml
+    application/geo+json
+    application/javascript
+    application/x-javascript
+    application/json
+    application/ld+json
+    application/manifest+json
+    application/rdf+xml
+    application/rss+xml
+    application/xhtml+xml
+    application/xml
+    font/eot
+    font/otf
+    font/ttf
+    image/svg+xml
+    text/css
+    text/javascript
+    text/plain
+    text/xml;
 
   add_header X-XSS-Protection          "0" always;
   add_header X-Content-Type-Options    "nosniff" always;
