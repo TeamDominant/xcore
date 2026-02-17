@@ -1,0 +1,187 @@
+{
+  "log": {
+    "level": "debug",
+    "output": "access.log",
+    "timestamp": true
+  },
+  "dns": {
+    "servers": [
+      {
+        "type": "local",
+        "tag": "dns-main"
+      }
+    ],
+    "rules": [
+      {
+        "rule_set": [
+          "category-ads-all"
+        ],
+        "action": "predefined",
+        "rcode": "NOERROR"
+      }
+    ],
+    "final": "dns-main"
+  },
+  "inbounds": [
+    {
+      "type": "trojan",
+      "tag": "trojan-in",
+      "listen": "0.0.0.0",
+      "listen_port": 10443,
+      "users": [
+        {% for user in final_singbox_users %}
+        {
+          "name": "{{ user.name }}",
+          "password": "{{ user.password }}"
+        }{{ "," if not loop.last else "" }}
+        {% endfor %}
+      ],
+      "transport": {},
+      "multiplex": {
+        "enabled": true,
+        "padding": true
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "direct",
+      "tag": "IPv4",
+      "domain_resolver": {
+        "server": "dns-main",
+        "strategy": "prefer_ipv4"
+      }
+    },
+    {
+      "type": "direct",
+      "tag": "direct"
+    },
+    {
+      "type": "socks",
+      "tag": "warp",
+      "server": "warp",
+      "server_port": {{ warp_port }}
+    }
+  ],
+  "route": {
+    "rules": [
+      {
+        "action": "sniff"
+      },
+      {
+        "protocol": "dns",
+        "action": "hijack-dns"
+      },
+      {
+        "rule_set": [
+          "category-ads-all"
+        ],
+        "action": "reject",
+        "method": "drop"
+      },
+      {
+        "domain_suffix": [
+          ".ru",
+          ".su",
+          ".ru.com",
+          ".ru.net",
+          "habr.com",
+          "ntc.party",
+          "canva.com"
+        ],
+        "domain_keyword": [
+          "xn--"
+        ],
+        "rule_set": [
+          "geoip-ru",
+          "category-gov-ru",
+          "google-deepmind",
+          "openai",
+          "anthropic",
+          "xai"
+        ],
+        "outbound": "warp"
+      },
+      {
+        "rule_set": [
+          "google"
+        ],
+        "outbound": "IPv4"
+      }
+    ],
+    "rule_set": [
+      {
+        "tag": "geoip-ru",
+        "type": "local",
+        "format": "binary",
+        "path": "/var/www/ruleset/geoip-ru.srs"
+      },
+      {
+        "tag": "category-gov-ru",
+        "type": "local",
+        "format": "binary",
+        "path": "/var/www/ruleset/geosite-category-gov-ru.srs"
+      },
+      {
+        "tag": "category-ads-all",
+        "type": "local",
+        "format": "binary",
+        "path": "/var/www/ruleset/geosite-category-ads-all.srs"
+      },
+      {
+        "tag": "google",
+        "type": "local",
+        "format": "binary",
+        "path": "/var/www/ruleset/geosite-google.srs"
+      },
+      {
+        "tag": "google-deepmind",
+        "type": "local",
+        "format": "binary",
+        "path": "/var/www/ruleset/geosite-google-deepmind.srs"
+      },
+      {
+        "tag": "openai",
+        "type": "local",
+        "format": "binary",
+        "path": "/var/www/ruleset/geosite-openai.srs"
+      },
+      {
+        "tag": "anthropic",
+        "type": "local",
+        "format": "binary",
+        "path": "/var/www/ruleset/geosite-anthropic.srs"
+      },
+      {
+        "tag": "xai",
+        "type": "local",
+        "format": "binary",
+        "path": "/var/www/ruleset/geosite-xai.srs"
+      }
+    ]
+  },
+  "experimental": {
+    "cache_file": {
+      "enabled": true
+    },
+    "v2ray_api": {
+      "listen": "0.0.0.0:10812",
+      "stats": {
+        "enabled": true,
+        "inbounds": [
+          "trojan-in"
+        ],
+        "outbounds": [
+          "direct",
+          "warp",
+          "IPv4"
+        ],
+        "users": [
+          {% for user in final_singbox_users %}
+          "{{ user.name }}"{{ "," if not loop.last else "" }}
+          {% endfor %}
+        ]
+      }
+    }
+  }
+}

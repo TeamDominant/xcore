@@ -23,36 +23,55 @@ defaults
   mode http
   log global
   option tcplog
-  option tcpka
-  option dontlognull
+  option  dontlognull
   timeout connect 5000
   timeout client  50000
   timeout server  50000
   
-  # Keepalive настройки
-  timeout connect 10s
-  timeout http-keep-alive 10s
-  timeout http-request 15s
-
 frontend haproxy-tls
   mode tcp
   timeout client 1h
-  bind 0.0.0.0:443 ssl crt /etc/haproxy/certs/{{ domain_name }}.pem alpn h2,http/1.1
+  bind :::443 v4v6 ssl crt /etc/haproxy/certs/{{ domain_name }}.pem alpn h2,http/1.1
   tcp-request inspect-delay 5s
   tcp-request content accept if { req_ssl_hello_type 1 }
 
   use_backend reject if !{ ssl_fc_sni -i {{ domain_name }} } !{ ssl_fc_sni -m end .{{ domain_name }} }
-  use_backend %[lua.vless_auth]
+  use_backend %[lua.identify_protocol]
   default_backend nginx
 
-backend xray
+{% for proto in enriched_protocols %}
+
+{% if proto.type == 'vless' %}
+backend vless
   mode tcp
+  timeout server 1h
+  {% if proxy_core == 'xray' %}
   option tcp-check
-  server vless xray:10550 init-addr last,libc,none send-proxy-v2 check inter 10s
+  server vless xray:10550 init-addr last,libc,none check inter 10s send-proxy-v2
+  {% elif proxy_core == 'singbox' %}
+  server vless singbox:10444 init-addr last,libc,none check
+  {% endif %}
+{% endif %}
+
+{% if proto.type == 'trojan' %}
+{% if proxy_core == 'xray' %}
+backend trojan-nomux
+  mode tcp
+  timeout server 1h
+  option tcp-check
+  server trojan-nomux xray:10551 init-addr last,libc,none check inter 10s send-proxy-v2
+{% elif proxy_core == 'singbox' %}
+backend trojan-mux
+  mode tcp
+  timeout server 1h
+  server trojan-mux singbox:10443 init-addr last,libc,none check
+{% endif %}
+{% endif %}
+
+{% endfor %}
 
 backend nginx
   mode http
-  timeout server 10s
   option forwardfor
   http-reuse never
   server web nginx:36078 init-addr last,libc,none check inter 5s fall 2 rise 2

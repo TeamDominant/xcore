@@ -37,28 +37,6 @@
         "2001:4860:4860::8888",
         "2001:4860:4860::8844"
       ],
-      "doh.pub": [
-        "1.12.12.12",
-        "120.53.53.53"
-      ],
-      "dns.quad9.net": [
-        "9.9.9.9",
-        "149.112.112.112",
-        "2620:fe::fe",
-        "2620:fe::9"
-      ],
-      "dns.umbrella.com": [
-        "208.67.220.220",
-        "208.67.222.222",
-        "2620:119:35::35",
-        "2620:119:53::53"
-      ],
-      "dns.sse.cisco.com": [
-        "208.67.220.220",
-        "208.67.222.222",
-        "2620:119:35::35",
-        "2620:119:53::53"
-      ],
       "engage.cloudflareclient.com": [
         "162.159.192.1",
         "2606:4700:d0::a29f:c001"
@@ -66,7 +44,7 @@
     },
     "servers": [
       {
-        "address": "https+local://1.1.1.1/dns-query",
+        "address": "https://8.8.8.8/dns-query",
         "domains": [
           "{domain}",
           "geosite:category-android-app-download",
@@ -157,15 +135,15 @@
         "allowUnexpectedIPs": true,
         "timeoutMs": 1000
       },
-      "8.8.8.8"
+      {
+        "address": "https://1.1.1.1/dns-query", 
+        "tag": "remote-dns" 
+      }
     ],
-    "skipFallback": true,
     "queryStrategy": "UseIP"
   },
   "routing": {
     "domainStrategy": "IPIfNonMatch",
-    "domainMatcher": "hybrid",
-    "network": "tcp,udp",
     "rules": [
       {
         "inboundTag": [
@@ -285,6 +263,10 @@
         "outboundTag": "direct"
       },
       {
+        "port": 53,
+        "outboundTag": "dns-out"
+      },
+      {
         "domain": [
           "domain:ooklaserver.net"
         ],
@@ -298,9 +280,8 @@
       "tag": "socks",
       "port": 10808,
       "listen": "127.0.0.1",
-      "protocol": "mixed",
+      "protocol": "socks",
       "settings": {
-        "userLevel": 1,
         "udp": true
       },
       "sniffing": {
@@ -312,6 +293,14 @@
         "enabled": true,
         "routeOnly": false
       }
+    },
+    {
+      "listen": "127.0.0.1",
+      "port": 10809,
+      "protocol": "http",
+      "settings": {
+      },
+      "tag": "http"
     },
     {
       "tag": "api",
@@ -331,14 +320,7 @@
         "network": "tcp",
         "security": "tls",
         "sockopt": {
-          "tcpCongestion": "bbr",
-          "tcpFastOpen": true,
-          "tcpNoDelay": true
-        },
-        "tcpSettings": {
-          "header": {
-            "type": "none"
-          }
+          "tcpFastOpen": true
         },
         "tlsSettings": {
           "utls": {
@@ -351,8 +333,9 @@
       },
       "mux": {
         "enabled": true,
-        "concurrency": 6,
-        "xudpConcurrency": 4
+        "concurrency": 2,
+        "xudpConcurrency": 8,
+        "xudpProxyUDP443": "reject"
       },
       "settings": {
         "domainStrategy": "UseIP",
@@ -375,13 +358,11 @@
       "tag": "direct",
       "protocol": "freedom",
       "settings": {
-        "userLevel": 2
+        "domainStrategy": "UseIP"
       },
       "streamSettings": {
         "sockopt": {
-          "tcpCongestion": "bbr",
-          "tcpFastOpen": true,
-          "tcpMptcp": true
+          "tcpFastOpen": true
         }
       }
     },
@@ -393,6 +374,10 @@
           "type": "http"
         }
       }
+    },
+    {
+      "tag": "dns-out",
+      "protocol": "dns"
     }
   ],
   "policy": {
@@ -401,22 +386,6 @@
       "statsInboundUplink": true,
       "statsOutboundDownlink": true,
       "statsOutboundUplink": true
-    },
-    "levels": {
-      "1": {
-        "bufferSize": 384,
-        "connIdle": 60,
-        "downlinkOnly": 2,
-        "handshake": 2,
-        "uplinkOnly": 1
-      },
-      "2": {
-        "bufferSize": 512,
-        "connIdle": 60,
-        "downlinkOnly": 5,
-        "handshake": 6,
-        "uplinkOnly": 1
-      }
     }
   },
   "api": {

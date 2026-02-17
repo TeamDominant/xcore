@@ -4,8 +4,8 @@
     state: directory
     mode: '0755'
 
-- name: Генерируем секцию node для config.yaml
+- name: Генерируем секцию node для config.yml
   template:
-    src: config.yaml.j2
-    dest: "{{ remote_path }}/v2rs/node/config.yaml"
+    src: config.yml.j2
+    dest: "{{ remote_path }}/v2rs/node/config.yml"
     mode: '0644'

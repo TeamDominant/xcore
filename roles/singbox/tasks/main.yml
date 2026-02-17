@@ -1,0 +1,38 @@
+---
+- name: Подготовка списка пользователей (сохранение старых)
+  include_tasks: preserve_users.yml
+
+- name: Create Singbox directories structure
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ remote_path }}/singbox", mode: '0755' }
+    - { path: "{{ remote_path }}/singbox/config", mode: '0777' }
+    - { path: "{{ remote_path }}/singbox/scripts", mode: '0755' }
+
+- name: Копирование статических файлов
+  ansible.builtin.copy:
+    src: "files/{{ item }}"
+    dest: "{{ remote_path }}/singbox/{{ item }}"
+    mode: '0644'
+  loop:
+    - supervisord.conf
+
+- name: Создание лог-файла 
+  ansible.builtin.file:
+    path: "{{ remote_path }}/singbox/config/access.log"
+    state: touch
+    mode: '0666'
+
+- name: Deploy Singbox configuration files
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { src: 'config.json.j2', dest: '{{ remote_path }}/singbox/config/config.json', mode: '0644' }
+    - { src: 'Dockerfile.j2', dest: '{{ remote_path }}/singbox/Dockerfile', mode: '0644' }
+    - { src: 'rulesets.txt.j2', dest: '{{ remote_path }}/singbox/scripts/rulesets.txt', mode: '0644' }
+    - { src: 'update_rulesets.sh.j2', dest: '{{ remote_path }}/singbox/scripts/update_rulesets.sh', mode: '0755' }

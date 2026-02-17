@@ -4,6 +4,7 @@ location /grpc_node/ {
     grpc_set_header Host $host;
     grpc_set_header X-Real-IP $remote_addr;
     
+    # Убираем буферизацию для стримов
     client_max_body_size 0;
     grpc_read_timeout 1h;
     grpc_send_timeout 1h;

@@ -18,7 +18,7 @@ const platformData = {
             },
             { 
                 name: "Sing-box", 
-                url: "https://apps.apple.com/us/app/sing-box-vt/id6451272673", 
+                url: "https://github.com/SagerNet/sing-box/releases/download/v1.11.13/sing-box-1.11.13-windows-amd64.zip", 
                 scheme: "sing-box://import-remote-profile?url=", 
                 client: "singbox"
             },
@@ -47,7 +47,7 @@ const platformData = {
             },
             { 
                 name: "Sing-box", 
-                url: "https://apps.apple.com/us/app/sing-box-vt/id6451272673", 
+                url: "https://github.com/SagerNet/sing-box/releases/download/v1.11.13/SFA-1.11.13-universal.apk", 
                 scheme: "sing-box://import-remote-profile?url=", 
                 client: "singbox"
             },

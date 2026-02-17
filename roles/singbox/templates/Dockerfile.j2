@@ -1,0 +1,63 @@
+#######################################
+# 1) STAGING: Download and Prepare build
+#######################################
+FROM alpine:latest AS build
+
+# 1.11.13
+ARG SINGBOX_VERSION="{{ singbox_version }}"
+ENV SINGBOX_DIR=/tmp/singbox-download
+
+# Устанавливаем только необходимые инструменты для загрузки
+RUN apk add --no-cache wget
+
+WORKDIR /tmp
+
+# Скачиваем и распаковываем
+RUN wget -q -O singbox \
+    "https://github.com/Adam-Sizzler/sing-box-v2ray-api/releases/download/v${SINGBOX_VERSION}/sing-box-linux-amd64" && \
+    apk del wget && \
+    rm -rf /var/cache/apk/*
+
+#######################################
+# 2) FINAL: Runtime with Supervisord
+#######################################
+FROM alpine:latest
+
+# Путь к бинарнику выносим отдельно
+ENV SINGBOX_BIN_DIR=/usr/local/bin/singbox
+ENV SINGBOX_ETC_DIR=/usr/local/etc/singbox
+
+# Устанавливаем runtime зависимости
+RUN apk add --no-cache \
+    tzdata \
+    ca-certificates \
+    bash \
+    curl \
+    supervisor
+
+# Создаем структуру
+RUN mkdir -p ${SINGBOX_ETC_DIR} \
+    ${SINGBOX_BIN_DIR}/scripts \
+    /var/log/supervisor \
+    /run
+
+# Копируем бинарник (теперь это файл по пути /usr/local/bin/singbox/singbox)
+# Чтобы вызов был просто /usr/local/bin/singbox/singbox
+COPY --from=build /tmp/singbox ${SINGBOX_BIN_DIR}/singbox
+
+# Копируем скрипты и конфиги
+COPY supervisord.conf /etc/supervisor/supervisord.conf
+COPY scripts/update_rulesets.sh ${SINGBOX_BIN_DIR}/scripts/update_rulesets.sh
+COPY scripts/rulesets.txt ${SINGBOX_BIN_DIR}/scripts/rulesets.txt
+
+# Права
+RUN chmod +x ${SINGBOX_BIN_DIR}/singbox && \
+    chmod +x ${SINGBOX_BIN_DIR}/scripts/update_rulesets.sh
+    
+WORKDIR ${SINGBOX_ETC_DIR}
+
+# Объявляем Volume
+VOLUME ${SINGBOX_ETC_DIR}
+
+# Запуск через supervisor
+CMD ["supervisord", "-c", "/etc/supervisor/supervisord.conf"]

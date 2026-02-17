@@ -16,12 +16,6 @@ server {
     return 403;
   }
 
-  location /check_health {
-    access_log off;
-    add_header Content-Type text/plain;
-    return 200 "OK";
-  }
-
   # Enable locations
   include /etc/nginx/locations/*.conf;
 }

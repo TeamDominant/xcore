@@ -8,8 +8,8 @@
     group: "10001"
     mode: '0775'
 
-- name: Генерируем секцию backend для config.yaml
+- name: Генерируем секцию backend для config.yml
   template:
-    src: config.yaml.j2
-    dest: "{{ remote_path }}/v2rs/backend/config.yaml"
+    src: config.yml.j2
+    dest: "{{ remote_path }}/v2rs/backend/config.yml"
     mode: '0644'

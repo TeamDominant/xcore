@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+# ВАЖНО: Путь внутри контейнера, куда монтируется объем
+RULESET_DIR="/var/www/ruleset"
+
+# Файл со списком (автоматически определяем путь относительно скрипта)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LIST_FILE="${SCRIPT_DIR}/rulesets.txt"
+
+BASE_URL="https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set"
+GEOIP_URL="https://raw.githubusercontent.com/SagerNet/sing-geoip/rule-set/geoip-ru.srs"
+TORRENT_URL="https://raw.githubusercontent.com/FPPweb3/sb-rule-sets/main/torrent-clients.json"
+
+mkdir -p "$RULESET_DIR"
+
+# Функция для безопасного скачивания через curl
+download_file() {
+    local url=$1
+    local dest=$2
+    # Убираем echo, чтобы логи не перемешивались в кашу при параллельном запуске
+    # Оставляем вывод только при ошибке или успехе в одну строку
+    curl -Ls -f -o "${dest}.1" "$url" && \
+    mv -f "${dest}.1" "$dest" && echo "[OK] $dest" || \
+    (rm -f "${dest}.1" && echo "[ERR] Failed: $url")
+}
+
+# 1. Запускаем скачивание списков в фоне
+if [ -f "$LIST_FILE" ]; then
+    while IFS= read -r name || [ -n "$name" ]; do
+        [[ -z "$name" || "$name" =~ ^# ]] && continue
+        
+        # Добавили '&' в конце — запуск в фоне
+        download_file "${BASE_URL}/${name}.srs" "${RULESET_DIR}/${name}.srs" & 
+        
+    done < "$LIST_FILE"
+else
+    echo "Warning: $LIST_FILE not found."
+fi
+
+# 2. Доп файлы тоже запускаем в фоне
+download_file "$GEOIP_URL" "${RULESET_DIR}/geoip-ru.srs" &
+download_file "$TORRENT_URL" "${RULESET_DIR}/torrent-clients.json" &
+
+# 3. ВАЖНО: Ждем завершения всех фоновых процессов
+echo "Waiting for downloads..."
+wait
+
+# 4. Только после того как всё скачалось, меняем права
+chmod -R 755 "$RULESET_DIR"
+echo "Update finished at $(date)"

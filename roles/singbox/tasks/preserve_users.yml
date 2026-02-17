@@ -1,0 +1,49 @@
+---
+# 1. Проверяем наличие файла
+- name: Проверка наличия старого config.json
+  ansible.builtin.stat:
+    path: "{{ remote_path }}/singbox/config/config.json"
+  register: singbox_config_stat
+
+# 2. Читаем файл (только если он есть)
+- name: Чтение текущего конфига Singbox
+  ansible.builtin.slurp:
+    src: "{{ remote_path }}/singbox/config/config.json"
+  register: singbox_current_raw
+  when: singbox_config_stat.stat.exists
+
+# 3. Вытаскиваем массив пользователей (только если файл был прочитан)
+- name: Парсинг существующих пользователей из JSON
+  ansible.builtin.set_fact:
+    loaded_users: >-
+      {{
+        ((singbox_current_raw['content'] | b64decode | from_json).inbounds 
+         | selectattr('tag', 'equalto', 'trojan-in') | list | first).users
+        | default([])
+      }}
+  when: 
+    - singbox_config_stat.stat.exists
+    - singbox_current_raw.content is defined
+  ignore_errors: true
+
+# 4. Формируем финальный список
+# Логика:
+# - Берем ТВОЕГО готового пользователя (proxy_user_name + proxy_user_password)
+# - Добавляем к нему всех найденных в файле, КРОМЕ него самого (чтобы не было дублей и старый пароль не перезаписал новый)
+- name: Объединение текущего пользователя с сохраненными
+  ansible.builtin.set_fact:
+    final_singbox_users: >-
+      {{
+        [
+          {
+            'name': proxy_user_name,
+            'password': proxy_user_password
+          }
+        ]
+        +
+        (loaded_users | default([]) | rejectattr('name', 'equalto', proxy_user_name) | list)
+      }}
+
+- name: Отладка (показать кого будем записывать)
+  ansible.builtin.debug:
+    msg: "Итоговый список пользователей: {{ final_singbox_users | map(attribute='name') | list }}"

@@ -1,5 +1,5 @@
 # Установка алгоритма контроля перегрузки
-net.ipv4.tcp_congestion_control = {{ bbr_control }}
+net.ipv4.tcp_congestion_control = bbr
 
 # Установка дисциплины управления очередью по умолчанию (FQ - Fair Queueing)
-net.core.default_qdisc = {{ bbr_qdisc }}
+net.core.default_qdisc = fq

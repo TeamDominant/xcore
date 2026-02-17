@@ -12,8 +12,7 @@ check: ## Проверка доступности хостов
 	ansible -m ping all
 
 setup: ## Полная настройка серверов согласно group_vars
-	@echo "$(GREEN)Запуск настройки...$(NC)"
-	ansible-playbook playbooks/main.yml
+	ansible-playbook playbooks/main.yml -v
 
 dry-run: ## Пробный запуск (покажет изменения, но не применит их)
 	ansible-playbook playbooks/main.yml --check --diff

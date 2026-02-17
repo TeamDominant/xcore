@@ -1,7 +1,7 @@
-x-common: &common
-  user: ${CONTAINER_USER:-}                    # UID/GID пользователя в контейнере https://dev.to/acro5piano/specifying-user-and-group-in-docker-i2e
-
 x-container: &container
+  #environment:
+  #  - TZ=${TZ:-Asia/Bangkok}
+  #network_mode: bridge
   restart: ${RESTART_POLICY:-unless-stopped}   # Перезапускаться всегда кроме команды завершения или поломки healthcheck
   # cpuset: ${CPUSET:-}                        # Номера ядер ЦП, в которых разрешено выполнение (0-3, 0,1)
   # cpu_shares: ${CPU_SHARES:-512}             # Доля ЦП (относительный вес, макс. 1024) при распределении между контейнерами
@@ -86,17 +86,19 @@ services:
       context: ./nginx
       dockerfile: Dockerfile
     container_name: nginx
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - ./nginx/locations:/etc/nginx/locations:ro
       - ./nginx/var/www:/var/www:ro
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:36078/check_health"]
-      interval: 10s
+      test: ["CMD-SHELL", "pgrep -f nginx || exit 1"]
+      interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 20s
+      start_period: 10s
     deploy:
       resources:
         limits:
@@ -104,6 +106,7 @@ services:
           memory: 120M
     profiles: [nginx, full, base]
 
+{% if proxy_core == "xray" %}
   # Xray proxy service
   xray:
     <<: [*container, *logging]
@@ -125,6 +128,34 @@ services:
           cpus: '0.5'
           memory: 150M
     profiles: [xray, full, base]
+
+{% elif proxy_core == "singbox" %}
+  # Singbox proxy service
+  singbox:
+    <<: [*container, *logging]
+    build:
+      context: ./singbox
+      dockerfile: Dockerfile
+    container_name: singbox
+    dns:
+      - 1.1.1.1
+    volumes:
+      - ${SINGBOX_CONFIG_PATH:-./singbox/config}:/usr/local/etc/singbox/
+      - ./nginx/var/www/ruleset:/var/www/ruleset
+      - ./singbox/scripts:/usr/local/bin/singbox/scripts:ro
+    healthcheck:
+      test: ["CMD", "pidof", "singbox"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 150M
+    profiles: [singbox, full, base]
+{% endif %}
 
   # Warp encrypted tunnel to Cloudflare
   warp:
@@ -158,17 +189,17 @@ services:
           memory: 200M
     profiles: [warp, full]
 
-  # V2RAY BACKEND - main management service for v2ray-stat
+  # V2RAY BACKEND - main management service for v2rs
   backend:
-    <<: [*container, *logging, *common]
-    image: ghcr.io/adam-sizzler/v2ray-stat-backend:${VERSION:-latest}
-    container_name: v2ray-stat-backend
+    <<: [*container, *logging]
+    image: ghcr.io/adam-sizzler/v2rs-backend:${VERSION:-latest}
+    container_name: v2rs-backend
     volumes:
-      - ${CONFIG_PATH:-./v2rs/backend/config.yaml}:/app/config.yaml:ro
+      - ${CONFIG_PATH:-./v2rs/backend/config.yml}:/app/config.yml:ro
       - ${CERTS_PATH:-./v2rs/certs}:/app/certs
       - backend-data:/app/data
     healthcheck:
-      test: ["CMD-SHELL", "pgrep -f v2ray-stat-backend || exit 1"]
+      test: ["CMD-SHELL", "pgrep -f v2rs-backend || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -182,15 +213,18 @@ services:
 
   # V2RAY NODE - node for processing user traffic
   node:
-    <<: [*container, *logging, *common]
-    image: ghcr.io/adam-sizzler/v2ray-stat-node:${VERSION:-latest}
-    container_name: v2ray-stat-node
+    <<: [*container, *logging]
+    image: ghcr.io/adam-sizzler/v2rs-node:${VERSION:-latest}
+    container_name: v2rs-node
+    user: "0:0"
     volumes:
-      - ${CONFIG_PATH:-./v2rs/node/config.yaml}:/app/config.yaml:ro
+      - ${CONFIG_PATH:-./v2rs/node/config.yml}:/app/config.yml:ro
       - ${CERTS_PATH:-./v2rs/certs}:/app/certs
       - ${XRAY_CONFIG_PATH:-./xray/config}:/usr/local/etc/xray
+      - ./haproxy/data:/etc/haproxy/data
+      - /var/run/docker.sock:/var/run/docker.sock
     healthcheck:
-      test: ["CMD-SHELL", "pgrep -f v2ray-stat-node || exit 1"]
+      test: ["CMD-SHELL", "pgrep -f v2rs-node || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -204,15 +238,16 @@ services:
 
   # V2RAY SUBSCRIPTION - subscription service for users
   subscription:
-    <<: [*container, *logging, *common]
-    image: ghcr.io/adam-sizzler/v2ray-stat-subscription:${VERSION:-latest}
-    container_name: v2ray-stat-subscription
+    <<: [*container, *logging]
+    image: ghcr.io/adam-sizzler/v2rs-subscription:${VERSION:-latest}
+    container_name: v2rs-subscription
     volumes:
-      - ${CONFIG_PATH:-./v2rs/subscription/config.yaml}:/app/config.yaml:ro
+      - ${CONFIG_PATH:-./v2rs/subscription/config.yml}:/app/config.yml:ro
       - ${CERTS_PATH:-./v2rs/certs}:/app/certs
       - ./v2rs/subscription/templates:/app/templates:ro
+      - ./v2rs/subscription/assets:/app/assets:ro
     healthcheck:
-      test: ["CMD-SHELL", "pgrep -f v2ray-stat-subscription || exit 1"]
+      test: ["CMD-SHELL", "pgrep -f v2rs-subscription || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -236,7 +271,13 @@ volumes:
 
 networks:
   default:
-    driver: ${NETWORK_DRIVER:-bridge}
+#    driver: ${NETWORK_DRIVER:-bridge}
+#    driver_opts:
+#      com.docker.network.dns.ttl: "60"
+#      com.docker.network.dns.search: "."
+    enable_ipv6: true
     ipam:
+      driver: default
       config:
-        - subnet: ${DOCKER_SUBNET:-172.32.0.0/28}
+        - subnet: ${DOCKER_SUBNET:-172.18.0.0/16}
+        - subnet: ${DOCKER_SUBNET_V6:-fd00:2::/64}

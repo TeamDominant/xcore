@@ -1,6 +1,23 @@
 ---
-- name: Generate shared UUID if not exists
+
+- name: Generate unique credentials for protocols
   set_fact:
-    proxy_user_uuid: "{{ 999999 | random | to_uuid }}"
-  when: proxy_user_uuid is not defined
+    enriched_protocols: "{{ generated_protocols_string | from_yaml }}"
+  vars:
+    generated_protocols_string: >-
+      {% set proto_list = [] %}
+      {% for proto in proxy_protocols %}
+        {% set user_list = [] %}
+        {% for user in proto.users %}
+          {% set pass = lookup('password', '/dev/null chars=ascii_letters,digits length=25') %}
+          {% set _ = user_list.append({
+            'name': user.name,
+            'uuid': 1000000 | random | to_uuid,
+            'password': pass,
+            'password_sha224': pass | hash('sha224')
+          }) %}
+        {% endfor %}
+        {% set _ = proto_list.append({'type': proto.type, 'users': user_list}) %}
+      {% endfor %}
+      {{ proto_list }}
   run_once: true

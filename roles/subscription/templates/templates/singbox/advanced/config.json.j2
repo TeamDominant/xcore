@@ -1,0 +1,649 @@
+{
+  "log": {
+    "level": "info",
+    "timestamp": true
+  },
+  "dns": {
+    "servers": [
+      {
+        "tag": "dns-remote",
+        "address": "tls://1.1.1.1",
+        "detour": "select"
+      },
+      {
+        "tag": "dns-local",
+        "address": "195.208.4.1",
+        "strategy": "ipv4_only"
+      },
+      {
+        "tag": "dns-block",
+        "address": "rcode://success"
+      }
+    ],
+    "rules": [
+      {
+        "rule_set": [
+          "category-ads-all"
+        ],
+        "domain_keyword": [
+          "analytics",
+          "telemetry",
+          "tracking",
+          "reklama",
+          "firebase",
+          "bongacams"
+        ],
+        "domain_suffix": [
+          "octoclick.com",
+          "2022welcome.com",
+          "octo25.me"
+        ],
+        "server": "dns-block",
+        "disable_cache": true
+      },
+      {
+        "domain_suffix": [
+          "habr.com",
+          "kemono.su",
+          "jut.su",
+          "kara.su",
+          "theins.ru",
+          "tvrain.ru",
+          "echo.msk.ru",
+          "the-village.ru",
+          "snob.ru",
+          "novayagazeta.ru",
+          "moscowtimes.ru"
+        ],
+        "domain_keyword": [
+          "animego",
+          "yummyanime",
+          "yummy-anime",
+          "animeportal",
+          "anime-portal",
+          "animedub",
+          "anidub",
+          "animelib",
+          "ikianime",
+          "anilibria"
+        ],
+        "rule_set": [
+          "telegram",
+          "google"
+        ],
+        "server": "dns-remote"
+      },
+      {
+        "domain_suffix": [
+          "{domain}",
+          ".ru",
+          ".su",
+          ".ru.com",
+          ".ru.net",
+          "vk.com",
+          "aeza.net",
+          "networkcheck.kde.org",
+          "wikipedia.org",
+          "kudago.com",
+          "msftconnecttest.com",
+          "kinescope.io",
+          "redheadsound.studio",
+          "icloud.com",
+          "plplayer.online",
+          "lomont.site",
+          "remanga.org",
+          "flcksbr.top",
+          "firefox.com",
+          "porno",
+          "shopstory.live"
+        ],
+        "domain_keyword": [
+          "researchgate",
+          "wildberries",
+          "aliexpress",
+          "nextcloud",
+          "kaspersky",
+          "springer",
+          "snapchat",
+          "taxitax",
+          "yandex",
+          "yango",
+          "stepik",
+          "pikabu",
+          "roblox",
+          "likee",
+          "steam",
+          "viber",
+          "skype",
+          "yappy",
+          "porno",
+          "wiki",
+          "okko",
+          "wink",
+          "kion",
+          "ozon",
+          "xn--",
+          "2gis",
+          "vkuser",
+          "miradres",
+          "premier",
+          "shutterstock",
+          "diginetica",
+          "kinescopecdn",
+          "browserscan",
+          "surfsharkdns",
+          "ip-api.com"
+        ],
+        "rule_set": [
+          "category-gov-ru",
+          "yandex",
+          "vk",
+          "mailru",
+          "ozon",
+          "zoom",
+          "reddit",
+          "twitch",
+          "tumblr",
+          "pinterest",
+          "deviantart",
+          "duckduckgo",
+          "yahoo",
+          "mozilla",
+          "oracle",
+          "adobe",
+          "blender",
+          "drweb",
+          "gitlab",
+          "debian",
+          "canonical",
+          "python",
+          "doi",
+          "springer",
+          "elsevier",
+          "sciencedirect",
+          "clarivate",
+          "sci-hub",
+          "duolingo",
+          "torrent-clients"
+        ],
+        "server": "dns-local"
+      },
+      {
+        "inbound": [
+          "tun-in"
+        ],
+        "server": "dns-remote"
+      }
+    ],
+    "final": "dns-local"
+  },
+  "inbounds": [
+    {
+      "type": "tun",
+      "tag": "tun-in",
+      "interface_name": "tun0",
+      "stack": "system",
+      "address": [
+        "172.19.0.1/28",
+        "fdfe:dcba:9876::1/126"
+      ],
+      "auto_route": true,
+      "strict_route": true,
+      "sniff_override_destination": true
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "direct",
+      "tag": "direct"
+    },
+{% for host in groups['servers'] %}
+    {
+      "type": "trojan",
+      "tag": "{{ host }}",
+      "server": "{domain}",
+      "server_port": {port},
+      "password": "{user_id}",
+      "tls": {
+        "enabled": true,
+        "server_name": "{domain}",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        }
+      },
+      "transport": {},
+      "multiplex": {
+        "enabled": true,
+        "padding": true
+      }
+    },{% if not loop.last %},{% endif %}
+{% endif %}
+    {
+      "type": "selector",
+      "tag": "select",
+      "outbounds": [
+        "⚡️ Auto",
+{% for host in groups['servers'] %}
+        "{{ host }}"{% if not loop.last %},{% endif %}
+{% endfor %}
+      ]
+    },
+    {
+      "tag": "⚡️ Auto",
+      "type": "urltest",
+      "url": "https://cp.cloudflare.com/generate_204",
+      "outbounds": [
+{% for host in groups['servers'] %}
+        "{{ host }}"{% if not loop.last %},{% endif %}
+{% endfor %}
+      ]
+    }
+  ],
+  "route": {
+    "auto_detect_interface": true,
+    "rules": [
+      {
+        "action": "sniff"
+      },
+      {
+        "protocol": "dns",
+        "action": "hijack-dns"
+      },
+      {
+        "ip_is_private": true,
+        "outbound": "direct"
+      },
+      {
+        "rule_set": [
+          "category-ads-all"
+        ],
+        "domain_suffix": [
+          "octoclick.com",
+          "2022welcome.com",
+          "octo25.me"
+        ],
+        "domain_keyword": [
+          "analytics",
+          "telemetry",
+          "tracking",
+          "reklama",
+          "firebase",
+          "bongacams"
+        ],
+        "action": "reject",
+        "method": "drop"
+      },
+      {
+        "domain_suffix": [
+          "habr.com",
+          "kemono.su",
+          "jut.su",
+          "kara.su",
+          "theins.ru",
+          "tvrain.ru",
+          "echo.msk.ru",
+          "the-village.ru",
+          "snob.ru",
+          "novayagazeta.ru",
+          "moscowtimes.ru"
+        ],
+        "domain_keyword": [
+          "animego",
+          "yummyanime",
+          "yummy-anime",
+          "animeportal",
+          "anime-portal",
+          "animedub",
+          "anidub",
+          "animelib",
+          "ikianime",
+          "anilibria"
+        ],
+        "rule_set": [
+          "telegram",
+          "google"
+        ],
+        "outbound": "select"
+      },
+      {
+        "domain_suffix": [
+          "{domain}",
+          ".ru",
+          ".su",
+          ".ru.com",
+          ".ru.net",
+          "vk.com",
+          "aeza.net",
+          "networkcheck.kde.org",
+          "wikipedia.org",
+          "kudago.com",
+          "msftconnecttest.com",
+          "kinescope.io",
+          "redheadsound.studio",
+          "icloud.com",
+          "plplayer.online",
+          "lomont.site",
+          "remanga.org",
+          "flcksbr.top",
+          "firefox.com",
+          "porno",
+          "shopstory.live"
+        ],
+        "domain_keyword": [
+          "researchgate",
+          "wildberries",
+          "aliexpress",
+          "nextcloud",
+          "kaspersky",
+          "springer",
+          "snapchat",
+          "taxitax",
+          "yandex",
+          "yango",
+          "stepik",
+          "pikabu",
+          "roblox",
+          "likee",
+          "steam",
+          "viber",
+          "skype",
+          "yappy",
+          "porno",
+          "wiki",
+          "okko",
+          "wink",
+          "kion",
+          "ozon",
+          "xn--",
+          "2gis",
+          "vkuser",
+          "miradres",
+          "premier",
+          "shutterstock",
+          "diginetica",
+          "kinescopecdn",
+          "browserscan",
+          "surfsharkdns",
+          "ip-api.com"
+        ],
+        "ip_cidr": [
+          "{ip}"
+        ],
+        "rule_set": [
+          "category-gov-ru",
+          "yandex",
+          "vk",
+          "mailru",
+          "ozon",
+          "zoom",
+          "reddit",
+          "twitch",
+          "tumblr",
+          "pinterest",
+          "deviantart",
+          "duckduckgo",
+          "yahoo",
+          "mozilla",
+          "oracle",
+          "adobe",
+          "blender",
+          "drweb",
+          "gitlab",
+          "debian",
+          "canonical",
+          "python",
+          "doi",
+          "springer",
+          "elsevier",
+          "sciencedirect",
+          "clarivate",
+          "sci-hub",
+          "duolingo",
+          "torrent-clients"
+        ],
+        "outbound": "direct"
+      },
+      {
+        "action": "resolve",
+        "strategy": "prefer_ipv4"
+      },
+      {
+        "rule_set": [
+          "geoip-ru"
+        ],
+        "outbound": "direct"
+      },
+      {
+        "domain_suffix": [
+          "ooklaserver.net"
+        ],
+        "port": 8080,
+        "outbound": "direct"
+      },
+      {
+        "inbound": [
+          "tun-in"
+        ],
+        "outbound": "select"
+      }
+    ],
+    "rule_set": [
+      {
+        "tag": "torrent-clients",
+        "type": "remote",
+        "format": "source",
+        "url": "https://{domain}/ruleset/torrent-clients.json"
+      },
+      {
+        "tag": "geoip-ru",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geoip-ru.srs"
+      },
+      {
+        "tag": "category-gov-ru",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-category-gov-ru.srs"
+      },
+      {
+        "tag": "yandex",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-yandex.srs"
+      },
+      {
+        "tag": "google",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-google.srs"
+      },
+      {
+        "tag": "telegram",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-telegram.srs"
+      },
+      {
+        "tag": "vk",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-vk.srs"
+      },
+      {
+        "tag": "mailru",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-mailru.srs"
+      },
+      {
+        "tag": "ozon",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-ozon.srs"
+      },
+      {
+        "tag": "zoom",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-zoom.srs"
+      },
+      {
+        "tag": "reddit",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-reddit.srs"
+      },
+      {
+        "tag": "twitch",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-twitch.srs"
+      },
+      {
+        "tag": "tumblr",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-tumblr.srs"
+      },
+      {
+        "tag": "4chan",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-4chan.srs"
+      },
+      {
+        "tag": "pinterest",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-pinterest.srs"
+      },
+      {
+        "tag": "deviantart",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-deviantart.srs"
+      },
+      {
+        "tag": "duckduckgo",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-duckduckgo.srs"
+      },
+      {
+        "tag": "yahoo",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-yahoo.srs"
+      },
+      {
+        "tag": "mozilla",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-mozilla.srs"
+      },
+      {
+        "tag": "oracle",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-oracle.srs"
+      },
+      {
+        "tag": "adobe",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-adobe.srs"
+      },
+      {
+        "tag": "blender",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-blender.srs"
+      },
+      {
+        "tag": "drweb",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-drweb.srs"
+      },
+      {
+        "tag": "gitlab",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-gitlab.srs"
+      },
+      {
+        "tag": "debian",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-debian.srs"
+      },
+      {
+        "tag": "canonical",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-canonical.srs"
+      },
+      {
+        "tag": "python",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-python.srs"
+      },
+      {
+        "tag": "doi",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-doi.srs"
+      },
+      {
+        "tag": "springer",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-springer.srs"
+      },
+      {
+        "tag": "elsevier",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-elsevier.srs"
+      },
+      {
+        "tag": "sciencedirect",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-sciencedirect.srs"
+      },
+      {
+        "tag": "clarivate",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-clarivate.srs"
+      },
+      {
+        "tag": "sci-hub",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-sci-hub.srs"
+      },
+      {
+        "tag": "duolingo",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-duolingo.srs"
+      },
+      {
+        "tag": "category-ads-all",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://{domain}/ruleset/geosite-category-ads-all.srs"
+      }
+    ]
+  },
+  "experimental": {
+    "cache_file": {
+      "enabled": true
+    }
+  }
+}

@@ -1,0 +1,58 @@
+# Log Settings
+log_config:
+  level: info                                           # Logging level: none, error, warn, info, debug, trace
+  mode: inclusive                                       # Mode: inclusive (this and lower), exclusive (only this)
+
+# Timezone Settings 
+TZ: Asia/Bangkok                                        # IANA timezone name (e.g., Europe/Amsterdam, Asia/Singapore). If empty, uses TZ environment variable or UTC.
+
+# V2RS-Sub Settings
+subscription:
+  listen_address: 0.0.0.0                               # Listening address for the subscription server. '127.0.0.1' restricts access to localhost.
+  listen_port: 9264                                     # Listening port for the subscription server. Must be between 1 and 65535.
+  listen_grpc_port: 9263                                # Listening port for the gRPC server.
+
+node_metadata:
+{% for host in groups['servers'] %}
+  {{ host }}:
+    remark_placeholder: 🇨🇭
+    domain_placeholder: "{{ hostvars[host].domain_name }}"
+    ip_placeholder: "{{ hostvars[host].ansible_host }}"
+    port_placeholder: "{{ hostvars[host].haproxy_port | default(haproxy_port) }}"
+{% endfor %}
+
+# Subscription Settings
+sub_config:
+  defaults:
+    headers:
+      Profile-Title: "base64:0J/QvtC00L/QuNGB0LrQsCDQtNC70Y8g0YLQtdCx0Y8g4p2k77iP"
+      Profile-Update-Interval: "12"
+      Support-Url: "https://natribu.org/"
+      Profile-Web-Page-Url: "https://{{ domain_name }}"
+      Announce: "base64:0JLRgdC1INGA0LDQsdC+0YLQsNC10YIg0LIg0YjRgtCw0YLQvdC+0Lwg0YDQtdC20LjQvNC1LCDQoNCa0J0g0KPQldCR0Ksh"
+    clients: ["xray", "singbox"]
+    nodes:
+{% for host in groups['servers'] %}
+      - "{{ host }}"
+{% endfor %}
+    templates:
+      base:
+      advanced:
+{% for host in groups['servers'] %}
+        {{ host }}: "config"
+{% endfor %}
+  groups:
+    premium:
+      clients: ["xray", "mihomo", "singbox"]
+      templates:
+        base:
+{% for host in groups['servers'] %}
+          {{ host }}: "config"
+{% endfor %}
+        advanced:
+{% for host in groups['servers'] %}
+          {{ host }}: "config"
+{% endfor %}
+  users:
+    premium:
+      users: ["cortez"]

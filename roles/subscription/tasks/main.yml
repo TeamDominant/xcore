@@ -1,3 +1,11 @@
+---
+
+- name: Синхронизация статических файлов (assets)
+  ansible.builtin.copy:
+    src: assets
+    dest: "{{ remote_path }}/v2rs/subscription/"
+    mode: '0755'
+
 - name: Создаём директорию для subscription
   ansible.builtin.file:
     path: "{{ remote_path }}/v2rs/subscription/templates"
@@ -24,8 +32,8 @@
   loop_control:
     label: "{{ item.path }}"
 
-- name: Генерируем секцию subscription для config.yaml
+- name: Генерируем секцию subscription для config.yml
   template:
-    src: config.yaml.j2
-    dest: "{{ remote_path }}/v2rs/subscription/config.yaml"
+    src: config.yml.j2
+    dest: "{{ remote_path }}/v2rs/subscription/config.yml"
     mode: '0644'
