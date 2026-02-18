@@ -10,7 +10,78 @@
       tags: ['common']
       when: setup_common | default(true)
 
+    - role: package
+      tags: ['package']
+      when: setup_package | default(true)
+
+    - role: ipv6
+      tags: ['ipv6']
+      when: setup_ipv6_disable | default(false)
+
+    - role: swap
+      tags: ['swap']
+      when: setup_swap | default(false)
+
+    - role: bbr
+      tags: ['bbr']
+      when: setup_bbr | default(false)
+
+    - role: autoupdate
+      tags: ['autoupdate']
+      when: setup_autoupdate | default(false)
+
+    - role: shellinabox
+      tags: ['shellinabox']
+      when: setup_shellinabox | default(false)
+
+    - role: firewall
+      tags: ['firewall']
+      when: setup_firewall | default(false)
+
+    - role: ssh
+      tags: ['ssh']
+      when: setup_ssh_hardening | default(false)
+
+    - role: docker
+      tags: ['docker']
+      when: setup_docker | default(false)
+
+    - role: certbot
+      tags: ['certbot']
+      when: setup_certbot | default(false)
 
     - role: haproxy
       tags: ['certbot']
       when: setup_haproxy | default(false)
+
+    - role: nginx
+      tags: ['nginx']
+      when: setup_nginx | default(false)
+
+    - role: xray
+      tags: ['xray']
+      when: proxy_core == "xray"
+
+    - role: singbox
+      tags: ['singbox']
+      when: proxy_core == "singbox"
+
+    - role: warp
+      tags: ['warp']
+      when: setup_warp | default(false)
+
+    - role: backend
+      tags: ['backend']
+      when: setup_backend | default(false)
+
+    - role: node
+      tags: ['node']
+      when: setup_node | default(false)
+
+    - role: subscription
+      tags: ['subscription']
+      when: setup_subscription | default(false)
+
+    - role: deploy
+      tags: ['deploy']
+      when: setup_deploy | default(false)
