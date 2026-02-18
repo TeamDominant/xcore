@@ -1,6 +1,4 @@
 ---
-- name: Подготовка списка пользователей (сохранение старых)
-  include_tasks: preserve_users.yml
 
 - name: Create Singbox directories structure
   ansible.builtin.file:

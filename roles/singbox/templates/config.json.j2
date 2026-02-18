@@ -23,16 +23,21 @@
     "final": "dns-main"
   },
   "inbounds": [
+    {% for protocol in proxy_protocols %}
     {
-      "type": "trojan",
-      "tag": "trojan-in",
+      "type": "{{ protocol.type }}",
+      "tag": "{{ protocol.type }}-in",
       "listen": "0.0.0.0",
-      "listen_port": 10443,
+      "listen_port": {{ 10550 if protocol.type == 'vless' else 10443 }},
       "users": [
-        {% for user in final_singbox_users %}
+        {% for user in protocol.users %}
         {
           "name": "{{ user.name }}",
-          "password": "{{ user.password }}"
+          {% if protocol.type == 'vless' %}
+          "uuid": "{{ user.uuid | default('generate-uuid-here-or-from-vars') }}"
+          {% elif protocol.type == 'trojan' %}
+          "password": "{{ user.password | default('default-password') }}"
+          {% endif %}
         }{{ "," if not loop.last else "" }}
         {% endfor %}
       ],
@@ -41,7 +46,8 @@
         "enabled": true,
         "padding": true
       }
-    }
+    }{{ "," if not loop.last else "" }}
+    {% endfor %}
   ],
   "outbounds": [
     {
@@ -169,7 +175,9 @@
       "stats": {
         "enabled": true,
         "inbounds": [
-          "trojan-in"
+        {% for proto in enriched_protocols %}
+          "{{ proto.type }}-in"{{ "," if not loop.last else "" }}
+        {% endfor %}
         ],
         "outbounds": [
           "direct",
@@ -177,8 +185,16 @@
           "IPv4"
         ],
         "users": [
-          {% for user in final_singbox_users %}
-          "{{ user.name }}"{{ "," if not loop.last else "" }}
+        {% set all_users = [] %}
+          {% for proto in enriched_protocols %}
+            {% for user in proto.users %}
+              {% if user.name not in all_users %}
+                {% set _ = all_users.append(user.name) %}
+              {% endif %}
+            {% endfor %}
+          {% endfor %}
+          {% for username in all_users %}
+          "{{ username }}"{{ "," if not loop.last else "" }}
           {% endfor %}
         ]
       }
