@@ -24,7 +24,7 @@
     src: 'users.csv.j2'
     dest: '{{ remote_path }}/haproxy/data/users.csv'
     mode: '0644'
-    force: no
+    force: yes
 
 - name: Deploy HAProxy configuration
   ansible.builtin.template:

@@ -211,6 +211,10 @@ services:
           memory: 50M
     profiles: [backend, full]
 
+{% set proxy_volume_map = {
+  "xray": "${XRAY_CONFIG_PATH:-./xray/config}:/usr/local/etc/xray",
+  "singbox": "${SINGBOX_CONFIG_PATH:-./singbox/config}:/usr/local/etc/singbox"
+} %}
   # V2RAY NODE - node for processing user traffic
   node:
     <<: [*container, *logging]
@@ -220,7 +224,7 @@ services:
     volumes:
       - ${CONFIG_PATH:-./v2rs/node/config.yml}:/app/config.yml:ro
       - ${CERTS_PATH:-./v2rs/certs}:/app/certs
-      - ${XRAY_CONFIG_PATH:-./xray/config}:/usr/local/etc/xray
+      - {{ proxy_volume_map[proxy_core] }}
       - ./haproxy/data:/etc/haproxy/data
       - /var/run/docker.sock:/var/run/docker.sock
     healthcheck:

@@ -217,15 +217,19 @@
         "enabled": true,
         "padding": true
       }
-    },{% if not loop.last %},{% endif %}
+    },
+{% if not loop.last %},
 {% endif %}
+{% endfor %}
     {
       "type": "selector",
       "tag": "select",
       "outbounds": [
         "⚡️ Auto",
 {% for host in groups['servers'] %}
-        "{{ host }}"{% if not loop.last %},{% endif %}
+        "{{ host }}"
+{% if not loop.last %},
+{% endif %}
 {% endfor %}
       ]
     },
@@ -235,7 +239,9 @@
       "url": "https://cp.cloudflare.com/generate_204",
       "outbounds": [
 {% for host in groups['servers'] %}
-        "{{ host }}"{% if not loop.last %},{% endif %}
+        "{{ host }}"
+{% if not loop.last %},
+{% endif %}
 {% endfor %}
       ]
     }

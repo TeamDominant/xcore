@@ -1,12 +1,9 @@
 {% for proto in enriched_protocols %}
 {% for user in proto.users %}
-
 {% if 'vless' in proto.type %}
 1,{{ user.name }},{{ user.uuid }}
-
 {% elif 'trojan' in proto.type %}
 1,{{ user.name }},{{ user.password_sha224 }}
-
 {% endif %}
 {% endfor %}
 {% endfor %}

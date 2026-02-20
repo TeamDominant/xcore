@@ -1,39 +1,28 @@
 ---
 
-- name: Синхронизация статических файлов (assets)
+- name: Синхронизация статических файлов и директорий
   ansible.builtin.copy:
-    src: assets
+    src: "{{ item }}"
     dest: "{{ remote_path }}/v2rs/subscription/"
     mode: '0755'
-
-- name: Создаём директорию для subscription
-  ansible.builtin.file:
-    path: "{{ remote_path }}/v2rs/subscription/templates"
-    state: directory
-    mode: '0755'
-
-- name: Создаем структуру директорий для шаблонов подписки
-  ansible.builtin.file:
-    path: "{{ remote_path }}/v2rs/subscription/templates/{{ item.path }}"
-    state: directory
-    mode: '0755'
-  with_filetree: "templates/templates"
-  when: item.state == 'directory'
-  loop_control:
-    label: "{{ item.path }}"
-
-- name: Рекурсивно копируем и обрабатываем файлы шаблонов
-  ansible.builtin.template:
-    src: "{{ item.src }}"
-    dest: "{{ remote_path }}/v2rs/subscription/templates/{{ item.path }}"
-    mode: '0644'
-  with_filetree: "templates/templates"
-  when: item.state == 'file'
-  loop_control:
-    label: "{{ item.path }}"
+  loop:
+    - assets
+    - templates
 
 - name: Генерируем секцию subscription для config.yml
   template:
     src: config.yml.j2
     dest: "{{ remote_path }}/v2rs/subscription/config.yml"
     mode: '0644'
+
+- name: Копирование файлов singbox и mihomo
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ remote_path }}/v2rs/subscription/templates/{{ item.dest }}"
+    mode: '0644'
+  loop:
+    - { src: 'templates/singbox/advanced/config.json.j2', dest: 'singbox/advanced/config.json' }
+    - { src: 'templates/mihomo/advanced/base.yml.j2', dest: 'mihomo/advanced/base.yaml' }
+    - { src: 'templates/mihomo/advanced/config.yml.j2', dest: 'mihomo/advanced/config.yml' }
+    - { src: 'templates/xray/advanced/config.json.j2', dest: 'xray/advanced/config.json' }
+    - { src: 'templates/xray/base/config.base.j2', dest: 'xray/base/config.base' }

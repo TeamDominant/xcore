@@ -14,10 +14,6 @@
       tags: ['package']
       when: setup_package | default(true)
 
-    - role: ipv6
-      tags: ['ipv6']
-      when: setup_ipv6_disable | default(false)
-
     - role: swap
       tags: ['swap']
       when: setup_swap | default(false)
@@ -51,7 +47,7 @@
       when: setup_certbot | default(false)
 
     - role: haproxy
-      tags: ['certbot']
+      tags: ['haproxy']
       when: setup_haproxy | default(false)
 
     - role: nginx

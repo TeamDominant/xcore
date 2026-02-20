@@ -23,23 +23,23 @@
     "final": "dns-main"
   },
   "inbounds": [
-    {% for protocol in proxy_protocols %}
+{% for protocol in enriched_protocols %}
     {
       "type": "{{ protocol.type }}",
       "tag": "{{ protocol.type }}-in",
       "listen": "0.0.0.0",
       "listen_port": {{ 10550 if protocol.type == 'vless' else 10443 }},
       "users": [
-        {% for user in protocol.users %}
+{% for user in protocol.users %}
         {
           "name": "{{ user.name }}",
-          {% if protocol.type == 'vless' %}
+{% if protocol.type == 'vless' %}
           "uuid": "{{ user.uuid | default('generate-uuid-here-or-from-vars') }}"
-          {% elif protocol.type == 'trojan' %}
+{% elif protocol.type == 'trojan' %}
           "password": "{{ user.password | default('default-password') }}"
-          {% endif %}
+{% endif %}
         }{{ "," if not loop.last else "" }}
-        {% endfor %}
+{% endfor %}
       ],
       "transport": {},
       "multiplex": {
@@ -47,7 +47,7 @@
         "padding": true
       }
     }{{ "," if not loop.last else "" }}
-    {% endfor %}
+{% endfor %}
   ],
   "outbounds": [
     {
@@ -175,9 +175,9 @@
       "stats": {
         "enabled": true,
         "inbounds": [
-        {% for proto in enriched_protocols %}
+{% for proto in enriched_protocols %}
           "{{ proto.type }}-in"{{ "," if not loop.last else "" }}
-        {% endfor %}
+{% endfor %}
         ],
         "outbounds": [
           "direct",
@@ -185,17 +185,17 @@
           "IPv4"
         ],
         "users": [
-        {% set all_users = [] %}
-          {% for proto in enriched_protocols %}
-            {% for user in proto.users %}
-              {% if user.name not in all_users %}
-                {% set _ = all_users.append(user.name) %}
-              {% endif %}
-            {% endfor %}
-          {% endfor %}
-          {% for username in all_users %}
+{% set all_users = [] %}
+{% for proto in enriched_protocols %}
+{% for user in proto.users %}
+{% if user.name not in all_users %}
+{% set _ = all_users.append(user.name) %}
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% for username in all_users %}
           "{{ username }}"{{ "," if not loop.last else "" }}
-          {% endfor %}
+{% endfor %}
         ]
       }
     }

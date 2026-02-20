@@ -16,8 +16,8 @@ global
   ssl-default-server-ciphersuites TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256
   ssl-default-server-options no-sslv3 no-tlsv10 no-tlsv11 no-tls-tickets
 
-  # You must first generate DH parameters - [ openssl dhparam -out /etc/haproxy/dhparam.pem 2048 ]
-  ssl-dh-param-file /etc/haproxy/certs/dhparam.pem
+  # # You must first generate DH parameters - [ openssl dhparam -out /etc/haproxy/dhparam.pem 2048 ]
+  # ssl-dh-param-file /etc/haproxy/certs/dhparam.pem
 
 defaults
   mode http
@@ -40,34 +40,29 @@ frontend haproxy-tls
   default_backend nginx
 
 {% for proto in enriched_protocols %}
-
 {% if proto.type == 'vless' %}
 backend vless
   mode tcp
   timeout server 1h
-  {% if proxy_core == 'xray' %}
   option tcp-check
-  server vless xray:10550 init-addr last,libc,none check inter 10s send-proxy-v2
-  {% elif proxy_core == 'singbox' %}
-  server vless singbox:10444 init-addr last,libc,none check
-  {% endif %}
-{% endif %}
-
-{% if proto.type == 'trojan' %}
 {% if proxy_core == 'xray' %}
-backend trojan-nomux
+  server vless xray:10550 init-addr last,libc,none check inter 10s send-proxy-v2
+{% elif proxy_core == 'singbox' %}
+  server vless singbox:10550 init-addr last,libc,none check
+{% endif %}
+{% endif %}
+{% if proto.type == 'trojan' %}
+
+backend trojan
   mode tcp
   timeout server 1h
   option tcp-check
-  server trojan-nomux xray:10551 init-addr last,libc,none check inter 10s send-proxy-v2
+{% if proxy_core == 'xray' %}
+  server trojan xray:10443 init-addr last,libc,none check inter 10s send-proxy-v2
 {% elif proxy_core == 'singbox' %}
-backend trojan-mux
-  mode tcp
-  timeout server 1h
-  server trojan-mux singbox:10443 init-addr last,libc,none check
+  server trojan singbox:10443 init-addr last,libc,none check
 {% endif %}
 {% endif %}
-
 {% endfor %}
 
 backend nginx

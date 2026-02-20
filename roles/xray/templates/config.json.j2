@@ -144,22 +144,27 @@
     ]
   },
   "inbounds": [
+{% for protocol in enriched_protocols %}
     {
-      "tag": "vless-in",
+      "protocol": "{{ protocol.type }}",
+      "tag": "{{ protocol.type }}-in",
+      "listen": "0.0.0.0",
+      "port": {{ 10550 if protocol.type == 'vless' else 10443 }},
       "settings": {
         "clients": [
-          {% for client in final_clients_list %}
+{% for user in protocol.users %}
           {
-            "email": "{{ client.email }}",
-            "id": "{{ client.id }}"
-          }{{ "," if not loop.last }}
-          {% endfor %}
+            "email": "{{ user.name }}",
+{% if protocol.type == 'vless' %}
+            "id": "{{ user.uuid | default('generate-uuid-here-or-from-vars') }}"
+{% elif protocol.type == 'trojan' %}
+          "password": "{{ user.password | default('default-password') }}"
+{% endif %}
+        }{{ "," if not loop.last else "" }}
+{% endfor %}
         ],
         "decryption": "none"
       },
-      "port": 10550,
-      "protocol": "vless",
-      "listen": "0.0.0.0",
       "streamSettings": {
         "network": "tcp",
         "security": "none",
@@ -185,7 +190,8 @@
         "metadataOnly": false,
         "routeOnly": false
       }
-    }
+    }{{ "," if not loop.last else "" }}
+{% endfor %}
   ],
   "outbounds": [
     {

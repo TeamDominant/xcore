@@ -12,15 +12,15 @@ LIVE_DIR="/etc/letsencrypt/live/$CERT_NAME"
 
 echo "=== Certbot Universal Manager started for $CERT_NAME ==="
 
-# 1. Генерация dhparam — только если ещё нет (даже при recreate)
-if [ ! -f "$DHPARAM" ] || [ ! -s "$DHPARAM" ]; then
-    echo "Generating dhparam.pem (2048 bit)..."
-    openssl dhparam -out "$DHPARAM" 2048
-    chmod 644 "$DHPARAM"
-    echo "dhparam.pem ready"
-else
-    echo "dhparam.pem already exists — skipped"
-fi
+# # 1. Генерация dhparam — только если ещё нет (даже при recreate)
+# if [ ! -f "$DHPARAM" ] || [ ! -s "$DHPARAM" ]; then
+#     echo "Generating dhparam.pem (2048 bit)..."
+#     openssl dhparam -out "$DHPARAM" 2048
+#     chmod 644 "$DHPARAM"
+#     echo "dhparam.pem ready"
+# else
+#     echo "dhparam.pem already exists — skipped"
+# fi
 
 # 2. Первый выпуск сертификата — только если его вообще нет
 if [ ! -d "$LIVE_DIR" ] || [ ! -f "$LIVE_DIR/fullchain.pem" ]; then
@@ -55,12 +55,12 @@ if docker ps --format "table {{ '{{.Names}}' }}" | grep -q "^haproxy$"; then
 fi
 
 # 4. Бесконечный цикл обновления (обновляет только если <30 дней до истечения)
-echo "Starting renew loop (every 12 hours)..."
+echo "Starting renew loop (every 24 hours)..."
 while true; do
     echo "[$(date)] Running certbot renew..."
     certbot renew --quiet \
         --deploy-hook "cat $LIVE_DIR/fullchain.pem $LIVE_DIR/privkey.pem > $COMBINED_PEM && chmod 644 $COMBINED_PEM && docker restart haproxy"
 
-    echo "[$(date)] Sleeping 12 hours..."
-    sleep 12h
+    echo "[$(date)] Sleeping 24 hours..."
+    sleep 24h
 done
